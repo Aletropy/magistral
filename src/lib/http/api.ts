@@ -1,5 +1,6 @@
 import type { z } from "zod";
 import type { BatchJobDetail } from "@/lib/batch/types";
+import type { ChatConversation, ChatConversationSummary } from "@/lib/chat/types";
 import type { Clause } from "@/lib/clauses/types";
 import type { AppNotification } from "@/lib/notifications/types";
 import type { ExportFormat } from "@/lib/export/formats";
@@ -56,6 +57,33 @@ export const UPLOAD_KIND_FIELD = "kind";
 
 export function personaEndpoint(id: string): string {
   return `${PERSONAS_ENDPOINT}/${encodeURIComponent(id)}`;
+}
+
+export const CONVERSATIONS_ENDPOINT = "/api/chat/conversations";
+
+export function conversationEndpoint(id: string): string {
+  return `${CONVERSATIONS_ENDPOINT}/${encodeURIComponent(id)}`;
+}
+
+export function conversationMessagesEndpoint(id: string): string {
+  return `${conversationEndpoint(id)}/messages`;
+}
+
+export function replyRetryEndpoint(conversationId: string, messageId: number): string {
+  return `${conversationMessagesEndpoint(conversationId)}/${messageId}/retry`;
+}
+
+export interface ConversationsResponseBody {
+  conversations: ChatConversationSummary[];
+}
+
+export interface ConversationResponseBody {
+  conversation: ChatConversation;
+}
+
+export interface ConversationCreatedResponseBody {
+  conversationId: string;
+  taskId: string;
 }
 
 export const TASKS_ENDPOINT = "/api/tasks";
@@ -198,7 +226,7 @@ export interface PersonaResponseBody {
   persona: Persona;
 }
 
-export function sendJson(method: "POST" | "PUT", url: string, body: unknown): Promise<Response> {
+export function sendJson(method: "POST" | "PUT" | "PATCH", url: string, body: unknown): Promise<Response> {
   return fetch(url, {
     method,
     headers: { "Content-Type": "application/json" },

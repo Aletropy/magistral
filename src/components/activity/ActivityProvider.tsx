@@ -34,6 +34,10 @@ export function useActivity(): ActivityContextValue {
   return useContext(ActivityContext);
 }
 
+function isCurrentPage(href: string): boolean {
+  return new URL(href, window.location.origin).pathname === window.location.pathname;
+}
+
 const TOASTS: Record<NotificationLevel, typeof toast.success> = {
   success: toast.success,
   error: toast.error,
@@ -54,6 +58,8 @@ export function ActivityProvider({ children }: { children: ReactNode }) {
   const announce = useCallback(
     (notification: AppNotification) => {
       const { href } = notification;
+      // The page the result belongs to is already on screen and shows it.
+      if (href && isCurrentPage(href) && !document.hidden) return;
       const open = href ? () => router.push(href) : () => {};
       TOASTS[notification.level](notification.title, {
         description: notification.body || undefined,

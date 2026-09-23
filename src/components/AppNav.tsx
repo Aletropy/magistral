@@ -8,6 +8,7 @@ import { NotificationBell } from "@/components/activity/NotificationBell";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
 import { BATCHES_PATH } from "@/lib/batch/paths";
+import { ASSISTANT_PATH } from "@/lib/chat/paths";
 import { CLAUSES_PATH } from "@/lib/clauses/paths";
 import { HISTORY_PATH, HOME_PATH } from "@/lib/minutas/paths";
 import { PERSONAS_PATH } from "@/lib/personas/paths";
@@ -18,6 +19,7 @@ import { cn } from "@/lib/utils";
 
 const NAV_LINKS = [
   { href: HOME_PATH, label: "Gerar minuta" },
+  { href: ASSISTANT_PATH, label: "Advogado IA" },
   { href: HISTORY_PATH, label: "Histórico" },
   { href: PERSONAS_PATH, label: "Personas" },
   { href: LIBRARY_PATH, label: "Biblioteca" },
@@ -57,7 +59,7 @@ function NavLinks({ pathname, onNavigate, className }: { pathname: string; onNav
   );
 }
 
-/** Inline links on large screens; a menu button with a vertical panel on phones and tablets. */
+/** Inline links on wide screens; a menu button with a vertical panel on phones, tablets and small laptops. */
 export function AppNav() {
   const pathname = usePathname();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -73,7 +75,7 @@ export function AppNav() {
         <Link href={HOME_PATH} className="py-3 font-semibold tracking-tight" onClick={closeMenu}>
           Magistral
         </Link>
-        <NavLinks pathname={pathname} className="hidden gap-1 lg:flex" />
+        <NavLinks pathname={pathname} className="hidden gap-1 xl:flex" />
         <div className="ml-auto flex items-center gap-1">
           <NotificationBell />
           <ThemeToggle />
@@ -81,7 +83,7 @@ export function AppNav() {
             type="button"
             variant="ghost"
             size="icon"
-            className="lg:hidden"
+            className="xl:hidden"
             aria-label={isMenuOpen ? "Fechar menu" : "Abrir menu"}
             aria-expanded={isMenuOpen}
             aria-controls={MOBILE_MENU_ID}
@@ -92,7 +94,7 @@ export function AppNav() {
         </div>
       </div>
       {isMenuOpen && (
-        <div id={MOBILE_MENU_ID} className="border-t px-4 py-2 lg:hidden">
+        <div id={MOBILE_MENU_ID} className="border-t px-4 py-2 xl:hidden">
           <NavLinks pathname={pathname} onNavigate={closeMenu} className="flex flex-col gap-1" />
         </div>
       )}

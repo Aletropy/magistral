@@ -29,7 +29,8 @@ export interface TaskHandler<P, R> {
   resultSchema: z.ZodType<R>;
   run(context: TaskContext<P>): Promise<R>;
   describeSuccess(result: R, task: { id: string; title: string }): NotificationDraft;
-  describeFailure(message: string, task: { id: string; title: string }): NotificationDraft;
+  /** `payload` is missing only when it could not be read. */
+  describeFailure(message: string, task: { id: string; title: string }, payload?: P): NotificationDraft;
   /** Cleans up after a permanent failure (e.g. marks a pending chat reply as failed). */
   onFailed?(payload: P, message: string): void;
   /** Cleans up after the user cancelled the task. */

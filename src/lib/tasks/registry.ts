@@ -1,4 +1,5 @@
 import "server-only";
+import { chatReplyTask } from "@/lib/chat/chatReplyTask";
 import { draftMinutaTask } from "@/lib/minuta/draftMinutaTask";
 import { suggestDraftTask } from "@/lib/minuta/suggestDraftTask";
 import { libraryDemoTask, libraryReindexTask, librarySyncTask, libraryUploadTask } from "@/lib/rag/libraryTasks";
@@ -15,4 +16,5 @@ export const TASK_HANDLERS: Record<TaskKind, AnyTaskHandler> = {
   "library.demo": libraryDemoTask,
   "style.capture": captureStyleTask,
   "minuta.extract": suggestDraftTask,
+  "chat.reply": chatReplyTask,
 };

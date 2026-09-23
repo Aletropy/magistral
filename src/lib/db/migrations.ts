@@ -242,6 +242,60 @@ function createTaskTables(db: DatabaseSync): void {
   `);
 }
 
+/** Idempotent, so the reconciliation below can run it on databases where another version took this slot. */
+function createChatTables(db: DatabaseSync): void {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS chat_conversations (
+      id TEXT PRIMARY KEY,
+      title TEXT NOT NULL,
+      minuta_id TEXT REFERENCES minutas(id) ON DELETE SET NULL,
+      use_library INTEGER NOT NULL DEFAULT 1,
+      created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+      updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+    );
+    CREATE INDEX IF NOT EXISTS chat_conversations_updated_at ON chat_conversations (updated_at);
+
+    CREATE TABLE IF NOT EXISTS chat_conversation_messages (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      conversation_id TEXT NOT NULL REFERENCES chat_conversations(id) ON DELETE CASCADE,
+      role TEXT NOT NULL,
+      content TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'done',
+      error TEXT,
+      sources TEXT,
+      task_id TEXT,
+      created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+    );
+    CREATE INDEX IF NOT EXISTS chat_conversation_messages_conversation
+      ON chat_conversation_messages (conversation_id, id);
+  `);
+}
+
+function tableExists(db: DatabaseSync, name: string): boolean {
+  return db.prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?").get(name) !== undefined;
+}
+
+/**
+ * Databases that ran an early prototype of the assistant have its tables (chat_threads, chat_messages)
+ * in the chat migration's slot and "assistant" usage rows. Their conversations move to the final tables
+ * and the usage is relabelled; on every other database this only confirms the chat tables exist.
+ */
+function reconcileLegacyChat(db: DatabaseSync): void {
+  createChatTables(db);
+  if (tableExists(db, "chat_threads")) {
+    db.exec(`
+      INSERT OR IGNORE INTO chat_conversations (id, title, created_at, updated_at)
+        SELECT id, title, created_at, updated_at FROM chat_threads;
+      INSERT INTO chat_conversation_messages (conversation_id, role, content, created_at)
+        SELECT thread_id, role, content, created_at FROM chat_messages
+        WHERE role IN ('user', 'assistant') ORDER BY id;
+      DROP TABLE chat_messages;
+      DROP TABLE chat_threads;
+    `);
+  }
+  db.exec("UPDATE llm_calls SET operation = 'chat' WHERE operation = 'assistant'");
+}
+
 /** Ordered schema changes. Append new migrations; never edit or reorder existing ones. */
 export const MIGRATIONS: readonly Migration[] = [
   createPersonaTables,
@@ -254,6 +308,8 @@ export const MIGRATIONS: readonly Migration[] = [
   createLibraryMetaTable,
   createMinutasTable,
   createTaskTables,
+  createChatTables,
+  reconcileLegacyChat,
 ];
 
 function readSchemaVersion(db: DatabaseSync): number {

@@ -39,3 +39,31 @@ describe("runMigrations", () => {
     expect(db.prepare("SELECT name FROM sqlite_master WHERE name = 'half_done'").get()).toBeUndefined();
   });
 });
+
+describe("legacy chat reconciliation", () => {
+  it("moves a prototype's conversations into the chat tables and relabels its usage", () => {
+    const db = openDatabase(IN_MEMORY_DATABASE);
+    const reconcile = MIGRATIONS.at(-1)!;
+    db.exec(`
+      DROP TABLE chat_conversation_messages;
+      DROP TABLE chat_conversations;
+      CREATE TABLE chat_threads (id TEXT PRIMARY KEY, title TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL);
+      CREATE TABLE chat_messages (id INTEGER PRIMARY KEY AUTOINCREMENT, thread_id TEXT NOT NULL, role TEXT NOT NULL,
+        content TEXT NOT NULL, sources TEXT, created_at TEXT NOT NULL);
+      INSERT INTO chat_threads VALUES ('t1', 'Como crio uma minuta?', '2026-09-23T20:00:00Z', '2026-09-23T20:01:00Z');
+      INSERT INTO chat_messages (thread_id, role, content, created_at) VALUES
+        ('t1', 'user', 'Como crio uma minuta?', '2026-09-23T20:00:00Z'),
+        ('t1', 'assistant', 'Acesse Gerar minuta.', '2026-09-23T20:01:00Z');
+      INSERT INTO llm_calls (operation, provider, model, input_tokens, output_tokens, thinking_tokens, latency_ms, status)
+        VALUES ('assistant', 'openrouter', 'm', 1, 1, 0, 1, 'ok');
+    `);
+
+    reconcile(db);
+
+    expect(db.prepare("SELECT id, title FROM chat_conversations").all()).toEqual([{ id: "t1", title: "Como crio uma minuta?" }]);
+    const messages = db.prepare("SELECT role, status FROM chat_conversation_messages ORDER BY id").all();
+    expect(messages).toEqual([{ role: "user", status: "done" }, { role: "assistant", status: "done" }]);
+    expect(db.prepare("SELECT name FROM sqlite_master WHERE name = 'chat_threads'").get()).toBeUndefined();
+    expect(db.prepare("SELECT operation FROM llm_calls").all()).toEqual([{ operation: "chat" }]);
+  });
+});

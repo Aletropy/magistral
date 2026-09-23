@@ -30,6 +30,8 @@ export const draftExtractionSchema = z.object({
   /** One condition per item; joined into the form's bullet list (models often drop line breaks in a string). */
   clauses: z.array(z.string()),
   approvedClauseIds: z.array(z.string()),
+  /** A persona id from the catalog, or empty when the source doesn't point to a tone. */
+  personaId: z.string(),
   reviewNotes: z.array(z.string()),
 });
 export type DraftExtraction = z.infer<typeof draftExtractionSchema>;
@@ -43,6 +45,8 @@ export const suggestedDraftSchema = z.object({
   parties: z.array(partyExtractionSchema),
   clauses: z.string(),
   approvedClauseIds: z.array(z.string()),
+  /** Null keeps the persona already chosen in the form. */
+  persona: z.string().nullable().default(null),
 });
 export type SuggestedDraft = z.infer<typeof suggestedDraftSchema>;
 
@@ -77,11 +81,17 @@ function clip(text: string, maxChars: number): string {
   return text.trim().slice(0, maxChars);
 }
 
+/** The clauses and personas that exist, which suggestions may point to. */
+export interface SuggestionCatalog {
+  clauseIds: ReadonlySet<string>;
+  personaIds: ReadonlySet<string>;
+}
+
 /**
- * Brings the model's reading within the form's limits: unknown clause ids are dropped, parties are
- * capped and padded to the minimum, and every text is clipped.
+ * Brings the model's reading within the form's limits: unknown clause and persona ids are dropped,
+ * parties are capped and padded to the minimum, and every text is clipped.
  */
-export function toSuggestedDraft(extraction: DraftExtraction, knownClauseIds: ReadonlySet<string>): SuggestedDraft {
+export function toSuggestedDraft(extraction: DraftExtraction, catalog: SuggestionCatalog): SuggestedDraft {
   const parties = extraction.parties
     .map((party) => ({
       name: clip(party.name, MAX_PARTY_NAME_CHARS),
@@ -98,8 +108,9 @@ export function toSuggestedDraft(extraction: DraftExtraction, knownClauseIds: Re
     parties,
     clauses: clip(toClauseList(extraction.clauses), MAX_CLAUSES_CHARS),
     approvedClauseIds: [...new Set(extraction.approvedClauseIds)]
-      .filter((id) => knownClauseIds.has(id))
+      .filter((id) => catalog.clauseIds.has(id))
       .slice(0, MAX_APPROVED_CLAUSES),
+    persona: catalog.personaIds.has(extraction.personaId) ? extraction.personaId : null,
   };
 }
 
@@ -110,20 +121,21 @@ export function toReviewNotes(notes: string[]): string[] {
     .slice(0, MAX_REVIEW_NOTES);
 }
 
-/** The form with a suggestion applied; clauses deleted since the suggestion was made are left out. */
+/** The form with a suggestion applied; clauses and personas deleted since the suggestion was made are left out. */
 export function applySuggestion(
   values: MinutaFormValues,
   suggestion: DraftSuggestionResult,
-  availableClauseIds: ReadonlySet<string>,
+  available: SuggestionCatalog,
 ): MinutaFormValues {
   const { draft } = suggestion;
   return {
     ...values,
+    persona: draft.persona && available.personaIds.has(draft.persona) ? draft.persona : values.persona,
     documentType: draft.documentType,
     customDocumentType: draft.customDocumentType,
     parties: draft.parties,
     clauses: draft.clauses,
-    approvedClauseIds: draft.approvedClauseIds.filter((id) => availableClauseIds.has(id)),
+    approvedClauseIds: draft.approvedClauseIds.filter((id) => available.clauseIds.has(id)),
     baseDocument: suggestion.baseDocument ?? values.baseDocument ?? null,
   };
 }

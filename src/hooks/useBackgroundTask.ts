@@ -10,8 +10,11 @@ import type { TaskDetail } from "@/lib/tasks/types";
 import { useTask } from "./useTask";
 
 export interface BackgroundTaskOptions {
-  /** The URL query parameter that remembers the task; pages following two tasks give each its own. */
-  queryParam?: string;
+  /**
+   * The URL query parameter that remembers the task; pages following two tasks give each its own.
+   * Null keeps the URL as it is, for tasks the page has nothing to restore from.
+   */
+  queryParam?: string | null;
 }
 
 /**
@@ -43,7 +46,7 @@ export function useBackgroundTask<R>(
         }
         const { taskId: queued } = (await response.json()) as TaskCreatedResponseBody;
         setTaskId(queued);
-        replaceTaskParam(queued, queryParam);
+        if (queryParam) replaceTaskParam(queued, queryParam);
         refreshActivity();
         return true;
       } catch {
@@ -59,7 +62,7 @@ export function useBackgroundTask<R>(
   /** Stops following the task (it keeps its entry in /tarefas). */
   const dismiss = useCallback(() => {
     setTaskId(null);
-    replaceTaskParam(null, queryParam);
+    if (queryParam) replaceTaskParam(null, queryParam);
   }, [queryParam]);
 
   return {

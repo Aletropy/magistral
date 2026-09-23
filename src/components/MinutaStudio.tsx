@@ -16,7 +16,12 @@ import { useMinutaGeneration, type MinutaGenerationInitialState } from "@/hooks/
 import { useReviewPersistence } from "@/hooks/useReviewPersistence";
 import type { ClauseOption } from "@/lib/clauses/types";
 import { DRAFT_SUGGESTIONS_ENDPOINT, postJson } from "@/lib/http/api";
-import { applySuggestion, draftSuggestionResultSchema, type DraftSuggestionResult } from "@/lib/minuta/draftSuggestion";
+import {
+  applySuggestion,
+  draftSuggestionResultSchema,
+  type DraftSuggestionResult,
+  type SuggestionCatalog,
+} from "@/lib/minuta/draftSuggestion";
 import { initialMinutaValues } from "@/lib/minuta/formDefaults";
 import { DRAFT_SUGGESTION_QUERY_PARAM } from "@/lib/minuta/paths";
 import type { MinutaFormValues, MinutaRequest } from "@/lib/minuta/schema";
@@ -47,12 +52,12 @@ interface InitialForm {
   reviewNotes: string[];
 }
 
-function initialForm(personas: PersonaSummary[], clauseIds: ReadonlySet<string>, suggestion: TaskDetail | null): InitialForm {
+function initialForm(personas: PersonaSummary[], catalog: SuggestionCatalog, suggestion: TaskDetail | null): InitialForm {
   const blank = initialMinutaValues(personas);
   const finished = suggestion?.status === "succeeded" ? draftSuggestionResultSchema.safeParse(suggestion.result) : null;
   if (!suggestion || !finished?.success) return { values: blank, appliedSuggestionId: null, reviewNotes: [] };
   return {
-    values: applySuggestion(blank, finished.data, clauseIds),
+    values: applySuggestion(blank, finished.data, catalog),
     appliedSuggestionId: suggestion.id,
     reviewNotes: finished.data.reviewNotes,
   };
@@ -66,8 +71,14 @@ export function MinutaStudio({
   initialGeneration,
   initialSuggestion = null,
 }: MinutaStudioProps) {
-  const clauseIds = useMemo(() => new Set(clauses.map((clause) => clause.id)), [clauses]);
-  const [start] = useState(() => initialForm(personas, clauseIds, initialSuggestion));
+  const catalog = useMemo(
+    () => ({
+      clauseIds: new Set(clauses.map((clause) => clause.id)),
+      personaIds: new Set(personas.map((persona) => persona.id)),
+    }),
+    [clauses, personas],
+  );
+  const [start] = useState(() => initialForm(personas, catalog, initialSuggestion));
   const [values, setValues] = useState(start.values);
   const [appliedSuggestionId, setAppliedSuggestionId] = useState(start.appliedSuggestionId);
   const [reviewNotes, setReviewNotes] = useState(start.reviewNotes);
@@ -130,7 +141,7 @@ export function MinutaStudio({
   }
 
   function applyDraftSuggestion(suggested: DraftSuggestionResult) {
-    changeValues(applySuggestion(values, suggested, clauseIds));
+    changeValues(applySuggestion(values, suggested, catalog));
     setAppliedSuggestionId(suggestion.taskId);
     setReviewNotes(suggested.reviewNotes);
     setWizard((previous) => ({ key: previous.key + 1, step: "revisao" }));

@@ -11,6 +11,7 @@ export const LLM_OPERATIONS = [
   "style_capture",
   "embedding",
   "minuta_extract",
+  "chat",
 ] as const;
 export type LlmOperation = (typeof LLM_OPERATIONS)[number];
 
@@ -21,6 +22,7 @@ export const LLM_OPERATION_LABELS: Record<LlmOperation, string> = {
   style_capture: "Captura de estilo",
   embedding: "Indexação da biblioteca",
   minuta_extract: "Preenchimento automático",
+  chat: "Advogado IA",
 };
 
 /** "ok", a generation failure reason, or why the call never produced a response. */

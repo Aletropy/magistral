@@ -1,5 +1,7 @@
+import Link from "next/link";
 import { connection } from "next/server";
 import { MinutaStudio } from "@/components/MinutaStudio";
+import { ASSISTANT_PATH } from "@/lib/chat/paths";
 import { loadGenerationState } from "@/lib/minuta/loadGenerationState";
 import { loadMinutaFormOptions } from "@/lib/minuta/loadMinutaFormOptions";
 import { DRAFT_SUGGESTION_QUERY_PARAM } from "@/lib/minuta/paths";
@@ -21,6 +23,13 @@ export default async function Home({ searchParams }: PageProps<"/">) {
         <p className="max-w-2xl text-muted-foreground">
           Siga o passo a passo ou preencha o formulário completo, parta do zero ou de um documento base, escolha o
           tom de voz e receba uma minuta pronta para revisar e baixar em Word ou PDF.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Dúvidas sobre o que pedir?{" "}
+          <Link href={ASSISTANT_PATH} className="text-primary hover:underline">
+            Converse com o Advogado IA
+          </Link>{" "}
+          e ele monta a minuta com você.
         </p>
       </header>
       <MinutaStudio

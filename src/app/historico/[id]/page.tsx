@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
+import { DiscussMinutaButton } from "@/components/chat/DiscussMinutaButton";
 import { DeleteMinutaButton } from "@/components/DeleteMinutaButton";
 import { SavedMinutaView } from "@/components/SavedMinutaView";
 import { getMinutaRepository } from "@/lib/minutas/getMinutaRepository";
@@ -29,7 +30,10 @@ export default async function SavedMinutaPage({ params }: PageProps<"/historico/
             {edited && ` · revisada em ${formatDateTime(minuta.updatedAt)}`}
           </p>
         </div>
-        <DeleteMinutaButton id={minuta.id} title={minuta.title} leavePage />
+        <div className="flex flex-wrap items-start gap-2">
+          <DiscussMinutaButton minutaId={minuta.id} />
+          <DeleteMinutaButton id={minuta.id} title={minuta.title} leavePage />
+        </div>
       </header>
       <SavedMinutaView initial={{ ...minuta.result, id: minuta.id }} />
     </main>

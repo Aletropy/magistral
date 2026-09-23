@@ -24,6 +24,7 @@ export const TASK_KINDS = [
   "library.demo",
   "style.capture",
   "minuta.extract",
+  "chat.reply",
 ] as const;
 export type TaskKind = (typeof TASK_KINDS)[number];
 
@@ -34,7 +35,8 @@ export const TASK_KIND_LABELS: Record<TaskKind, string> = {
   "library.reindex": "Reindexação da biblioteca",
   "library.demo": "Exemplos da biblioteca",
   "style.capture": "Captura de estilo",
-  "minuta.extract": "Leitura de documento base",
+  "minuta.extract": "Preenchimento de minuta",
+  "chat.reply": "Resposta do Advogado IA",
 };
 
 export interface TaskProgress {

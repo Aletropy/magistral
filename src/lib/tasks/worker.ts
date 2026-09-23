@@ -86,7 +86,7 @@ export function createTaskWorker(options: TaskWorkerOptions): TaskWorker {
       const failure = handler.onFailed;
       if (failure) safely(() => failure(payload, message));
     }
-    const draft = handler?.describeFailure(message, task) ?? {
+    const draft = handler?.describeFailure(message, task, payload) ?? {
       level: "error" as const,
       title: `Falhou: ${task.title}`,
       body: message,
