@@ -6,6 +6,7 @@ import { ConsultedSources } from "@/components/ConsultedSources";
 import { ForbiddenTermsWarning } from "@/components/ForbiddenTermsWarning";
 import { RedlinePanel } from "@/components/RedlinePanel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { WarningCallout } from "@/components/ui/WarningCallout";
 import { MinutaPreview } from "@/components/MinutaPreview";
 import type { MinutaResponseBody } from "@/lib/http/api";
 import { parseMarkdown } from "@/lib/markdown/parseMarkdown";
@@ -20,7 +21,7 @@ interface ResultPanelProps {
 
 function Notice({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex min-h-64 items-center justify-center rounded-lg border border-dashed border-zinc-300 p-8 text-center text-sm text-zinc-500">
+    <div className="flex min-h-64 items-center justify-center rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
       {children}
     </div>
   );
@@ -32,7 +33,7 @@ export function ResultPanel({ result, isGenerating, error, onReviewApplied }: Re
   return (
     <section className="flex flex-col gap-4" aria-live="polite" aria-busy={isGenerating}>
       {error && (
-        <p role="alert" className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <p role="alert" className="rounded-md border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
           {error}
         </p>
       )}
@@ -47,10 +48,10 @@ export function ResultPanel({ result, isGenerating, error, onReviewApplied }: Re
           <DownloadButtons markdown={result.markdown} blocks={blocks} />
           <ForbiddenTermsWarning terms={result.forbiddenTermsFound} />
           {!result.approvedClauseOrderKept && (
-            <p role="status" className="rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+            <WarningCallout>
               ⚠ A IA não manteve a ordem escolhida para as cláusulas aprovadas. Revise a sequência antes de
               exportar.
-            </p>
+            </WarningCallout>
           )}
           <ConsultedSources sources={result.consultedSources} strategy={result.retrievalStrategy} />
           <Tabs defaultValue="document">

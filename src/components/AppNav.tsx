@@ -7,6 +7,7 @@ import { CLAUSES_PATH } from "@/lib/clauses/paths";
 import { PERSONAS_PATH } from "@/lib/personas/paths";
 import { LIBRARY_PATH } from "@/lib/rag/paths";
 import { cn } from "@/lib/utils";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 const NAV_LINKS = [
   { href: "/", label: "Gerar minuta" },
@@ -44,6 +45,9 @@ export function AppNav() {
             </li>
           ))}
         </ul>
+        <div className="ml-auto">
+          <ThemeToggle />
+        </div>
       </div>
     </nav>
   );

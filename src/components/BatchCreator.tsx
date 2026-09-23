@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/FormField";
 import { Input } from "@/components/ui/input";
+import { WarningCallout } from "@/components/ui/WarningCallout";
 import { batchPath } from "@/lib/batch/paths";
 import { MAX_BATCH_NAME_CHARS } from "@/lib/batch/schema";
 import {
@@ -178,10 +179,10 @@ export function BatchCreator(options: MinutaFormOptions) {
           <div className="flex flex-col gap-4 rounded-lg border bg-card p-4">
             <h2 className="text-sm font-medium">3. Conferir e iniciar</h2>
             {missing.length > 0 && (
-              <p className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+              <WarningCallout>
                 ⚠ Sem coluna correspondente: {missing.map(placeholder).join(", ")}. Esses campos sairão como
                 [PREENCHER: …].
-              </p>
+              </WarningCallout>
             )}
             <p className="text-sm text-muted-foreground">Primeira linha preenchida:</p>
             <PreviewRow request={fillRequestTemplate(template, sheet.rows[0])} />
