@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import type { MinutaRequest } from "@/lib/minuta/schema";
+import { DEFAULT_STYLE_SLIDERS } from "@/lib/personas/styleSliders";
 import type { Persona } from "@/lib/personas/types";
 import { MinutaGenerationError } from "./errors";
 import { generateMinuta } from "./generateMinuta";
@@ -28,6 +29,8 @@ const PERSONA: Persona = {
   toneParameters: ["Use voz ativa."],
   temperature: 0.2,
   examples: [],
+  negativeConstraints: [],
+  styleSliders: DEFAULT_STYLE_SLIDERS,
   isBuiltin: false,
   createdAt: "2026-09-23T00:00:00.000Z",
   updatedAt: "2026-09-23T00:00:00.000Z",

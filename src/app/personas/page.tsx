@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { getPersonaRepository } from "@/lib/personas/getPersonaRepository";
-import { NEW_PERSONA_PATH, personaEditPath } from "@/lib/personas/paths";
+import { NEW_PERSONA_PATH, personaEditPath, personaPlaygroundPath } from "@/lib/personas/paths";
 
 const TEMPERATURE_DECIMALS = 2;
 
@@ -57,6 +57,9 @@ export default async function PersonasPage() {
                 </TableCell>
                 <TableCell>
                   <div className="flex items-start justify-end gap-2">
+                    <Button asChild variant="outline" size="sm">
+                      <Link href={personaPlaygroundPath(persona.id)}>Testar</Link>
+                    </Button>
                     <Button asChild variant="outline" size="sm">
                       <Link href={personaEditPath(persona.id)}>Editar</Link>
                     </Button>

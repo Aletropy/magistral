@@ -33,3 +33,16 @@ describe("personaInputSchema", () => {
     expect(personaInputSchema.safeParse({ ...VALID, examples: [""] }).success).toBe(false);
   });
 });
+
+describe("personaInputSchema negative constraints and sliders", () => {
+  it("rejects duplicate terms, ignoring case and accents", () => {
+    const result = personaInputSchema.safeParse({ ...VALID, negativeConstraints: ["Outrossim", "outrossím"] });
+    expect(result.success).toBe(false);
+  });
+
+  it("keeps sliders as integers within range", () => {
+    const sliders = VALID.styleSliders;
+    expect(personaInputSchema.safeParse({ ...VALID, styleSliders: { ...sliders, length: 6 } }).success).toBe(false);
+    expect(personaInputSchema.safeParse({ ...VALID, styleSliders: { ...sliders, length: 2.5 } }).success).toBe(false);
+  });
+});

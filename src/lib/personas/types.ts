@@ -1,3 +1,5 @@
+import type { StyleSliders } from "./styleSliders";
+
 export interface Persona {
   id: string;
   name: string;
@@ -10,6 +12,10 @@ export interface Persona {
   temperature: number;
   /** Few-shot samples showing tone only; the model must not copy their content. */
   examples: string[];
+  /** Words and phrases the model must never use. */
+  negativeConstraints: string[];
+  /** Formality, aggressiveness and length levels; neutral levels add nothing to the prompt. */
+  styleSliders: StyleSliders;
   /** Seeded personas can be edited but never deleted. */
   isBuiltin: boolean;
   createdAt: string;
@@ -17,7 +23,10 @@ export interface Persona {
 }
 
 /** The persona fields that shape the system prompt. */
-export type PersonaStyle = Pick<Persona, "systemInstruction" | "toneParameters" | "examples">;
+export type PersonaStyle = Pick<
+  Persona,
+  "systemInstruction" | "toneParameters" | "examples" | "negativeConstraints" | "styleSliders"
+>;
 
 /** What the minuta form needs to list a persona. */
 export type PersonaSummary = Pick<Persona, "id" | "name" | "description">;

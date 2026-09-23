@@ -1,4 +1,5 @@
 import type { PersonaStyle } from "@/lib/personas/types";
+import { buildExamplesSection, buildPersonaSections, toBulletList } from "./personaSections";
 
 export const MISSING_DATA_PLACEHOLDER = "[PREENCHER: descrição do dado]";
 
@@ -19,23 +20,13 @@ const OUTPUT_RULES = [
   "Nenhuma saudação, introdução, comentário, explicação ou observação antes ou depois da minuta (nada de \"Aqui está o seu documento\").",
 ];
 
-function toBulletList(items: string[]): string {
-  return items.map((item) => `- ${item}`).join("\n");
-}
-
-function formatExamples(examples: string[]): string {
-  return examples.map((example) => `<exemplo>\n${example}\n</exemplo>`).join("\n\n");
-}
-
-/** The persona's own text comes first; the drafting and output rules are fixed guardrails. */
+/** The persona's own sections come first; the drafting and output rules are fixed guardrails. */
 export function buildSystemPrompt(style: PersonaStyle): string {
   return [
-    style.systemInstruction,
-    style.toneParameters.length > 0 && `## Tom de voz\n${toBulletList(style.toneParameters)}`,
+    ...buildPersonaSections(style),
     `## Regras de redação\n${toBulletList(DRAFTING_RULES)}`,
     `## Formato de saída\n${toBulletList(OUTPUT_RULES)}`,
-    style.examples.length > 0 &&
-      `## Exemplos de tom (imite o estilo, não o conteúdo)\n${formatExamples(style.examples)}`,
+    buildExamplesSection(style),
   ]
     .filter(Boolean)
     .join("\n\n");

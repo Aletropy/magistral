@@ -2,13 +2,18 @@ import { randomUUID } from "node:crypto";
 import type { DatabaseSync } from "node:sqlite";
 import { z } from "zod";
 import { withTransaction } from "@/lib/db/transaction";
-import type { PersonaInput } from "./schema";
+import { styleSlidersSchema, type PersonaInput } from "./schema";
 import type { Persona } from "./types";
 
 const stringListJson = z
   .string()
   .transform((json) => JSON.parse(json) as unknown)
   .pipe(z.array(z.string()));
+
+const styleSlidersJson = z
+  .string()
+  .transform((json) => JSON.parse(json) as unknown)
+  .pipe(styleSlidersSchema);
 
 const personaRowSchema = z.object({
   id: z.string(),
@@ -17,6 +22,8 @@ const personaRowSchema = z.object({
   system_instruction: z.string(),
   tone_parameters: stringListJson,
   temperature: z.number(),
+  negative_constraints: stringListJson,
+  style_sliders: styleSlidersJson,
   is_builtin: z.number(),
   created_at: z.string(),
   updated_at: z.string(),
@@ -42,13 +49,14 @@ export function createPersonaRepository(db: DatabaseSync): PersonaRepository {
     "SELECT content FROM persona_examples WHERE persona_id = ? ORDER BY position",
   );
   const insertPersona = db.prepare(
-    `INSERT INTO personas (id, name, description, system_instruction, tone_parameters, temperature)
-     VALUES (?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO personas (id, name, description, system_instruction, tone_parameters, temperature,
+                           negative_constraints, style_sliders)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
   );
   const updatePersona = db.prepare(
     `UPDATE personas
      SET name = ?, description = ?, system_instruction = ?, tone_parameters = ?, temperature = ?,
-         updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+         negative_constraints = ?, style_sliders = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
      WHERE id = ?`,
   );
   const deleteExamples = db.prepare("DELETE FROM persona_examples WHERE persona_id = ?");
@@ -67,6 +75,8 @@ export function createPersonaRepository(db: DatabaseSync): PersonaRepository {
       toneParameters: parsed.tone_parameters,
       temperature: parsed.temperature,
       examples: selectExamples.all(parsed.id).map((example) => exampleRowSchema.parse(example).content),
+      negativeConstraints: parsed.negative_constraints,
+      styleSliders: parsed.style_sliders,
       isBuiltin: parsed.is_builtin === 1,
       createdAt: parsed.created_at,
       updatedAt: parsed.updated_at,
@@ -98,6 +108,8 @@ export function createPersonaRepository(db: DatabaseSync): PersonaRepository {
           input.systemInstruction,
           JSON.stringify(input.toneParameters),
           input.temperature,
+          JSON.stringify(input.negativeConstraints),
+          JSON.stringify(input.styleSliders),
         );
         replaceExamples(id, input.examples);
       });
@@ -112,6 +124,8 @@ export function createPersonaRepository(db: DatabaseSync): PersonaRepository {
           input.systemInstruction,
           JSON.stringify(input.toneParameters),
           input.temperature,
+          JSON.stringify(input.negativeConstraints),
+          JSON.stringify(input.styleSliders),
           id,
         );
         if (changes === 0) return false;

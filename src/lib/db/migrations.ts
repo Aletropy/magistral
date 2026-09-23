@@ -1,5 +1,6 @@
 import type { DatabaseSync } from "node:sqlite";
 import { BUILTIN_PERSONAS } from "@/lib/personas/seeds";
+import { DEFAULT_STYLE_SLIDERS } from "@/lib/personas/styleSliders";
 import { withTransaction } from "./transaction";
 
 export type Migration = (db: DatabaseSync) => void;
@@ -66,8 +67,18 @@ function createLlmCallsTable(db: DatabaseSync): void {
   `);
 }
 
+function addPersonaStyleControls(db: DatabaseSync): void {
+  db.exec(`ALTER TABLE personas ADD COLUMN negative_constraints TEXT NOT NULL DEFAULT '[]'`);
+  db.exec(`ALTER TABLE personas ADD COLUMN style_sliders TEXT NOT NULL DEFAULT '{}'`);
+  db.prepare("UPDATE personas SET style_sliders = ?").run(JSON.stringify(DEFAULT_STYLE_SLIDERS));
+}
+
 /** Ordered schema changes. Append new migrations; never edit or reorder existing ones. */
-export const MIGRATIONS: readonly Migration[] = [createPersonaTables, createLlmCallsTable];
+export const MIGRATIONS: readonly Migration[] = [
+  createPersonaTables,
+  createLlmCallsTable,
+  addPersonaStyleControls,
+];
 
 function readSchemaVersion(db: DatabaseSync): number {
   const row = db.prepare("PRAGMA user_version").get() as { user_version: number };

@@ -1,4 +1,5 @@
 import type { PersonaInput } from "./schema";
+import { DEFAULT_STYLE_SLIDERS } from "./styleSliders";
 
 /** Strict legal opinions need low variance; plain-language drafting tolerates a little more. */
 const CONSERVADOR_TEMPERATURE = 0.2;
@@ -25,6 +26,8 @@ export const BUILTIN_PERSONAS: readonly BuiltinPersona[] = [
     examples: [
       "## CLÁUSULA QUINTA – DA RESCISÃO\n\nO presente Contrato poderá ser rescindido por qualquer das Partes, mediante notificação escrita com antecedência mínima de 30 (trinta) dias, sem prejuízo das obrigações vencidas até a data da efetiva rescisão.\n\n**Parágrafo Único.** O inadimplemento de qualquer obrigação aqui prevista, não sanado no prazo de 10 (dez) dias contados do recebimento de notificação, autoriza a rescisão imediata pela Parte inocente.",
     ],
+    negativeConstraints: [],
+    styleSliders: DEFAULT_STYLE_SLIDERS,
   },
   {
     id: "moderno",
@@ -42,6 +45,8 @@ export const BUILTIN_PERSONAS: readonly BuiltinPersona[] = [
     examples: [
       "## 5. Encerramento do contrato\n\nQualquer parte pode encerrar este contrato avisando a outra por escrito com 30 dias de antecedência. O que já estiver vencido continua devido.\n\nSe uma parte descumprir o contrato e não corrigir o problema em 10 dias após ser avisada, a outra pode encerrá-lo na hora.",
     ],
+    negativeConstraints: [],
+    styleSliders: DEFAULT_STYLE_SLIDERS,
   },
   {
     id: "agressivo",
@@ -59,6 +64,8 @@ export const BUILTIN_PERSONAS: readonly BuiltinPersona[] = [
     examples: [
       "## CLÁUSULA QUINTA – DA RESCISÃO E DAS PENALIDADES\n\nO descumprimento de qualquer obrigação pela CONTRATADA autoriza a CONTRATANTE a rescindir este Contrato de imediato, independentemente de notificação, sujeitando a CONTRATADA a multa não compensatória de 20% (vinte por cento) do valor total do Contrato, acrescida de perdas e danos, juros de 1% (um por cento) ao mês e honorários advocatícios de 20% (vinte por cento).",
     ],
+    negativeConstraints: [],
+    styleSliders: DEFAULT_STYLE_SLIDERS,
   },
 ];
 

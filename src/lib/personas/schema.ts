@@ -1,4 +1,11 @@
 import { z } from "zod";
+import { normalizeForMatch } from "@/lib/text/normalizeForMatch";
+import {
+  DEFAULT_STYLE_SLIDERS,
+  STYLE_SLIDER_MAX,
+  STYLE_SLIDER_MIN,
+  type StyleSliders,
+} from "./styleSliders";
 
 export const MAX_PERSONA_ID_CHARS = 64;
 export const MAX_PERSONA_NAME_CHARS = 80;
@@ -12,6 +19,33 @@ export const TEMPERATURE_MIN = 0;
 export const TEMPERATURE_MAX = 1;
 export const TEMPERATURE_STEP = 0.05;
 export const DEFAULT_TEMPERATURE = 0.4;
+export const MAX_NEGATIVE_CONSTRAINTS = 50;
+export const MAX_NEGATIVE_CONSTRAINT_CHARS = 60;
+
+const styleSliderSchema = z
+  .number()
+  .int()
+  .min(STYLE_SLIDER_MIN, { error: `O mínimo é ${STYLE_SLIDER_MIN}.` })
+  .max(STYLE_SLIDER_MAX, { error: `O máximo é ${STYLE_SLIDER_MAX}.` });
+
+export const styleSlidersSchema = z.object({
+  formality: styleSliderSchema,
+  aggressiveness: styleSliderSchema,
+  length: styleSliderSchema,
+}) satisfies z.ZodType<StyleSliders>;
+
+export const negativeConstraintsSchema = z
+  .array(
+    z
+      .string()
+      .trim()
+      .min(1, { error: "Termo vazio." })
+      .max(MAX_NEGATIVE_CONSTRAINT_CHARS, { error: `Use no máximo ${MAX_NEGATIVE_CONSTRAINT_CHARS} caracteres.` }),
+  )
+  .max(MAX_NEGATIVE_CONSTRAINTS, { error: `Use no máximo ${MAX_NEGATIVE_CONSTRAINTS} termos.` })
+  .refine((terms) => new Set(terms.map(normalizeForMatch)).size === terms.length, {
+    error: "Há termos repetidos.",
+  });
 
 export const personaInputSchema = z.object({
   name: z
@@ -51,6 +85,8 @@ export const personaInputSchema = z.object({
         .max(MAX_EXAMPLE_CHARS, { error: `Use no máximo ${MAX_EXAMPLE_CHARS} caracteres.` }),
     )
     .max(MAX_EXAMPLES, { error: `Use no máximo ${MAX_EXAMPLES} exemplos.` }),
+  negativeConstraints: negativeConstraintsSchema,
+  styleSliders: styleSlidersSchema,
 });
 
 export type PersonaInput = z.infer<typeof personaInputSchema>;
@@ -63,4 +99,6 @@ export const EMPTY_PERSONA: PersonaFormValues = {
   toneParameters: [],
   temperature: DEFAULT_TEMPERATURE,
   examples: [],
+  negativeConstraints: [],
+  styleSliders: DEFAULT_STYLE_SLIDERS,
 };

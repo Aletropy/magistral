@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { MinutaRequest } from "@/lib/minuta/schema";
 import { BUILTIN_PERSONAS } from "@/lib/personas/seeds";
+import { DEFAULT_STYLE_SLIDERS, STYLE_SLIDERS } from "@/lib/personas/styleSliders";
 import type { PersonaStyle } from "@/lib/personas/types";
 import { buildSystemPrompt } from "./buildSystemPrompt";
 import { buildUserPrompt } from "./buildUserPrompt";
@@ -20,6 +21,8 @@ const MINIMAL_STYLE: PersonaStyle = {
   systemInstruction: "Você é um redator jurídico.",
   toneParameters: [],
   examples: [],
+  negativeConstraints: [],
+  styleSliders: DEFAULT_STYLE_SLIDERS,
 };
 
 describe("buildSystemPrompt", () => {
@@ -52,10 +55,22 @@ describe("buildSystemPrompt", () => {
     expect(prompt).toContain("<exemplo>\nExemplo A\n</exemplo>\n\n<exemplo>\nExemplo B\n</exemplo>");
   });
 
-  it("omits the tone and example sections when the persona has none", () => {
+  it("omits the tone, adjustment, forbidden-term and example sections when the persona has none", () => {
     const prompt = buildSystemPrompt(MINIMAL_STYLE);
     expect(prompt).not.toContain("## Tom de voz");
+    expect(prompt).not.toContain("## Ajustes de estilo");
+    expect(prompt).not.toContain("## Palavras e expressões proibidas");
     expect(prompt).not.toContain("<exemplo>");
+  });
+
+  it("adds slider adjustments and quoted forbidden terms", () => {
+    const prompt = buildSystemPrompt({
+      ...MINIMAL_STYLE,
+      styleSliders: { ...DEFAULT_STYLE_SLIDERS, formality: 5 },
+      negativeConstraints: ["outrossim", "posto isto"],
+    });
+    expect(prompt).toContain(`## Ajustes de estilo\n- ${STYLE_SLIDERS.formality.instructions[5]}`);
+    expect(prompt).toContain('- "outrossim"\n- "posto isto"');
   });
 });
 

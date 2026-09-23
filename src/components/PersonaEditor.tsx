@@ -6,21 +6,22 @@ import { EditableList } from "@/components/EditableList";
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/FormField";
 import { Input } from "@/components/ui/input";
-import { Slider } from "@/components/ui/slider";
+import { StyleSlidersField } from "@/components/StyleSlidersField";
+import { TagInput } from "@/components/TagInput";
+import { TemperatureField } from "@/components/TemperatureField";
 import { Textarea } from "@/components/ui/textarea";
 import { usePersonaMutations } from "@/hooks/usePersonaMutations";
 import { PERSONAS_PATH } from "@/lib/personas/paths";
 import {
   MAX_EXAMPLES,
   MAX_EXAMPLE_CHARS,
+  MAX_NEGATIVE_CONSTRAINTS,
+  MAX_NEGATIVE_CONSTRAINT_CHARS,
   MAX_PERSONA_DESCRIPTION_CHARS,
   MAX_PERSONA_NAME_CHARS,
   MAX_SYSTEM_INSTRUCTION_CHARS,
   MAX_TONE_PARAMETERS,
   MAX_TONE_PARAMETER_CHARS,
-  TEMPERATURE_MAX,
-  TEMPERATURE_MIN,
-  TEMPERATURE_STEP,
   personaInputSchema,
   type PersonaFormValues,
 } from "@/lib/personas/schema";
@@ -29,7 +30,6 @@ import { collectFieldErrors } from "@/lib/validation/collectFieldErrors";
 const DESCRIPTION_ROWS = 2;
 const SYSTEM_INSTRUCTION_ROWS = 4;
 const EXAMPLE_ROWS = 6;
-const TEMPERATURE_DECIMALS = 2;
 
 interface PersonaEditorProps {
   /** Omitted when creating a new persona. */
@@ -131,28 +131,36 @@ export function PersonaEditor({ personaId, initialValues }: PersonaEditorProps) 
         )}
       />
 
-      <div className="flex flex-col gap-2">
-        <div className="flex items-baseline justify-between">
-          <span id="temperature-label" className="text-sm font-medium">
-            Temperatura
-          </span>
-          <span className="text-sm tabular-nums">{values.temperature.toFixed(TEMPERATURE_DECIMALS)}</span>
-        </div>
-        <Slider
-          aria-labelledby="temperature-label"
-          min={TEMPERATURE_MIN}
-          max={TEMPERATURE_MAX}
-          step={TEMPERATURE_STEP}
+      <FormField
+        label="Palavras e expressões proibidas"
+        htmlFor="negativeConstraints"
+        error={errors.negativeConstraints}
+        hint="Digite e tecle Enter ou vírgula. A IA nunca deve usar esses termos (ex.: outrossim, debalde, posto isto)."
+      >
+        <TagInput
+          id="negativeConstraints"
+          tags={values.negativeConstraints}
+          maxTags={MAX_NEGATIVE_CONSTRAINTS}
+          maxTagChars={MAX_NEGATIVE_CONSTRAINT_CHARS}
+          placeholder="Ex.: outrossim"
           disabled={isPending}
-          value={[values.temperature]}
-          onValueChange={([temperature]) => update("temperature", temperature)}
+          invalid={Boolean(errors.negativeConstraints)}
+          onChange={(negativeConstraints) => update("negativeConstraints", negativeConstraints)}
         />
-        <p className="text-xs text-muted-foreground">
-          Valores baixos (0,2) para pareceres rigorosos; altos (0,7) para textos persuasivos. Só o
-          Gemini usa este ajuste.
-        </p>
-        {errors.temperature && <p className="text-xs text-destructive">{errors.temperature}</p>}
-      </div>
+      </FormField>
+
+      <StyleSlidersField
+        value={values.styleSliders}
+        disabled={isPending}
+        onChange={(styleSliders) => update("styleSliders", styleSliders)}
+      />
+
+      <TemperatureField
+        value={values.temperature}
+        error={errors.temperature}
+        disabled={isPending}
+        onChange={(temperature) => update("temperature", temperature)}
+      />
 
       <EditableList
         legend="Exemplos de estilo"

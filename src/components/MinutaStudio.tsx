@@ -10,12 +10,17 @@ interface MinutaStudioProps {
 }
 
 export function MinutaStudio({ personas }: MinutaStudioProps) {
-  const { markdown, isGenerating, error, generate } = useMinutaGeneration();
+  const { markdown, forbiddenTermsFound, isGenerating, error, generate } = useMinutaGeneration();
 
   return (
     <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,26rem)_minmax(0,1fr)]">
       <MinutaForm personas={personas} isSubmitting={isGenerating} onSubmit={generate} />
-      <ResultPanel markdown={markdown} isGenerating={isGenerating} error={error} />
+      <ResultPanel
+        markdown={markdown}
+        forbiddenTermsFound={forbiddenTermsFound}
+        isGenerating={isGenerating}
+        error={error}
+      />
     </div>
   );
 }

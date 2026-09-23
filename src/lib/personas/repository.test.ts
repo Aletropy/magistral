@@ -11,6 +11,8 @@ const INPUT: PersonaInput = {
   toneParameters: ["Use voz ativa.", "Limite parágrafos a 3 frases."],
   temperature: 0.2,
   examples: ["Exemplo um.", "Exemplo dois."],
+  negativeConstraints: ["outrossim", "posto isto"],
+  styleSliders: { formality: 4, aggressiveness: 5, length: 2 },
 };
 
 describe("createPersonaRepository", () => {
@@ -38,9 +40,20 @@ describe("createPersonaRepository", () => {
 
   it("updates fields and replaces the examples", () => {
     const created = repository.create(INPUT);
-    const updated = repository.update(created.id, { ...INPUT, temperature: 0.7, examples: ["Só um."] });
+    const updated = repository.update(created.id, {
+      ...INPUT,
+      temperature: 0.7,
+      examples: ["Só um."],
+      negativeConstraints: [],
+      styleSliders: { formality: 1, aggressiveness: 1, length: 1 },
+    });
 
-    expect(updated).toMatchObject({ temperature: 0.7, examples: ["Só um."] });
+    expect(updated).toMatchObject({
+      temperature: 0.7,
+      examples: ["Só um."],
+      negativeConstraints: [],
+      styleSliders: { formality: 1, aggressiveness: 1, length: 1 },
+    });
   });
 
   it("returns null when updating a persona that does not exist", () => {

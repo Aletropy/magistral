@@ -2,11 +2,13 @@
 
 import { useMemo } from "react";
 import { DownloadButtons } from "@/components/DownloadButtons";
+import { ForbiddenTermsWarning } from "@/components/ForbiddenTermsWarning";
 import { MinutaPreview } from "@/components/MinutaPreview";
 import { parseMarkdown } from "@/lib/markdown/parseMarkdown";
 
 interface ResultPanelProps {
   markdown: string | null;
+  forbiddenTermsFound: string[];
   isGenerating: boolean;
   error: string | null;
 }
@@ -19,7 +21,7 @@ function Notice({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function ResultPanel({ markdown, isGenerating, error }: ResultPanelProps) {
+export function ResultPanel({ markdown, forbiddenTermsFound, isGenerating, error }: ResultPanelProps) {
   const blocks = useMemo(() => (markdown ? parseMarkdown(markdown) : []), [markdown]);
 
   return (
@@ -38,6 +40,7 @@ export function ResultPanel({ markdown, isGenerating, error }: ResultPanelProps)
       ) : markdown ? (
         <>
           <DownloadButtons markdown={markdown} blocks={blocks} />
+          <ForbiddenTermsWarning terms={forbiddenTermsFound} />
           <MinutaPreview blocks={blocks} />
         </>
       ) : (

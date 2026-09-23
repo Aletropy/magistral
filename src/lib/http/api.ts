@@ -4,6 +4,7 @@ import type { Persona } from "@/lib/personas/types";
 export const MINUTA_ENDPOINT = "/api/minuta";
 export const EXPORT_ENDPOINT = "/api/export";
 export const PERSONAS_ENDPOINT = "/api/personas";
+export const PLAYGROUND_ENDPOINT = "/api/playground";
 
 export function personaEndpoint(id: string): string {
   return `${PERSONAS_ENDPOINT}/${encodeURIComponent(id)}`;
@@ -24,7 +25,12 @@ export interface ApiErrorBody {
 
 export interface MinutaResponseBody {
   markdown: string;
+  /** Forbidden terms of the persona that still appear in the output. */
+  forbiddenTermsFound: string[];
 }
+
+/** The playground's rewrite comes back in the same shape as a minuta. */
+export type PlaygroundResponseBody = MinutaResponseBody;
 
 export interface PersonaResponseBody {
   persona: Persona;

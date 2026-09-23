@@ -8,6 +8,7 @@ import { generateMinuta } from "@/lib/llm/generateMinuta";
 import { getMinutaGenerator } from "@/lib/llm/getMinutaGenerator";
 import { toErrorResponseInfo } from "@/lib/llm/toErrorResponseInfo";
 import { minutaRequestSchema } from "@/lib/minuta/schema";
+import { findNegativeConstraintViolations } from "@/lib/personas/findNegativeConstraintViolations";
 import { getPersonaRepository } from "@/lib/personas/getPersonaRepository";
 import { PERSONA_NOT_FOUND_MESSAGE } from "@/lib/personas/messages";
 
@@ -23,7 +24,8 @@ export async function POST(request: Request): Promise<Response> {
     if (!persona) return errorResponse(HTTP_BAD_REQUEST, PERSONA_NOT_FOUND_MESSAGE);
 
     const markdown = await generateMinuta(getMinutaGenerator("minuta"), parsed.data, persona);
-    return Response.json({ markdown } satisfies MinutaResponseBody);
+    const forbiddenTermsFound = findNegativeConstraintViolations(markdown, persona.negativeConstraints);
+    return Response.json({ markdown, forbiddenTermsFound } satisfies MinutaResponseBody);
   } catch (error) {
     console.error("[api/minuta] generation failed", error);
     const { status, message } = toErrorResponseInfo(error);
