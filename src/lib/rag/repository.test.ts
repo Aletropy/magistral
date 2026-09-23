@@ -3,7 +3,9 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { IN_MEMORY_DATABASE, openDatabase } from "@/lib/db/openDatabase";
 import type { TextChunk } from "./chunkLegalText";
 import { createLibraryRepository, type LibraryRepository, type NewLibrarySource } from "./repository";
-import { axisVector } from "./testHelpers";
+import { FAKE_EMBEDDING_ID, TEST_DIMENSIONS, axisVector } from "./testHelpers";
+
+const MODEL = { id: FAKE_EMBEDDING_ID, dimensions: TEST_DIMENSIONS };
 
 const SOURCE: NewLibrarySource = {
   title: "Lei Complementar nº 7/1973",
@@ -33,7 +35,7 @@ describe("createLibraryRepository", () => {
   });
 
   it("stores a source with its chunks and reports counts", () => {
-    const source = library.addSource(SOURCE, CHUNKS, [axisVector(0), axisVector(1)]);
+    const source = library.addSource(SOURCE, CHUNKS, [axisVector(0), axisVector(1)], MODEL);
 
     expect(source).toMatchObject({ title: SOURCE.title, chunkCount: 2, charCount: 300 });
     expect(library.findBySha256("abc")?.id).toBe(source.id);
@@ -42,7 +44,7 @@ describe("createLibraryRepository", () => {
   });
 
   it("finds chunks by keyword, ignoring accents, and by vector similarity", () => {
-    library.addSource(SOURCE, CHUNKS, [axisVector(0), axisVector(1)]);
+    library.addSource(SOURCE, CHUNKS, [axisVector(0), axisVector(1)], MODEL);
     const [iptu, iss] = library.allChunks();
 
     expect(library.keywordSearch('"servicos"', 5)).toEqual([iss.id]);
@@ -50,13 +52,13 @@ describe("createLibraryRepository", () => {
   });
 
   it("returns chunks in the order of the requested ids", () => {
-    library.addSource(SOURCE, CHUNKS, [axisVector(0), axisVector(1)]);
+    library.addSource(SOURCE, CHUNKS, [axisVector(0), axisVector(1)], MODEL);
     const [first, second] = library.allChunks();
     expect(library.getChunks([second.id, first.id]).map((chunk) => chunk.id)).toEqual([second.id, first.id]);
   });
 
   it("deleting a source removes its chunks from the keyword and vector indexes", () => {
-    const source = library.addSource(SOURCE, CHUNKS, [axisVector(0), axisVector(1)]);
+    const source = library.addSource(SOURCE, CHUNKS, [axisVector(0), axisVector(1)], MODEL);
 
     expect(library.deleteSource(source.id)).toBe(true);
     expect(count(db, "library_chunks")).toBe(0);
@@ -66,7 +68,7 @@ describe("createLibraryRepository", () => {
   });
 
   it("rolls back when embeddings don't match the chunks", () => {
-    expect(() => library.addSource(SOURCE, CHUNKS, [axisVector(0)])).toThrow();
+    expect(() => library.addSource(SOURCE, CHUNKS, [axisVector(0)], MODEL)).toThrow();
     expect(library.listSources()).toEqual([]);
   });
 });

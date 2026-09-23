@@ -29,7 +29,11 @@ export type StyleProfile = z.infer<typeof styleProfileSchema>;
 /** What Gemini returns: the profile plus suggestions for a new persona and verbatim excerpts. */
 export const styleExtractionSchema = z.object({
   profile: styleProfileSchema,
-  suggestedName: z.string().describe("Nome curto para a persona, ex.: 'PGM - Parecer Tributário'."),
+  suggestedName: z
+    .string()
+    .describe(
+      "Nome curto da persona que descreve o tipo de documento e o estilo, ex.: 'PGM - Parecer Tributário'. Nunca use nome de pessoa.",
+    ),
   suggestedSystemInstruction: z
     .string()
     .describe("Uma ou duas frases começando com 'Você é', descrevendo quem escreve neste estilo."),

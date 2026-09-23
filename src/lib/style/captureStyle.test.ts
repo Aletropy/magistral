@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { renderDocument } from "@/lib/export/renderDocument";
-import type { StyleExtractor } from "@/lib/llm/gemini/extractStyle";
+import type { StyleExtractor } from "@/lib/style/extractor";
 import { NO_USAGE } from "@/lib/llm/types";
 import { parseMarkdown } from "@/lib/markdown/parseMarkdown";
 import { MAX_PERSONA_NAME_CHARS, MAX_TONE_PARAMETERS } from "@/lib/personas/schema";

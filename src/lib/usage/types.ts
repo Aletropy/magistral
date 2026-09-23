@@ -1,4 +1,8 @@
-import type { LlmProvider } from "@/lib/llm/providers";
+import { LLM_PROVIDERS } from "@/lib/llm/providers";
+
+/** Who served a call: a drafting provider, or the local embedding model. */
+export const USAGE_PROVIDERS = [...LLM_PROVIDERS, "local"] as const;
+export type UsageProvider = (typeof USAGE_PROVIDERS)[number];
 
 export const LLM_OPERATIONS = ["minuta", "batch", "playground", "style_capture", "embedding"] as const;
 export type LlmOperation = (typeof LLM_OPERATIONS)[number];
@@ -25,7 +29,7 @@ export type LlmCallStatus = (typeof LLM_CALL_STATUSES)[number];
 
 export interface NewLlmCall {
   operation: LlmOperation;
-  provider: LlmProvider;
+  provider: UsageProvider;
   model: string;
   inputTokens: number;
   outputTokens: number;

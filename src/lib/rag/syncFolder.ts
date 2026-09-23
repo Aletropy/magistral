@@ -3,7 +3,8 @@ import path from "node:path";
 import { DocumentExtractionError } from "@/lib/documents/errors";
 import { detectDocumentFormat } from "@/lib/documents/formats";
 import { DOCUMENT_EXTRACTION_ERRORS } from "@/lib/documents/messages";
-import type { Embedder } from "@/lib/llm/gemini/embed";
+import type { EmbeddingModel } from "@/lib/llm/embeddings";
+import { LibraryIndexMismatchError } from "./errors";
 import { inferKindFromFileName, prepareSource, sha256Of } from "./prepareSource";
 import type { LibraryRepository } from "./repository";
 
@@ -33,10 +34,11 @@ async function listDocuments(root: string): Promise<string[]> {
  */
 export async function syncLibraryFolder(
   library: LibraryRepository,
-  embed: Embedder,
+  embedding: EmbeddingModel,
   root: string,
 ): Promise<FolderSyncReport> {
   await mkdir(root, { recursive: true });
+  if (!library.isCompatible(embedding)) throw new LibraryIndexMismatchError();
   const report: FolderSyncReport = { added: [], updated: [], removed: [], unchanged: 0, duplicates: [], failed: [] };
   const files = await listDocuments(root);
   const folderSources = new Map(
@@ -61,13 +63,13 @@ export async function syncLibraryFolder(
     }
 
     try {
-      const prepared = await prepareSource(embed, {
+      const prepared = await prepareSource(embedding, {
         fileName: path.posix.basename(relativePath),
         bytes,
         kind: previous?.kind ?? inferKindFromFileName(relativePath),
         folderPath: relativePath,
       });
-      library.addSource(prepared.source, prepared.chunks, prepared.embeddings, previous?.id);
+      library.addSource(prepared.source, prepared.chunks, prepared.embeddings, embedding, previous?.id);
       (previous ? report.updated : report.added).push(relativePath);
     } catch (error) {
       if (!(error instanceof DocumentExtractionError)) throw error;

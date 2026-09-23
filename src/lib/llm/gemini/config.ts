@@ -25,6 +25,3 @@ export const GEMINI_EMBEDDING_MODEL = "gemini-embedding-2";
 
 /** Reduced from the native 3072 to keep the local index small; retrieval quality barely changes. */
 export const EMBEDDING_DIMENSIONS = 768;
-
-/** Texts per embedContent request. */
-export const EMBED_BATCH_SIZE = 100;

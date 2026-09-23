@@ -1,16 +1,9 @@
 import type { GoogleGenAI } from "@google/genai";
 import type { EmbeddingTask } from "@/lib/rag/types";
+import type { EmbedFunction } from "../embeddings";
 import { MinutaGenerationError } from "../errors";
 import type { TokenUsage } from "../types";
 import { EMBEDDING_DIMENSIONS, GEMINI_EMBEDDING_MODEL } from "./config";
-
-export interface EmbeddingResult {
-  embeddings: number[][];
-  model: string;
-  usage: TokenUsage;
-}
-
-export type Embedder = (texts: string[], task: EmbeddingTask) => Promise<EmbeddingResult>;
 
 const TASK_TYPES: Record<EmbeddingTask, string> = {
   document: "RETRIEVAL_DOCUMENT",
@@ -21,7 +14,7 @@ const TASK_TYPES: Record<EmbeddingTask, string> = {
  * Embeds up to one batch of texts. The embed endpoint reports no token usage, so the tokens are
  * counted with a parallel countTokens call to keep the cost audit exact.
  */
-export function createGeminiEmbedder(client: GoogleGenAI): Embedder {
+export function createGeminiEmbedder(client: GoogleGenAI): EmbedFunction {
   return async (texts, task) => {
     // One Content per text: a plain string[] would be merged into a single multi-part content (one vector).
     const contents = texts.map((text) => ({ role: "user", parts: [{ text }] }));

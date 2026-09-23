@@ -34,6 +34,7 @@ export function batchDownloadEndpoint(id: string, format: ExportFormat): string 
 export const EXTRACT_TEXT_ENDPOINT = "/api/documents/extract";
 export const LIBRARY_SOURCES_ENDPOINT = "/api/library/sources";
 export const LIBRARY_SYNC_ENDPOINT = "/api/library/sync";
+export const LIBRARY_REINDEX_ENDPOINT = "/api/library/reindex";
 
 export function librarySourceEndpoint(id: number): string {
   return `${LIBRARY_SOURCES_ENDPOINT}/${id}`;
@@ -125,6 +126,11 @@ export interface LibraryUploadOutcome {
 
 export interface LibraryUploadResponseBody {
   outcomes: LibraryUploadOutcome[];
+}
+
+export interface LibraryReindexResponseBody {
+  chunks: number;
+  model: string;
 }
 
 export interface LibrarySyncResponseBody {

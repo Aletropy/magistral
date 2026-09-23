@@ -1,4 +1,5 @@
-import type { Embedder } from "@/lib/llm/gemini/embed";
+import type { EmbeddingModel } from "@/lib/llm/embeddings";
+import { LibraryIndexMismatchError } from "./errors";
 import { normalizeForMatch } from "@/lib/text/normalizeForMatch";
 import type { LibraryRepository } from "./repository";
 import type { LibraryChunk } from "./types";
@@ -39,15 +40,16 @@ export function toFtsQuery(text: string): string | null {
 /** Keyword (BM25) and semantic (vector) search over the library, merged with Reciprocal Rank Fusion. */
 export async function hybridSearch(
   library: LibraryRepository,
-  embed: Embedder,
+  embedding: EmbeddingModel,
   query: string,
   topN: number = RETRIEVAL_TOP_N,
 ): Promise<LibraryChunk[]> {
+  if (!library.isCompatible(embedding)) throw new LibraryIndexMismatchError();
   const ftsQuery = toFtsQuery(query);
   const keywordIds = ftsQuery ? library.keywordSearch(ftsQuery, RETRIEVAL_CANDIDATES) : [];
   const {
     embeddings: [queryEmbedding],
-  } = await embed([query], "query");
+  } = await embedding.embed([query], "query");
   const vectorIds = library.vectorSearch(queryEmbedding, RETRIEVAL_CANDIDATES);
 
   return library.getChunks(reciprocalRankFusion([keywordIds, vectorIds]).slice(0, topN));

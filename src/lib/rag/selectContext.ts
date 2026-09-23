@@ -1,4 +1,4 @@
-import type { Embedder } from "@/lib/llm/gemini/embed";
+import type { EmbeddingModel } from "@/lib/llm/embeddings";
 import { hybridSearch } from "./hybridSearch";
 import type { LibraryRepository } from "./repository";
 import type { LibraryChunk } from "./types";
@@ -45,7 +45,7 @@ function groupBySource(chunks: LibraryChunk[]): LibraryChunk[][] {
 /** Picks the library text for a request: everything when it is small, the best-matching chunks otherwise. */
 export async function selectLibraryContext(
   library: LibraryRepository,
-  embed: Embedder,
+  embedding: EmbeddingModel,
   query: string,
   fullContextMaxChars: number = FULL_CONTEXT_MAX_CHARS,
 ): Promise<LibraryContext> {
@@ -63,7 +63,7 @@ export async function selectLibraryContext(
     return { strategy: "full", sources };
   }
 
-  const chunks = await hybridSearch(library, embed, query);
+  const chunks = await hybridSearch(library, embedding, query);
   return {
     strategy: "search",
     sources: chunks.map((chunk, index) => ({

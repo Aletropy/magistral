@@ -1,11 +1,12 @@
 import { LlmConfigurationError } from "./errors";
 
-export const LLM_PROVIDERS = ["gemini", "anthropic"] as const;
+export const LLM_PROVIDERS = ["openrouter", "gemini", "anthropic"] as const;
 
 export type LlmProvider = (typeof LLM_PROVIDERS)[number];
 
 export const LLM_PROVIDER_ENV_VAR = "LLM_PROVIDER";
-export const DEFAULT_LLM_PROVIDER: LlmProvider = "gemini";
+/** Free OpenRouter models: the Gemini free tier ran out of daily quota too often. */
+export const DEFAULT_LLM_PROVIDER: LlmProvider = "openrouter";
 
 function isLlmProvider(value: string): value is LlmProvider {
   return (LLM_PROVIDERS as readonly string[]).includes(value);

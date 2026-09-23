@@ -9,6 +9,8 @@ import { inferKindFromFileName, titleFromFileName } from "./prepareSource";
 import { createLibraryRepository, type LibraryRepository } from "./repository";
 import { selectLibraryContext } from "./selectContext";
 import { syncLibraryFolder } from "./syncFolder";
+import { LibraryIndexMismatchError } from "./errors";
+import { reindexLibrary } from "./reindexLibrary";
 import { IPTU_LAW, ISS_LAW, docxFromMarkdown, fakeEmbedder } from "./testHelpers";
 
 describe("reciprocalRankFusion", () => {
@@ -54,7 +56,7 @@ describe("library ingestion and retrieval", () => {
 
     expect(first).toMatchObject({ status: "added", source: { title: "lc 7", chunkCount: 3 } });
     expect(second).toMatchObject({ status: "duplicate", existing: { title: "lc 7" } });
-    expect(embed).toHaveBeenCalledTimes(1);
+    expect(embed.embed).toHaveBeenCalledTimes(1);
   });
 
   it("puts a small library in the prompt whole, one reference per source", async () => {
@@ -81,7 +83,7 @@ describe("library ingestion and retrieval", () => {
 
     expect(context.strategy).toBe("search");
     expect(context.sources.slice(0, 2).every((source) => source.title === "iss" && source.label.startsWith("Art."))).toBe(true);
-    expect(embed).toHaveBeenLastCalledWith(["ISS sobre hospedagem"], "query");
+    expect(embed.embed).toHaveBeenLastCalledWith(["ISS sobre hospedagem"], "query");
   });
 
   it("returns no sources for an empty library", async () => {
@@ -132,5 +134,49 @@ describe("syncLibraryFolder", () => {
 
     expect(report.duplicates).toEqual(["copia.docx"]);
     expect(library.listSources().map((source) => source.fileName)).toEqual(["upload.docx"]);
+  });
+});
+
+describe("embedding model changes", () => {
+  let library: LibraryRepository;
+
+  beforeEach(async () => {
+    library = createLibraryRepository(openDatabase(IN_MEMORY_DATABASE));
+    const bytes = await docxFromMarkdown(ISS_LAW);
+    await ingestDocument(library, fakeEmbedder("modelo-antigo"), { fileName: "iss.docx", bytes, kind: "lei", folderPath: null });
+  });
+
+  it("records which model built the index", () => {
+    expect(library.indexInfo()).toMatchObject({ model: "modelo-antigo", dimensions: 768 });
+  });
+
+  it("refuses to mix vectors from another model, and to search with it", async () => {
+    const other = fakeEmbedder("modelo-novo", 384);
+    const bytes = await docxFromMarkdown(IPTU_LAW);
+
+    await expect(
+      ingestDocument(library, other, { fileName: "iptu.docx", bytes, kind: "lei", folderPath: null }),
+    ).rejects.toBeInstanceOf(LibraryIndexMismatchError);
+    expect(other.embed).not.toHaveBeenCalled();
+    await expect(selectLibraryContext(library, other, "hospedagem", 1)).rejects.toBeInstanceOf(LibraryIndexMismatchError);
+  });
+
+  it("reindexes every chunk with the new model, resizing the vector table, and then searches with it", async () => {
+    const other = fakeEmbedder("modelo-novo", 384);
+
+    expect(await reindexLibrary(library, other)).toBe(library.allChunks().length);
+    expect(library.indexInfo()).toMatchObject({ model: "modelo-novo", dimensions: 384 });
+
+    const context = await selectLibraryContext(library, other, "hospedagem", 1);
+    expect(context.sources[0].text).toContain("hospedagem");
+  });
+
+  it("adopts the new model once the library is empty again", async () => {
+    library.deleteSource(library.listSources()[0].id);
+    const other = fakeEmbedder("modelo-novo", 384);
+    const bytes = await docxFromMarkdown(IPTU_LAW);
+
+    await ingestDocument(library, other, { fileName: "iptu.docx", bytes, kind: "lei", folderPath: null });
+    expect(library.indexInfo()).toMatchObject({ model: "modelo-novo", dimensions: 384 });
   });
 });

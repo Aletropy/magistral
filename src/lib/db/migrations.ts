@@ -1,7 +1,6 @@
 import type { DatabaseSync } from "node:sqlite";
 import { BUILTIN_PERSONAS } from "@/lib/personas/seeds";
 import { DEFAULT_STYLE_SLIDERS } from "@/lib/personas/styleSliders";
-import { EMBEDDING_DIMENSIONS } from "@/lib/llm/gemini/config";
 import { withTransaction } from "./transaction";
 
 export type Migration = (db: DatabaseSync) => void;
@@ -78,6 +77,10 @@ function addPersonaStyleProfile(db: DatabaseSync): void {
   db.exec("ALTER TABLE personas ADD COLUMN style_profile TEXT");
 }
 
+/** The vector size the library table was first created with (gemini-embedding-2 at 768). Frozen history. */
+const INITIAL_EMBEDDING_DIMENSIONS = 768;
+const INITIAL_EMBEDDING_MODEL = "gemini-embedding-2";
+
 function createLibraryTables(db: DatabaseSync): void {
   db.exec(`
     CREATE TABLE library_sources (
@@ -108,7 +111,7 @@ function createLibraryTables(db: DatabaseSync): void {
     );
 
     CREATE VIRTUAL TABLE library_chunk_vectors USING vec0(
-      embedding float[${EMBEDDING_DIMENSIONS}] distance_metric=cosine
+      embedding float[${INITIAL_EMBEDDING_DIMENSIONS}] distance_metric=cosine
     );
 
     CREATE TRIGGER library_chunks_after_insert AFTER INSERT ON library_chunks BEGIN
@@ -163,6 +166,17 @@ function createBatchTables(db: DatabaseSync): void {
   `);
 }
 
+function createLibraryMetaTable(db: DatabaseSync): void {
+  db.exec("CREATE TABLE library_meta (key TEXT PRIMARY KEY, value TEXT NOT NULL)");
+  // Libraries indexed before this migration were embedded with Gemini.
+  const hasChunks = db.prepare("SELECT 1 FROM library_chunks LIMIT 1").get();
+  if (hasChunks) {
+    const insert = db.prepare("INSERT INTO library_meta (key, value) VALUES (?, ?)");
+    insert.run("embedding_model", INITIAL_EMBEDDING_MODEL);
+    insert.run("embedding_dimensions", String(INITIAL_EMBEDDING_DIMENSIONS));
+  }
+}
+
 /** Ordered schema changes. Append new migrations; never edit or reorder existing ones. */
 export const MIGRATIONS: readonly Migration[] = [
   createPersonaTables,
@@ -172,6 +186,7 @@ export const MIGRATIONS: readonly Migration[] = [
   createLibraryTables,
   createClausesTable,
   createBatchTables,
+  createLibraryMetaTable,
 ];
 
 function readSchemaVersion(db: DatabaseSync): number {

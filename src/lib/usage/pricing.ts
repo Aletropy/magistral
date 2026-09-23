@@ -18,8 +18,13 @@ export const MODEL_PRICING: Readonly<Record<string, ModelPricing>> = {
   "claude-opus-4-8": { inputUsdPerMTok: 5, outputUsdPerMTok: 25 },
 };
 
+/** OpenRouter's free variants end in ":free"; models run on this machine are "local/…". Both cost nothing. */
+const FREE_MODEL_SUFFIX = ":free";
+const LOCAL_MODEL_PREFIX = "local/";
+
 /** Estimated USD cost of one call; thinking tokens are billed at the output rate. Null for unknown models. */
 export function estimateCostUsd(model: string, usage: TokenUsage): number | null {
+  if (model.endsWith(FREE_MODEL_SUFFIX) || model.startsWith(LOCAL_MODEL_PREFIX)) return 0;
   const pricing = MODEL_PRICING[model];
   if (!pricing) return null;
 

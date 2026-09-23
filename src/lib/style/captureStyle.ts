@@ -1,7 +1,7 @@
 import { DocumentExtractionError } from "@/lib/documents/errors";
 import { extractText, type UploadedDocument } from "@/lib/documents/extractText";
 import { MAX_DOCUMENT_TEXT_CHARS } from "@/lib/documents/formats";
-import type { StyleExtractor } from "@/lib/llm/gemini/extractStyle";
+import type { StyleExtractor } from "@/lib/style/extractor";
 import {
   MAX_EXAMPLES,
   MAX_EXAMPLE_CHARS,

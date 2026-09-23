@@ -12,6 +12,12 @@ describe("estimateCostUsd", () => {
     expect(cost).toBeCloseTo(inputUsdPerMTok + outputUsdPerMTok);
   });
 
+  it("prices free OpenRouter models and local models at zero", () => {
+    const usage = { inputTokens: 5000, outputTokens: 5000, thinkingTokens: 0 };
+    expect(estimateCostUsd("qwen/qwen3.8-27b:free", usage)).toBe(0);
+    expect(estimateCostUsd("local/embeddinggemma-300m", usage)).toBe(0);
+  });
+
   it("returns null for a model missing from the pricing table", () => {
     expect(estimateCostUsd("modelo-desconhecido", { inputTokens: 1, outputTokens: 1, thinkingTokens: 0 })).toBeNull();
   });

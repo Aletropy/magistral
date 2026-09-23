@@ -1,6 +1,6 @@
 import { errorResponse, type LibrarySyncResponseBody } from "@/lib/http/api";
 import { getEmbedder } from "@/lib/llm/getEmbedder";
-import { toErrorResponseInfo } from "@/lib/llm/toErrorResponseInfo";
+import { describeDraftingFailure } from "@/lib/minuta/errors";
 import { resolveLibraryDir } from "@/lib/rag/config";
 import { getLibraryRepository } from "@/lib/rag/getLibraryRepository";
 import { syncLibraryFolder } from "@/lib/rag/syncFolder";
@@ -15,7 +15,7 @@ export async function POST(): Promise<Response> {
     return Response.json({ folder, report } satisfies LibrarySyncResponseBody);
   } catch (error) {
     console.error("[api/library/sync] sync failed", error);
-    const { status, message } = toErrorResponseInfo(error);
+    const { status, message } = describeDraftingFailure(error);
     return errorResponse(status, message);
   }
 }

@@ -2,11 +2,15 @@ import { connection } from "next/server";
 import { DeleteLibrarySourceButton } from "@/components/DeleteLibrarySourceButton";
 import { LibrarySyncPanel } from "@/components/LibrarySyncPanel";
 import { LibraryUploadForm } from "@/components/LibraryUploadForm";
+import { ReindexLibraryButton } from "@/components/ReindexLibraryButton";
+import { WarningCallout } from "@/components/ui/WarningCallout";
+import { getActiveEmbeddingIdentity } from "@/lib/llm/getEmbedder";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { resolveLibraryDir } from "@/lib/rag/config";
 import { getLibraryRepository } from "@/lib/rag/getLibraryRepository";
 import { FULL_CONTEXT_MAX_CHARS } from "@/lib/rag/selectContext";
+import { LIBRARY_INDEX_MISMATCH_MESSAGE } from "@/lib/rag/errors";
 import { LIBRARY_SOURCE_KIND_LABELS } from "@/lib/rag/types";
 import { formatDateTime, formatInteger } from "@/lib/usage/format";
 
@@ -15,6 +19,8 @@ export default async function LibraryPage() {
   const library = getLibraryRepository();
   const sources = library.listSources();
   const totalChars = library.totalChars();
+  const indexInfo = library.indexInfo();
+  const needsReindex = indexInfo.chunkCount > 0 && indexInfo.model !== getActiveEmbeddingIdentity().id;
   const strategy =
     totalChars <= FULL_CONTEXT_MAX_CHARS
       ? "cabe inteira no contexto da IA (recuperação completa)"
@@ -35,6 +41,13 @@ export default async function LibraryPage() {
           </p>
         )}
       </header>
+
+      {needsReindex && (
+        <WarningCallout className="flex flex-col gap-3">
+          <p>{LIBRARY_INDEX_MISMATCH_MESSAGE}</p>
+          <ReindexLibraryButton />
+        </WarningCallout>
+      )}
 
       <div className="grid items-start gap-4 lg:grid-cols-2">
         <LibraryUploadForm />

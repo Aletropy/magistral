@@ -10,7 +10,8 @@ import {
   type LibraryUploadResponseBody,
 } from "@/lib/http/api";
 import { getEmbedder } from "@/lib/llm/getEmbedder";
-import { toErrorResponseInfo } from "@/lib/llm/toErrorResponseInfo";
+import { describeDraftingFailure } from "@/lib/minuta/errors";
+import { LibraryIndexMismatchError } from "@/lib/rag/errors";
 import { getLibraryRepository } from "@/lib/rag/getLibraryRepository";
 import { ingestDocument } from "@/lib/rag/ingest";
 import { LIBRARY_SOURCE_KINDS, type LibrarySourceKind } from "@/lib/rag/types";
@@ -24,8 +25,8 @@ function isKind(value: unknown): value is LibrarySourceKind {
 
 function failureMessage(error: unknown): string {
   if (error instanceof DocumentExtractionError) return DOCUMENT_EXTRACTION_ERRORS[error.reason].message;
-  console.error("[api/library/sources] ingest failed", error);
-  return toErrorResponseInfo(error).message;
+  if (!(error instanceof LibraryIndexMismatchError)) console.error("[api/library/sources] ingest failed", error);
+  return describeDraftingFailure(error).message;
 }
 
 export async function POST(request: Request): Promise<Response> {
@@ -44,7 +45,7 @@ export async function POST(request: Request): Promise<Response> {
   if (!isKind(kind)) return errorResponse(HTTP_BAD_REQUEST, "Selecione o tipo dos documentos.");
 
   const library = getLibraryRepository();
-  const embed = getEmbedder();
+  const embedding = getEmbedder();
   const outcomes: LibraryUploadOutcome[] = [];
   for (const file of files) {
     if (file.size > MAX_UPLOAD_BYTES) {
@@ -53,7 +54,7 @@ export async function POST(request: Request): Promise<Response> {
     }
     try {
       const bytes = new Uint8Array(await file.arrayBuffer());
-      const outcome = await ingestDocument(library, embed, { fileName: file.name, bytes, kind, folderPath: null });
+      const outcome = await ingestDocument(library, embedding, { fileName: file.name, bytes, kind, folderPath: null });
       outcomes.push(
         outcome.status === "added"
           ? { fileName: file.name, status: "added" }

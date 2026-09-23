@@ -8,17 +8,22 @@ import { createAnthropicGenerator } from "./anthropic/generate";
 import { getGeminiClient } from "./gemini/client";
 import { GEMINI_MODEL } from "./gemini/config";
 import { createGeminiGenerator } from "./gemini/generate";
+import { getOpenRouterClient, getOpenRouterModels } from "./openrouter/client";
+import { createOpenRouterGenerator } from "./openrouter/generate";
 import { LLM_PROVIDER_ENV_VAR, resolveLlmProvider, type LlmProvider } from "./providers";
 import type { MinutaGenerator } from "./types";
 
 const GENERATOR_FACTORIES: Record<LlmProvider, () => MinutaGenerator> = {
+  openrouter: () => createOpenRouterGenerator(getOpenRouterClient(), getOpenRouterModels()),
   gemini: () => createGeminiGenerator(getGeminiClient()),
   anthropic: () => createAnthropicGenerator(getAnthropicClient()),
 };
 
-const CONFIGURED_MODELS: Record<LlmProvider, string> = {
-  gemini: GEMINI_MODEL,
-  anthropic: ANTHROPIC_MODEL,
+/** Recorded when a call fails before the provider says which model answered. */
+const CONFIGURED_MODELS: Record<LlmProvider, () => string> = {
+  openrouter: () => getOpenRouterModels()[0],
+  gemini: () => GEMINI_MODEL,
+  anthropic: () => ANTHROPIC_MODEL,
 };
 
 /**
@@ -32,7 +37,7 @@ export function getMinutaGenerator(operation: LlmOperation): MinutaGenerator {
   return withUsageAudit((prompt) => GENERATOR_FACTORIES[provider]()(prompt), {
     operation,
     provider,
-    configuredModel: CONFIGURED_MODELS[provider],
+    configuredModel: CONFIGURED_MODELS[provider](),
     record: (call) => usage.record(call),
   });
 }

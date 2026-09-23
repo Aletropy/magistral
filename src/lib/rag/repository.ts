@@ -2,6 +2,7 @@ import type { DatabaseSync } from "node:sqlite";
 import { z } from "zod";
 import { withTransaction } from "@/lib/db/transaction";
 import type { TextChunk } from "./chunkLegalText";
+import { LibraryIndexMismatchError } from "./errors";
 import { LIBRARY_SOURCE_KINDS, type LibraryChunk, type LibrarySource, type LibrarySourceKind } from "./types";
 
 const sourceRowSchema = z.object({
@@ -27,6 +28,11 @@ const chunkRowSchema = z.object({
 });
 
 const idRowSchema = z.object({ id: z.number() });
+const metaRowSchema = z.object({ key: z.string(), value: z.string() });
+const countRowSchema = z.object({ count: z.number() });
+
+const META_MODEL = "embedding_model";
+const META_DIMENSIONS = "embedding_dimensions";
 
 export interface NewLibrarySource {
   title: string;
@@ -37,17 +43,37 @@ export interface NewLibrarySource {
   charCount: number;
 }
 
+/** The embedding model an index was built with; nulls while the library is empty. */
+export interface LibraryIndexInfo {
+  model: string | null;
+  dimensions: number | null;
+  chunkCount: number;
+}
+
+/** Identifies the embedding model vectors came from. */
+export interface EmbeddingIdentity {
+  id: string;
+  dimensions: number;
+}
+
 export interface LibraryRepository {
+  indexInfo(): LibraryIndexInfo;
+  /** Whether new vectors from `model` can join the index (always true for an empty library). */
+  isCompatible(model: EmbeddingIdentity): boolean;
+  /** Replaces every vector with ones from `model` (same chunk ids), resizing the vector table if needed. */
+  reindex(model: EmbeddingIdentity, vectors: { chunkId: number; embedding: number[] }[]): void;
   listSources(): LibrarySource[];
   findBySha256(sha256: string): LibrarySource | null;
   /**
    * Stores a source with its chunks and their embeddings (same order) in one transaction, optionally
-   * deleting the source it replaces in the same transaction.
+   * deleting the source it replaces. Throws LibraryIndexMismatchError when `model` differs from the one
+   * the rest of the index was built with.
    */
   addSource(
     source: NewLibrarySource,
     chunks: TextChunk[],
     embeddings: number[][],
+    model: EmbeddingIdentity,
     replacesSourceId?: number,
   ): LibrarySource;
   /** Returns false when no source has this id. */
@@ -106,6 +132,41 @@ export function createLibraryRepository(db: DatabaseSync): LibraryRepository {
     "INSERT INTO library_chunks (source_id, position, label, context, text) VALUES (?, ?, ?, ?, ?) RETURNING id",
   );
   const insertVector = db.prepare("INSERT INTO library_chunk_vectors (rowid, embedding) VALUES (?, ?)");
+  const selectMeta = db.prepare("SELECT key, value FROM library_meta");
+  const upsertMeta = db.prepare(
+    "INSERT INTO library_meta (key, value) VALUES (?, ?) ON CONFLICT (key) DO UPDATE SET value = excluded.value",
+  );
+  const countChunks = db.prepare("SELECT COUNT(*) AS count FROM library_chunks");
+
+  function indexInfo(): LibraryIndexInfo {
+    const meta = new Map(selectMeta.all().map((row) => {
+      const { key, value } = metaRowSchema.parse(row);
+      return [key, value] as const;
+    }));
+    const dimensions = meta.get(META_DIMENSIONS);
+    return {
+      model: meta.get(META_MODEL) ?? null,
+      dimensions: dimensions ? Number(dimensions) : null,
+      chunkCount: countRowSchema.parse(countChunks.get()).count,
+    };
+  }
+
+  /** Points the index at `model`, recreating the (then empty) vector table when its size changes. */
+  function adoptModel(model: EmbeddingIdentity, current: LibraryIndexInfo): void {
+    if (current.dimensions !== model.dimensions) {
+      db.exec("DROP TABLE library_chunk_vectors");
+      db.exec(
+        `CREATE VIRTUAL TABLE library_chunk_vectors USING vec0(embedding float[${model.dimensions}] distance_metric=cosine)`,
+      );
+    }
+    upsertMeta.run(META_MODEL, model.id);
+    upsertMeta.run(META_DIMENSIONS, String(model.dimensions));
+  }
+
+  function isCompatible(model: EmbeddingIdentity): boolean {
+    const info = indexInfo();
+    return info.chunkCount === 0 || info.model === model.id;
+  }
   const deleteSourceById = db.prepare("DELETE FROM library_sources WHERE id = ?");
   const selectTotalChars = db.prepare("SELECT COALESCE(SUM(char_count), 0) AS total FROM library_sources");
   const selectAllChunks = db.prepare(
@@ -124,6 +185,17 @@ export function createLibraryRepository(db: DatabaseSync): LibraryRepository {
   }
 
   return {
+    indexInfo,
+    isCompatible,
+
+    reindex(model, vectors) {
+      withTransaction(db, () => {
+        db.exec("DELETE FROM library_chunk_vectors");
+        adoptModel(model, indexInfo());
+        for (const { chunkId, embedding } of vectors) insertVector.run(BigInt(chunkId), new Float32Array(embedding));
+      });
+    },
+
     listSources: () => selectSources.all().map(toSource),
 
     findBySha256(sha256) {
@@ -131,12 +203,15 @@ export function createLibraryRepository(db: DatabaseSync): LibraryRepository {
       return row ? toSource(row) : null;
     },
 
-    addSource(source, chunks, embeddings, replacesSourceId) {
+    addSource(source, chunks, embeddings, model, replacesSourceId) {
       if (chunks.length !== embeddings.length) {
         throw new Error(`Got ${embeddings.length} embeddings for ${chunks.length} chunks.`);
       }
       const id = withTransaction(db, () => {
         if (replacesSourceId !== undefined) deleteSourceById.run(replacesSourceId);
+        const info = indexInfo();
+        if (info.chunkCount === 0) adoptModel(model, info);
+        else if (info.model !== model.id) throw new LibraryIndexMismatchError();
         const { id: sourceId } = idRowSchema.parse(
           insertSource.get(source.title, source.kind, source.fileName, source.folderPath, source.sha256, source.charCount),
         );

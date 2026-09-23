@@ -1,22 +1,25 @@
 import { vi } from "vitest";
 import { renderDocument } from "@/lib/export/renderDocument";
-import { EMBEDDING_DIMENSIONS } from "@/lib/llm/gemini/config";
-import type { Embedder } from "@/lib/llm/gemini/embed";
+import type { EmbedFunction, EmbeddingModel } from "@/lib/llm/embeddings";
 import { NO_USAGE } from "@/lib/llm/types";
 import { parseMarkdown } from "@/lib/markdown/parseMarkdown";
 
+export const TEST_DIMENSIONS = 768;
+export const FAKE_EMBEDDING_ID = "fake-embedding";
+
 /** A unit vector along one axis, so nearest-neighbour results in tests are predictable. */
-export function axisVector(axis: number): number[] {
-  return Array.from({ length: EMBEDDING_DIMENSIONS }, (_, index) => (index === axis ? 1 : 0));
+export function axisVector(axis: number, dimensions: number = TEST_DIMENSIONS): number[] {
+  return Array.from({ length: dimensions }, (_, index) => (index === axis ? 1 : 0));
 }
 
 /** Embeds anything mentioning "hospedagem" on axis 1 and everything else on axis 0. */
-export function fakeEmbedder() {
-  return vi.fn<Embedder>(async (texts) => ({
-    embeddings: texts.map((text) => axisVector(text.toLowerCase().includes("hospedagem") ? 1 : 0)),
-    model: "fake-embedding",
+export function fakeEmbedder(id: string = FAKE_EMBEDDING_ID, dimensions: number = TEST_DIMENSIONS) {
+  const embed = vi.fn<EmbedFunction>(async (texts) => ({
+    embeddings: texts.map((text) => axisVector(text.toLowerCase().includes("hospedagem") ? 1 : 0, dimensions)),
+    model: id,
     usage: NO_USAGE,
   }));
+  return { id, dimensions, embed } satisfies EmbeddingModel;
 }
 
 /** Renders a DOCX fixture; separate lines with blank lines, since Markdown joins adjacent ones. */

@@ -2,6 +2,7 @@
 
 import { useCallback, useState } from "react";
 import {
+  LIBRARY_REINDEX_ENDPOINT,
   LIBRARY_SOURCES_ENDPOINT,
   LIBRARY_SYNC_ENDPOINT,
   NETWORK_ERROR_MESSAGE,
@@ -49,10 +50,15 @@ export function useLibraryActions() {
     [run],
   );
 
+  const reindex = useCallback(
+    <T,>() => run(() => fetch(LIBRARY_REINDEX_ENDPOINT, { method: "POST" }), (response) => response.json() as Promise<T>),
+    [run],
+  );
+
   const remove = useCallback(
     (id: number) => run(() => fetch(librarySourceEndpoint(id), { method: "DELETE" }), async () => true),
     [run],
   );
 
-  return { isPending, error, upload, sync, remove };
+  return { isPending, error, upload, sync, reindex, remove };
 }

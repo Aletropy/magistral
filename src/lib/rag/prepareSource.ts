@@ -3,7 +3,7 @@ import path from "node:path";
 import { DocumentExtractionError } from "@/lib/documents/errors";
 import { extractText } from "@/lib/documents/extractText";
 import { MAX_LIBRARY_DOCUMENT_CHARS } from "@/lib/documents/formats";
-import type { Embedder } from "@/lib/llm/gemini/embed";
+import type { EmbeddingModel } from "@/lib/llm/embeddings";
 import { normalizeForMatch } from "@/lib/text/normalizeForMatch";
 import { chunkLegalText, type TextChunk } from "./chunkLegalText";
 import { embedAll } from "./embedAll";
@@ -49,14 +49,14 @@ export function toEmbeddingText(title: string, chunk: TextChunk): string {
 }
 
 /** Extracts, chunks and embeds a document; nothing is written until the caller stores the result. */
-export async function prepareSource(embed: Embedder, document: LibraryDocument): Promise<PreparedSource> {
+export async function prepareSource(embedding: EmbeddingModel, document: LibraryDocument): Promise<PreparedSource> {
   const text = await extractText({ name: document.fileName, bytes: document.bytes });
   if (text.length > MAX_LIBRARY_DOCUMENT_CHARS) throw new DocumentExtractionError("too_long");
 
   const title = titleFromFileName(document.fileName);
   const chunks = chunkLegalText(text);
   const embeddings = await embedAll(
-    embed,
+    embedding,
     chunks.map((chunk) => toEmbeddingText(title, chunk)),
     "document",
   );

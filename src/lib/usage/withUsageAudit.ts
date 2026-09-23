@@ -1,12 +1,11 @@
 import { LlmConfigurationError, MinutaGenerationError } from "@/lib/llm/errors";
-import type { LlmProvider } from "@/lib/llm/providers";
 import { NO_USAGE, type TokenUsage } from "@/lib/llm/types";
 import { estimateCostUsd } from "./pricing";
-import type { LlmCallStatus, LlmOperation, NewLlmCall } from "./types";
+import type { LlmCallStatus, LlmOperation, NewLlmCall, UsageProvider } from "./types";
 
 export interface UsageAuditOptions {
   operation: LlmOperation;
-  provider: LlmProvider;
+  provider: UsageProvider;
   /** Recorded when the call fails before the provider reports which model answered. */
   configuredModel: string;
   record: (call: NewLlmCall) => void;

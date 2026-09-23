@@ -36,6 +36,12 @@ export const RATE_LIMITED: ErrorResponseInfo = {
   status: 429,
   message: "Muitas solicitações no momento. Aguarde alguns instantes e tente novamente.",
 };
+/** The provider's free daily allowance is used up; retrying today won't help. */
+export const DAILY_QUOTA_EXHAUSTED: ErrorResponseInfo = {
+  status: 429,
+  message:
+    "A cota diária gratuita da IA acabou. Tente novamente amanhã ou configure uma chave com cobrança.",
+};
 export const SERVICE_UNAVAILABLE: ErrorResponseInfo = {
   status: 503,
   message: "O serviço de IA está indisponível agora. Tente novamente em alguns minutos.",

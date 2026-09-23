@@ -10,7 +10,7 @@ const geistSans = Geist({
 });
 
 export const metadata: Metadata = {
-  title: "Minuta com Personalidade",
+  title: "Magistral",
   description: "Gere minutas de contratos com o tom de voz certo e baixe em Word ou PDF.",
 };
 

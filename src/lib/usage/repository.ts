@@ -1,13 +1,12 @@
 import type { DatabaseSync } from "node:sqlite";
 import { z } from "zod";
-import { LLM_PROVIDERS } from "@/lib/llm/providers";
-import { LLM_CALL_STATUSES, LLM_OPERATIONS, type LlmCall, type NewLlmCall, type UsageGroup, type UsageTotals } from "./types";
+import { LLM_CALL_STATUSES, LLM_OPERATIONS, USAGE_PROVIDERS, type LlmCall, type NewLlmCall, type UsageGroup, type UsageTotals } from "./types";
 
 const llmCallRowSchema = z.object({
   id: z.number(),
   created_at: z.string(),
   operation: z.enum(LLM_OPERATIONS),
-  provider: z.enum(LLM_PROVIDERS),
+  provider: z.enum(USAGE_PROVIDERS),
   model: z.string(),
   input_tokens: z.number(),
   output_tokens: z.number(),
