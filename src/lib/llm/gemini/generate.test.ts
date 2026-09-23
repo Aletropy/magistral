@@ -4,7 +4,7 @@ import { MinutaGenerationError } from "../errors";
 import { GEMINI_MODEL } from "./config";
 import { createGeminiGenerator } from "./generate";
 
-const PROMPT = { system: "Você é um advogado.", user: "Redija um NDA." };
+const PROMPT = { system: "Você é um advogado.", user: "Redija um NDA.", temperature: 0.3 };
 
 interface FakeResponse {
   text?: string;
@@ -19,7 +19,7 @@ function fakeClient(response: FakeResponse) {
 }
 
 describe("createGeminiGenerator", () => {
-  it("returns the response text and sends the system prompt as systemInstruction", async () => {
+  it("returns the response text and sends the system prompt and temperature in the config", async () => {
     const { client, generateContent } = fakeClient({
       text: "# ACORDO",
       candidates: [{ finishReason: FinishReason.STOP }],
@@ -30,7 +30,10 @@ describe("createGeminiGenerator", () => {
       expect.objectContaining({
         model: GEMINI_MODEL,
         contents: PROMPT.user,
-        config: expect.objectContaining({ systemInstruction: PROMPT.system }),
+        config: expect.objectContaining({
+          systemInstruction: PROMPT.system,
+          temperature: PROMPT.temperature,
+        }),
       }),
     );
   });

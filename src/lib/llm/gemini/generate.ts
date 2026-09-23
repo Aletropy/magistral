@@ -13,11 +13,11 @@ const BLOCKED_FINISH_REASONS = new Set<FinishReason>([
 ]);
 
 export function createGeminiGenerator(client: GoogleGenAI): MinutaGenerator {
-  return async ({ system, user }) => {
+  return async ({ system, user, temperature }) => {
     const response = await client.models.generateContent({
       model: GEMINI_MODEL,
       contents: user,
-      config: { systemInstruction: system, maxOutputTokens: GEMINI_MAX_OUTPUT_TOKENS },
+      config: { systemInstruction: system, temperature, maxOutputTokens: GEMINI_MAX_OUTPUT_TOKENS },
     });
 
     const finishReason = response.candidates?.[0]?.finishReason;

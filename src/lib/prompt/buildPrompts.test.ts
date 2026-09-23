@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { MinutaRequest } from "@/lib/minuta/schema";
-import { PERSONA_IDS } from "@/lib/personas/catalog";
-import { PERSONA_PROMPT_STYLES } from "@/lib/personas/promptStyles";
+import { BUILTIN_PERSONAS } from "@/lib/personas/seeds";
+import type { PersonaStyle } from "@/lib/personas/types";
 import { buildSystemPrompt } from "./buildSystemPrompt";
 import { buildUserPrompt } from "./buildUserPrompt";
 
@@ -16,21 +16,46 @@ const REQUEST: MinutaRequest = {
   persona: "agressivo",
 };
 
+const MINIMAL_STYLE: PersonaStyle = {
+  systemInstruction: "Você é um redator jurídico.",
+  toneParameters: [],
+  examples: [],
+};
+
 describe("buildSystemPrompt", () => {
-  it.each(PERSONA_IDS)("starts with the %s persona role", (personaId) => {
-    const firstLine = buildSystemPrompt(personaId).split("\n")[0];
-    expect(firstLine).toBe(PERSONA_PROMPT_STYLES[personaId].role);
-  });
+  it.each(BUILTIN_PERSONAS.map((persona) => [persona.id, persona] as const))(
+    "starts with the %s persona's system instruction",
+    (_, persona) => {
+      const firstLine = buildSystemPrompt(persona).split("\n")[0];
+      expect(firstLine).toBe(persona.systemInstruction);
+    },
+  );
 
   it("requires Markdown-only output with no greeting", () => {
-    const prompt = buildSystemPrompt("moderno");
+    const prompt = buildSystemPrompt(MINIMAL_STYLE);
     expect(prompt).toContain("somente com a minuta, em Markdown");
     expect(prompt).toContain("Nenhuma saudação");
   });
 
   it("produces a distinct prompt per persona", () => {
-    const prompts = new Set(PERSONA_IDS.map(buildSystemPrompt));
-    expect(prompts.size).toBe(PERSONA_IDS.length);
+    const prompts = new Set(BUILTIN_PERSONAS.map(buildSystemPrompt));
+    expect(prompts.size).toBe(BUILTIN_PERSONAS.length);
+  });
+
+  it("lists every tone parameter and wraps each example in its own block", () => {
+    const prompt = buildSystemPrompt({
+      ...MINIMAL_STYLE,
+      toneParameters: ["Use voz ativa.", "Limite parágrafos a 3 frases."],
+      examples: ["Exemplo A", "Exemplo B"],
+    });
+    expect(prompt).toContain("- Use voz ativa.\n- Limite parágrafos a 3 frases.");
+    expect(prompt).toContain("<exemplo>\nExemplo A\n</exemplo>\n\n<exemplo>\nExemplo B\n</exemplo>");
+  });
+
+  it("omits the tone and example sections when the persona has none", () => {
+    const prompt = buildSystemPrompt(MINIMAL_STYLE);
+    expect(prompt).not.toContain("## Tom de voz");
+    expect(prompt).not.toContain("<exemplo>");
   });
 });
 

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { PERSONA_IDS } from "@/lib/personas/catalog";
+import { MAX_PERSONA_ID_CHARS } from "@/lib/personas/schema";
 import { DOCUMENT_TYPE_IDS, OTHER_DOCUMENT_TYPE_ID } from "./documentTypes";
 
 export const MIN_PARTIES = 2;
@@ -42,7 +42,11 @@ export const minutaRequestSchema = z
     clauses: z.string().trim().max(MAX_CLAUSES_CHARS, {
       error: `Use no máximo ${MAX_CLAUSES_CHARS} caracteres.`,
     }),
-    persona: z.enum(PERSONA_IDS, { error: "Selecione uma personalidade válida." }),
+    persona: z
+      .string({ error: "Selecione uma personalidade válida." })
+      .trim()
+      .min(1, { error: "Selecione uma personalidade." })
+      .max(MAX_PERSONA_ID_CHARS, { error: "Selecione uma personalidade válida." }),
   })
   .refine(
     (request) =>
@@ -53,13 +57,3 @@ export const minutaRequestSchema = z
 export type MinutaRequest = z.infer<typeof minutaRequestSchema>;
 export type MinutaFormValues = z.input<typeof minutaRequestSchema>;
 export type Party = MinutaRequest["parties"][number];
-
-/** Maps each invalid field path (e.g. "parties.0.name") to its first error message. */
-export function collectFieldErrors(error: z.ZodError): Record<string, string> {
-  const fieldErrors: Record<string, string> = {};
-  for (const issue of error.issues) {
-    const path = issue.path.join(".");
-    fieldErrors[path] ??= issue.message;
-  }
-  return fieldErrors;
-}

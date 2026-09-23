@@ -1,5 +1,4 @@
-import type { PersonaId } from "@/lib/personas/catalog";
-import { PERSONA_PROMPT_STYLES } from "@/lib/personas/promptStyles";
+import type { PersonaStyle } from "@/lib/personas/types";
 
 export const MISSING_DATA_PLACEHOLDER = "[PREENCHER: descrição do dado]";
 
@@ -24,14 +23,20 @@ function toBulletList(items: string[]): string {
   return items.map((item) => `- ${item}`).join("\n");
 }
 
-export function buildSystemPrompt(personaId: PersonaId): string {
-  const style = PERSONA_PROMPT_STYLES[personaId];
+function formatExamples(examples: string[]): string {
+  return examples.map((example) => `<exemplo>\n${example}\n</exemplo>`).join("\n\n");
+}
 
+/** The persona's own text comes first; the drafting and output rules are fixed guardrails. */
+export function buildSystemPrompt(style: PersonaStyle): string {
   return [
-    style.role,
-    `## Tom de voz\n${toBulletList(style.toneRules)}`,
+    style.systemInstruction,
+    style.toneParameters.length > 0 && `## Tom de voz\n${toBulletList(style.toneParameters)}`,
     `## Regras de redação\n${toBulletList(DRAFTING_RULES)}`,
     `## Formato de saída\n${toBulletList(OUTPUT_RULES)}`,
-    `## Exemplo de tom (imite o estilo, não o conteúdo)\n<exemplo>\n${style.styleExample}\n</exemplo>`,
-  ].join("\n\n");
+    style.examples.length > 0 &&
+      `## Exemplos de tom (imite o estilo, não o conteúdo)\n${formatExamples(style.examples)}`,
+  ]
+    .filter(Boolean)
+    .join("\n\n");
 }

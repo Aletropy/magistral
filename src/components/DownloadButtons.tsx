@@ -1,6 +1,6 @@
 "use client";
 
-import { SECONDARY_BUTTON_CLASS } from "@/components/ui/styles";
+import { Button } from "@/components/ui/button";
 import { useFileDownload } from "@/hooks/useFileDownload";
 import { EXPORT_FORMATS, EXPORT_FORMAT_INFO, buildFileName } from "@/lib/export/formats";
 import type { DocumentBlock } from "@/lib/markdown/types";
@@ -17,18 +17,18 @@ export function DownloadButtons({ markdown, blocks }: DownloadButtonsProps) {
     <div className="flex flex-col items-end gap-1">
       <div className="flex gap-2">
         {EXPORT_FORMATS.map((format) => (
-          <button
+          <Button
             key={format}
             type="button"
-            className={SECONDARY_BUTTON_CLASS}
+            variant="outline"
             disabled={pendingFormat !== null}
             onClick={() => download(markdown, format, buildFileName(blocks, format))}
           >
             {pendingFormat === format ? "Gerando…" : `Baixar ${EXPORT_FORMAT_INFO[format].label}`}
-          </button>
+          </Button>
         ))}
       </div>
-      {error && <p className="text-xs text-red-600">{error}</p>}
+      {error && <p className="text-xs text-destructive">{error}</p>}
     </div>
   );
 }

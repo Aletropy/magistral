@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
+import { collectFieldErrors } from "@/lib/validation/collectFieldErrors";
 import {
   MAX_CLAUSES_CHARS,
-  collectFieldErrors,
   minutaRequestSchema,
   type MinutaFormValues,
 } from "./schema";
@@ -45,8 +45,8 @@ describe("minutaRequestSchema", () => {
     expect(errors).toHaveProperty(["parties.1.name"]);
   });
 
-  it("rejects an unknown persona", () => {
-    const errors = fieldErrorsFor({ ...VALID_REQUEST, persona: "sarcastico" });
+  it("requires a persona", () => {
+    const errors = fieldErrorsFor({ ...VALID_REQUEST, persona: "  " });
     expect(errors).toHaveProperty("persona");
   });
 

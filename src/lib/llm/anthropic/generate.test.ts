@@ -4,7 +4,7 @@ import { MinutaGenerationError } from "../errors";
 import { ANTHROPIC_MODEL, REFUSAL_FALLBACK_BETA, REFUSAL_FALLBACK_MODE } from "./config";
 import { createAnthropicGenerator } from "./generate";
 
-const PROMPT = { system: "Você é um advogado.", user: "Redija um NDA." };
+const PROMPT = { system: "Você é um advogado.", user: "Redija um NDA.", temperature: 0.3 };
 
 interface FakeMessage {
   stop_reason: string;
@@ -37,6 +37,12 @@ describe("createAnthropicGenerator", () => {
         fallbacks: REFUSAL_FALLBACK_MODE,
       }),
     );
+  });
+
+  it("does not send the temperature, which Claude Opus 5 rejects", async () => {
+    const { client, stream } = fakeClient({ stop_reason: "end_turn", content: [{ type: "text", text: "# ACORDO" }] });
+    await createAnthropicGenerator(client)(PROMPT);
+    expect(stream).toHaveBeenCalledWith(expect.not.objectContaining({ temperature: expect.anything() }));
   });
 
   it.each([

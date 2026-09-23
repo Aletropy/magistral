@@ -8,6 +8,7 @@ import {
   REFUSAL_FALLBACK_MODE,
 } from "./config";
 
+/** Claude Opus 5 rejects sampling parameters, so the persona's temperature is not sent. */
 export function createAnthropicGenerator(client: Anthropic): MinutaGenerator {
   return async ({ system, user }) => {
     const stream = client.beta.messages.stream({

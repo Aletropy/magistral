@@ -3,8 +3,11 @@
 import { useState, type FormEvent } from "react";
 import { PartiesField } from "@/components/PartiesField";
 import { PersonaSelector } from "@/components/PersonaSelector";
+import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/FormField";
-import { INPUT_CLASS, PRIMARY_BUTTON_CLASS } from "@/components/ui/styles";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { NATIVE_SELECT_CLASS } from "@/components/ui/nativeSelect";
 import {
   DEFAULT_DOCUMENT_TYPE_ID,
   DOCUMENT_TYPE_IDS,
@@ -15,33 +18,38 @@ import {
 import {
   MAX_CLAUSES_CHARS,
   MAX_CUSTOM_DOCUMENT_TYPE_CHARS,
-  collectFieldErrors,
   minutaRequestSchema,
   type MinutaFormValues,
   type MinutaRequest,
 } from "@/lib/minuta/schema";
-import { DEFAULT_PERSONA_ID } from "@/lib/personas/catalog";
+import { DEFAULT_PERSONA_ID } from "@/lib/personas/seeds";
+import { collectFieldErrors } from "@/lib/validation/collectFieldErrors";
+import type { PersonaSummary } from "@/lib/personas/types";
 
 const CLAUSES_ROWS = 6;
 
-const INITIAL_VALUES: MinutaFormValues = {
-  documentType: DEFAULT_DOCUMENT_TYPE_ID,
-  customDocumentType: "",
-  parties: [
-    { name: "", role: "Contratante", qualification: "" },
-    { name: "", role: "Contratada", qualification: "" },
-  ],
-  clauses: "",
-  persona: DEFAULT_PERSONA_ID,
-};
+function initialValues(personas: PersonaSummary[]): MinutaFormValues {
+  const hasDefault = personas.some((persona) => persona.id === DEFAULT_PERSONA_ID);
+  return {
+    documentType: DEFAULT_DOCUMENT_TYPE_ID,
+    customDocumentType: "",
+    parties: [
+      { name: "", role: "Contratante", qualification: "" },
+      { name: "", role: "Contratada", qualification: "" },
+    ],
+    clauses: "",
+    persona: hasDefault ? DEFAULT_PERSONA_ID : (personas[0]?.id ?? ""),
+  };
+}
 
 interface MinutaFormProps {
+  personas: PersonaSummary[];
   isSubmitting: boolean;
   onSubmit: (request: MinutaRequest) => void;
 }
 
-export function MinutaForm({ isSubmitting, onSubmit }: MinutaFormProps) {
-  const [values, setValues] = useState<MinutaFormValues>(INITIAL_VALUES);
+export function MinutaForm({ personas, isSubmitting, onSubmit }: MinutaFormProps) {
+  const [values, setValues] = useState<MinutaFormValues>(() => initialValues(personas));
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   function update<K extends keyof MinutaFormValues>(field: K, value: MinutaFormValues[K]) {
@@ -64,7 +72,7 @@ export function MinutaForm({ isSubmitting, onSubmit }: MinutaFormProps) {
       <FormField label="Tipo de documento" htmlFor="documentType" error={errors.documentType}>
         <select
           id="documentType"
-          className={INPUT_CLASS}
+          className={NATIVE_SELECT_CLASS}
           disabled={isSubmitting}
           value={values.documentType}
           onChange={(event) => update("documentType", event.target.value as DocumentTypeId)}
@@ -79,9 +87,8 @@ export function MinutaForm({ isSubmitting, onSubmit }: MinutaFormProps) {
 
       {values.documentType === OTHER_DOCUMENT_TYPE_ID && (
         <FormField label="Qual documento?" htmlFor="customDocumentType" error={errors.customDocumentType}>
-          <input
+          <Input
             id="customDocumentType"
-            className={INPUT_CLASS}
             placeholder="Ex.: Termo de Cessão de Direitos Autorais"
             maxLength={MAX_CUSTOM_DOCUMENT_TYPE_CHARS}
             disabled={isSubmitting}
@@ -105,9 +112,8 @@ export function MinutaForm({ isSubmitting, onSubmit }: MinutaFormProps) {
         error={errors.clauses}
         hint={`${values.clauses.length}/${MAX_CLAUSES_CHARS} caracteres. Descreva prazos, valores, multas, foro…`}
       >
-        <textarea
+        <Textarea
           id="clauses"
-          className={INPUT_CLASS}
           rows={CLAUSES_ROWS}
           maxLength={MAX_CLAUSES_CHARS}
           disabled={isSubmitting}
@@ -119,15 +125,16 @@ export function MinutaForm({ isSubmitting, onSubmit }: MinutaFormProps) {
       </FormField>
 
       <PersonaSelector
+        personas={personas}
         value={values.persona}
         error={errors.persona}
         disabled={isSubmitting}
         onChange={(persona) => update("persona", persona)}
       />
 
-      <button type="submit" className={PRIMARY_BUTTON_CLASS} disabled={isSubmitting}>
+      <Button type="submit" size="lg" disabled={isSubmitting}>
         {isSubmitting ? "Gerando minuta…" : "Gerar minuta"}
-      </button>
+      </Button>
     </form>
   );
 }
