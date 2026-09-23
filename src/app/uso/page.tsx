@@ -51,7 +51,7 @@ export default async function UsagePage() {
         groups={usage.groupedTotals("day", USAGE_WINDOW_DAYS)}
         formatKey={formatDay}
       />
-      <div className="grid gap-8 xl:grid-cols-2">
+      <div className="grid grid-cols-1 gap-8 xl:grid-cols-2">
         <UsageGroupTable
           title="Por operação"
           keyHeader="Operação"
