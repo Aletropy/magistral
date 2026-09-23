@@ -12,5 +12,6 @@ export function toPersonaInput(persona: Persona): PersonaInput {
     examples: persona.examples,
     negativeConstraints: persona.negativeConstraints,
     styleSliders: persona.styleSliders,
+    styleProfile: persona.styleProfile,
   };
 }

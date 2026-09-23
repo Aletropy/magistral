@@ -1,5 +1,6 @@
 import { styleSliderInstructions } from "@/lib/personas/styleSliders";
 import type { PersonaStyle } from "@/lib/personas/types";
+import { formatStyleProfile } from "@/lib/style/formatStyleProfile";
 
 export function toBulletList(items: string[]): string {
   return items.map((item) => `- ${item}`).join("\n");
@@ -16,6 +17,8 @@ export function buildPersonaSections(style: PersonaStyle): string[] {
   return [
     style.systemInstruction,
     style.toneParameters.length > 0 && `## Tom de voz\n${toBulletList(style.toneParameters)}`,
+    style.styleProfile &&
+      `## Perfil de estilo de referência\nReproduza estas convenções do documento de referência, dentro do formato de saída exigido:\n${toBulletList(formatStyleProfile(style.styleProfile))}`,
     adjustments.length > 0 && `## Ajustes de estilo\n${toBulletList(adjustments)}`,
     style.negativeConstraints.length > 0 &&
       `## Palavras e expressões proibidas\nNunca use as palavras ou expressões abaixo, nem suas variações de gênero e número:\n${toBulletList(style.negativeConstraints.map(quote))}`,

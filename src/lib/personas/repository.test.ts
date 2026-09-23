@@ -13,6 +13,7 @@ const INPUT: PersonaInput = {
   examples: ["Exemplo um.", "Exemplo dois."],
   negativeConstraints: ["outrossim", "posto isto"],
   styleSliders: { formality: 4, aggressiveness: 5, length: 2 },
+  styleProfile: null,
 };
 
 describe("createPersonaRepository", () => {
@@ -54,6 +55,26 @@ describe("createPersonaRepository", () => {
       negativeConstraints: [],
       styleSliders: { formality: 1, aggressiveness: 1, length: 1 },
     });
+  });
+
+  it("stores and clears a captured style profile", () => {
+    const profile = {
+      structuralFramework: "Cláusulas.",
+      sectionOrder: ["OBJETO"],
+      vocabularyComplexity: "média" as const,
+      vocabularyNotes: "",
+      sentenceLength: { averageWords: 20, shortPercent: 30, mediumPercent: 50, longPercent: 20, notes: "" },
+      headerConventions: "Caixa alta.",
+      headerExamples: [],
+      citationFormatting: "nenhuma",
+      tone: "Direto.",
+      recurringExpressions: [],
+      formattingRules: [],
+    };
+    const created = repository.create({ ...INPUT, styleProfile: profile });
+
+    expect(repository.get(created.id)?.styleProfile).toEqual(profile);
+    expect(repository.update(created.id, { ...INPUT, styleProfile: null })?.styleProfile).toBeNull();
   });
 
   it("returns null when updating a persona that does not exist", () => {

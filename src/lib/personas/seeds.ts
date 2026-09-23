@@ -28,6 +28,7 @@ export const BUILTIN_PERSONAS: readonly BuiltinPersona[] = [
     ],
     negativeConstraints: [],
     styleSliders: DEFAULT_STYLE_SLIDERS,
+    styleProfile: null,
   },
   {
     id: "moderno",
@@ -47,6 +48,7 @@ export const BUILTIN_PERSONAS: readonly BuiltinPersona[] = [
     ],
     negativeConstraints: [],
     styleSliders: DEFAULT_STYLE_SLIDERS,
+    styleProfile: null,
   },
   {
     id: "agressivo",
@@ -66,6 +68,7 @@ export const BUILTIN_PERSONAS: readonly BuiltinPersona[] = [
     ],
     negativeConstraints: [],
     styleSliders: DEFAULT_STYLE_SLIDERS,
+    styleProfile: null,
   },
 ];
 

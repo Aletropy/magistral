@@ -5,7 +5,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { getPersonaRepository } from "@/lib/personas/getPersonaRepository";
-import { NEW_PERSONA_PATH, personaEditPath, personaPlaygroundPath } from "@/lib/personas/paths";
+import {
+  NEW_PERSONA_PATH,
+  STYLE_CAPTURE_PATH,
+  personaEditPath,
+  personaPlaygroundPath,
+} from "@/lib/personas/paths";
 
 const TEMPERATURE_DECIMALS = 2;
 
@@ -23,9 +28,14 @@ export default async function PersonasPage() {
             de estilo de cada persona.
           </p>
         </div>
-        <Button asChild size="lg">
-          <Link href={NEW_PERSONA_PATH}>Nova persona</Link>
-        </Button>
+        <div className="flex gap-2">
+          <Button asChild size="lg" variant="outline">
+            <Link href={STYLE_CAPTURE_PATH}>Capturar estilo de documento</Link>
+          </Button>
+          <Button asChild size="lg">
+            <Link href={NEW_PERSONA_PATH}>Nova persona</Link>
+          </Button>
+        </div>
       </header>
 
       <div className="rounded-lg border bg-card">

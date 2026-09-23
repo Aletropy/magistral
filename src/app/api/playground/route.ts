@@ -21,7 +21,7 @@ export async function POST(request: Request): Promise<Response> {
     const persona = getPersonaRepository().get(personaId);
     if (!persona) return errorResponse(HTTP_NOT_FOUND, PERSONA_NOT_FOUND_MESSAGE);
 
-    const style = { ...draft, examples: persona.examples };
+    const style = { ...draft, examples: persona.examples, styleProfile: persona.styleProfile };
     const markdown = await rewriteSample(getMinutaGenerator("playground"), style, draft.temperature, sampleText);
     const forbiddenTermsFound = findNegativeConstraintViolations(markdown, draft.negativeConstraints);
     return Response.json({ markdown, forbiddenTermsFound } satisfies PlaygroundResponseBody);

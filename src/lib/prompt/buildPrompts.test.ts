@@ -23,6 +23,7 @@ const MINIMAL_STYLE: PersonaStyle = {
   examples: [],
   negativeConstraints: [],
   styleSliders: DEFAULT_STYLE_SLIDERS,
+  styleProfile: null,
 };
 
 describe("buildSystemPrompt", () => {
@@ -61,6 +62,28 @@ describe("buildSystemPrompt", () => {
     expect(prompt).not.toContain("## Ajustes de estilo");
     expect(prompt).not.toContain("## Palavras e expressões proibidas");
     expect(prompt).not.toContain("<exemplo>");
+  });
+
+  it("adds the captured style profile after the tone section", () => {
+    const prompt = buildSystemPrompt({
+      ...MINIMAL_STYLE,
+      styleProfile: {
+        structuralFramework: "Relatório, fundamentação e conclusão.",
+        sectionOrder: [],
+        vocabularyComplexity: "alta",
+        vocabularyNotes: "",
+        sentenceLength: { averageWords: 25, shortPercent: 20, mediumPercent: 50, longPercent: 30, notes: "" },
+        headerConventions: "Algarismos romanos.",
+        headerExamples: [],
+        citationFormatting: "nenhuma",
+        tone: "Técnico.",
+        recurringExpressions: [],
+        formattingRules: [],
+      },
+    });
+    expect(prompt).toContain("## Perfil de estilo de referência");
+    expect(prompt).toContain("- Estrutura: Relatório, fundamentação e conclusão.");
+    expect(prompt.indexOf("## Perfil de estilo")).toBeLessThan(prompt.indexOf("## Regras de redação"));
   });
 
   it("adds slider adjustments and quoted forbidden terms", () => {

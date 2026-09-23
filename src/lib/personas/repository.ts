@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import type { DatabaseSync } from "node:sqlite";
 import { z } from "zod";
 import { withTransaction } from "@/lib/db/transaction";
+import { styleProfileSchema } from "@/lib/style/styleProfileSchema";
 import { styleSlidersSchema, type PersonaInput } from "./schema";
 import type { Persona } from "./types";
 
@@ -15,6 +16,12 @@ const styleSlidersJson = z
   .transform((json) => JSON.parse(json) as unknown)
   .pipe(styleSlidersSchema);
 
+const styleProfileJson = z
+  .string()
+  .nullable()
+  .transform((json) => (json === null ? null : (JSON.parse(json) as unknown)))
+  .pipe(styleProfileSchema.nullable());
+
 const personaRowSchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -24,12 +31,17 @@ const personaRowSchema = z.object({
   temperature: z.number(),
   negative_constraints: stringListJson,
   style_sliders: styleSlidersJson,
+  style_profile: styleProfileJson,
   is_builtin: z.number(),
   created_at: z.string(),
   updated_at: z.string(),
 });
 
 const exampleRowSchema = z.object({ content: z.string() });
+
+function serializeStyleProfile(input: PersonaInput): string | null {
+  return input.styleProfile ? JSON.stringify(input.styleProfile) : null;
+}
 
 export type PersonaDeletion = "deleted" | "not_found" | "builtin";
 
@@ -50,13 +62,13 @@ export function createPersonaRepository(db: DatabaseSync): PersonaRepository {
   );
   const insertPersona = db.prepare(
     `INSERT INTO personas (id, name, description, system_instruction, tone_parameters, temperature,
-                           negative_constraints, style_sliders)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+                           negative_constraints, style_sliders, style_profile)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
   );
   const updatePersona = db.prepare(
     `UPDATE personas
      SET name = ?, description = ?, system_instruction = ?, tone_parameters = ?, temperature = ?,
-         negative_constraints = ?, style_sliders = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+         negative_constraints = ?, style_sliders = ?, style_profile = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
      WHERE id = ?`,
   );
   const deleteExamples = db.prepare("DELETE FROM persona_examples WHERE persona_id = ?");
@@ -77,6 +89,7 @@ export function createPersonaRepository(db: DatabaseSync): PersonaRepository {
       examples: selectExamples.all(parsed.id).map((example) => exampleRowSchema.parse(example).content),
       negativeConstraints: parsed.negative_constraints,
       styleSliders: parsed.style_sliders,
+      styleProfile: parsed.style_profile,
       isBuiltin: parsed.is_builtin === 1,
       createdAt: parsed.created_at,
       updatedAt: parsed.updated_at,
@@ -110,6 +123,7 @@ export function createPersonaRepository(db: DatabaseSync): PersonaRepository {
           input.temperature,
           JSON.stringify(input.negativeConstraints),
           JSON.stringify(input.styleSliders),
+          serializeStyleProfile(input),
         );
         replaceExamples(id, input.examples);
       });
@@ -126,6 +140,7 @@ export function createPersonaRepository(db: DatabaseSync): PersonaRepository {
           input.temperature,
           JSON.stringify(input.negativeConstraints),
           JSON.stringify(input.styleSliders),
+          serializeStyleProfile(input),
           id,
         );
         if (changes === 0) return false;

@@ -73,11 +73,16 @@ function addPersonaStyleControls(db: DatabaseSync): void {
   db.prepare("UPDATE personas SET style_sliders = ?").run(JSON.stringify(DEFAULT_STYLE_SLIDERS));
 }
 
+function addPersonaStyleProfile(db: DatabaseSync): void {
+  db.exec("ALTER TABLE personas ADD COLUMN style_profile TEXT");
+}
+
 /** Ordered schema changes. Append new migrations; never edit or reorder existing ones. */
 export const MIGRATIONS: readonly Migration[] = [
   createPersonaTables,
   createLlmCallsTable,
   addPersonaStyleControls,
+  addPersonaStyleProfile,
 ];
 
 function readSchemaVersion(db: DatabaseSync): number {

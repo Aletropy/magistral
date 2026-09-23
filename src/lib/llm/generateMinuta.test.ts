@@ -31,6 +31,7 @@ const PERSONA: Persona = {
   examples: [],
   negativeConstraints: [],
   styleSliders: DEFAULT_STYLE_SLIDERS,
+  styleProfile: null,
   isBuiltin: false,
   createdAt: "2026-09-23T00:00:00.000Z",
   updatedAt: "2026-09-23T00:00:00.000Z",

@@ -1,6 +1,6 @@
 import { LlmConfigurationError, MinutaGenerationError } from "@/lib/llm/errors";
 import type { LlmProvider } from "@/lib/llm/providers";
-import { NO_USAGE, type MinutaGenerator, type TokenUsage } from "@/lib/llm/types";
+import { NO_USAGE, type TokenUsage } from "@/lib/llm/types";
 import { estimateCostUsd } from "./pricing";
 import type { LlmCallStatus, LlmOperation, NewLlmCall } from "./types";
 
@@ -20,8 +20,17 @@ function failureStatus(error: unknown): LlmCallStatus {
   return "upstream";
 }
 
-/** Wraps a generator so every call, successful or not, is logged with tokens, latency and cost. */
-export function withUsageAudit(generate: MinutaGenerator, options: UsageAuditOptions): MinutaGenerator {
+/** Any LLM call result that reports which model answered and what it billed. */
+export interface AuditedResult {
+  model: string;
+  usage: TokenUsage;
+}
+
+/** Wraps an LLM call so every invocation, successful or not, is logged with tokens, latency and cost. */
+export function withUsageAudit<Args extends unknown[], Result extends AuditedResult>(
+  call: (...args: Args) => Promise<Result>,
+  options: UsageAuditOptions,
+): (...args: Args) => Promise<Result> {
   const { operation, provider, configuredModel, record, now = () => performance.now() } = options;
 
   function safeRecord(model: string, usage: TokenUsage, startedAt: number, status: LlmCallStatus) {
@@ -41,10 +50,10 @@ export function withUsageAudit(generate: MinutaGenerator, options: UsageAuditOpt
     }
   }
 
-  return async (prompt) => {
+  return async (...args) => {
     const startedAt = now();
     try {
-      const result = await generate(prompt);
+      const result = await call(...args);
       safeRecord(result.model, result.usage, startedAt, "ok");
       return result;
     } catch (error) {

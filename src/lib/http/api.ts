@@ -1,10 +1,14 @@
 import type { z } from "zod";
 import type { Persona } from "@/lib/personas/types";
+import type { StyleCaptureResult } from "@/lib/style/captureStyle";
 
 export const MINUTA_ENDPOINT = "/api/minuta";
 export const EXPORT_ENDPOINT = "/api/export";
 export const PERSONAS_ENDPOINT = "/api/personas";
 export const PLAYGROUND_ENDPOINT = "/api/playground";
+export const STYLE_CAPTURE_ENDPOINT = "/api/style-capture";
+/** The multipart field that carries the uploaded document. */
+export const UPLOAD_FILE_FIELD = "file";
 
 export function personaEndpoint(id: string): string {
   return `${PERSONAS_ENDPOINT}/${encodeURIComponent(id)}`;
@@ -15,6 +19,9 @@ export const HTTP_NO_CONTENT = 204;
 export const HTTP_BAD_REQUEST = 400;
 export const HTTP_NOT_FOUND = 404;
 export const HTTP_CONFLICT = 409;
+export const HTTP_PAYLOAD_TOO_LARGE = 413;
+export const HTTP_UNSUPPORTED_MEDIA_TYPE = 415;
+export const HTTP_UNPROCESSABLE_CONTENT = 422;
 
 export const NETWORK_ERROR_MESSAGE =
   "Falha de conexão com o servidor. Verifique sua internet e tente novamente.";
@@ -31,6 +38,10 @@ export interface MinutaResponseBody {
 
 /** The playground's rewrite comes back in the same shape as a minuta. */
 export type PlaygroundResponseBody = MinutaResponseBody;
+
+export interface StyleCaptureResponseBody {
+  result: StyleCaptureResult;
+}
 
 export interface PersonaResponseBody {
   persona: Persona;

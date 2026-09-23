@@ -27,6 +27,7 @@ export const LLM_CALL_STATUS_LABELS: Record<LlmCallStatus, string> = {
   refusal: "Recusada",
   truncated: "Truncada",
   empty: "Vazia",
+  invalid_output: "Resposta inválida",
   configuration: "Configuração",
   upstream: "Falha na API",
 };

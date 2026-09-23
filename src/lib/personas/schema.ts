@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { styleProfileSchema } from "@/lib/style/styleProfileSchema";
 import { normalizeForMatch } from "@/lib/text/normalizeForMatch";
 import {
   DEFAULT_STYLE_SLIDERS,
@@ -87,6 +88,7 @@ export const personaInputSchema = z.object({
     .max(MAX_EXAMPLES, { error: `Use no máximo ${MAX_EXAMPLES} exemplos.` }),
   negativeConstraints: negativeConstraintsSchema,
   styleSliders: styleSlidersSchema,
+  styleProfile: styleProfileSchema.nullable(),
 });
 
 export type PersonaInput = z.infer<typeof personaInputSchema>;
@@ -101,4 +103,5 @@ export const EMPTY_PERSONA: PersonaFormValues = {
   examples: [],
   negativeConstraints: [],
   styleSliders: DEFAULT_STYLE_SLIDERS,
+  styleProfile: null,
 };

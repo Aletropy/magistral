@@ -6,6 +6,7 @@ import { EditableList } from "@/components/EditableList";
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/FormField";
 import { Input } from "@/components/ui/input";
+import { StyleProfileCard } from "@/components/StyleProfileCard";
 import { StyleSlidersField } from "@/components/StyleSlidersField";
 import { TagInput } from "@/components/TagInput";
 import { TemperatureField } from "@/components/TemperatureField";
@@ -161,6 +162,17 @@ export function PersonaEditor({ personaId, initialValues }: PersonaEditorProps) 
         disabled={isPending}
         onChange={(temperature) => update("temperature", temperature)}
       />
+
+      {values.styleProfile && (
+        <StyleProfileCard
+          profile={values.styleProfile}
+          action={
+            <Button type="button" variant="ghost" size="sm" disabled={isPending} onClick={() => update("styleProfile", null)}>
+              Remover perfil
+            </Button>
+          }
+        />
+      )}
 
       <EditableList
         legend="Exemplos de estilo"

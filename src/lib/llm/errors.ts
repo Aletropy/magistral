@@ -8,7 +8,7 @@ export class LlmConfigurationError extends Error {
   }
 }
 
-export type GenerationFailureReason = "refusal" | "truncated" | "empty";
+export type GenerationFailureReason = "refusal" | "truncated" | "empty" | "invalid_output";
 
 export class MinutaGenerationError extends Error {
   readonly reason: GenerationFailureReason;
@@ -59,6 +59,10 @@ export const GENERATION_FAILURES: Record<GenerationFailureReason, ErrorResponseI
     message: "A minuta ficou longa demais e veio incompleta. Reduza o escopo e tente novamente.",
   },
   empty: UPSTREAM_FAILURE,
+  invalid_output: {
+    status: 502,
+    message: "A IA devolveu uma resposta fora do formato esperado. Tente novamente.",
+  },
 };
 
 const HTTP_UNAUTHORIZED = 401;

@@ -1,11 +1,12 @@
 import type { LlmProvider } from "@/lib/llm/providers";
 
-export const LLM_OPERATIONS = ["minuta", "playground"] as const;
+export const LLM_OPERATIONS = ["minuta", "playground", "style_capture"] as const;
 export type LlmOperation = (typeof LLM_OPERATIONS)[number];
 
 export const LLM_OPERATION_LABELS: Record<LlmOperation, string> = {
   minuta: "Geração de minuta",
   playground: "Playground de persona",
+  style_capture: "Captura de estilo",
 };
 
 /** "ok", a generation failure reason, or why the call never produced a response. */
@@ -14,6 +15,7 @@ export const LLM_CALL_STATUSES = [
   "refusal",
   "truncated",
   "empty",
+  "invalid_output",
   "configuration",
   "upstream",
 ] as const;

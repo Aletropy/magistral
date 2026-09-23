@@ -13,6 +13,7 @@ const STYLE: PersonaStyle = {
   examples: [],
   negativeConstraints: ["outrossim"],
   styleSliders: { ...DEFAULT_STYLE_SLIDERS, length: 1 },
+  styleProfile: null,
 };
 
 describe("buildPlaygroundPrompt", () => {

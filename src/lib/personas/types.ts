@@ -1,3 +1,4 @@
+import type { StyleProfile } from "@/lib/style/styleProfileSchema";
 import type { StyleSliders } from "./styleSliders";
 
 export interface Persona {
@@ -16,6 +17,8 @@ export interface Persona {
   negativeConstraints: string[];
   /** Formality, aggressiveness and length levels; neutral levels add nothing to the prompt. */
   styleSliders: StyleSliders;
+  /** Writing style extracted from a reference document by Style Capture, if any. */
+  styleProfile: StyleProfile | null;
   /** Seeded personas can be edited but never deleted. */
   isBuiltin: boolean;
   createdAt: string;
@@ -25,7 +28,7 @@ export interface Persona {
 /** The persona fields that shape the system prompt. */
 export type PersonaStyle = Pick<
   Persona,
-  "systemInstruction" | "toneParameters" | "examples" | "negativeConstraints" | "styleSliders"
+  "systemInstruction" | "toneParameters" | "examples" | "negativeConstraints" | "styleSliders" | "styleProfile"
 >;
 
 /** What the minuta form needs to list a persona. */
