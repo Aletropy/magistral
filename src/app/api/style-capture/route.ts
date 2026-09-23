@@ -2,20 +2,23 @@ import { DocumentExtractionError } from "@/lib/documents/errors";
 import { MAX_UPLOAD_BYTES } from "@/lib/documents/formats";
 import { DOCUMENT_EXTRACTION_ERRORS } from "@/lib/documents/messages";
 import {
+  HTTP_ACCEPTED,
   HTTP_BAD_REQUEST,
   UPLOAD_FILE_FIELD,
   errorResponse,
-  type StyleCaptureResponseBody,
+  type TaskCreatedResponseBody,
 } from "@/lib/http/api";
-import { getStyleExtractor } from "@/lib/llm/getStyleExtractor";
-import { toErrorResponseInfo } from "@/lib/llm/toErrorResponseInfo";
-import { captureStyle } from "@/lib/style/captureStyle";
-
-/** Gemini may think for a while over a long reference document. */
-export const maxDuration = 300;
+import { UNEXPECTED_ERROR } from "@/lib/llm/errors";
+import { readStyleDocument } from "@/lib/style/captureStyle";
+import { captureStyleTask } from "@/lib/style/captureStyleTask";
+import { enqueueTask } from "@/lib/tasks/getTaskWorker";
 
 const MISSING_FILE_MESSAGE = "Selecione um arquivo PDF ou DOCX.";
 
+/**
+ * Reads the document's text now, so unreadable files fail at once, and queues the style analysis.
+ * Only the text is kept, and only until the task finishes.
+ */
 export async function POST(request: Request): Promise<Response> {
   let form: FormData;
   try {
@@ -30,17 +33,21 @@ export async function POST(request: Request): Promise<Response> {
     return errorResponse(status, message);
   }
 
+  let text: string;
   try {
-    const bytes = new Uint8Array(await file.arrayBuffer());
-    const result = await captureStyle(getStyleExtractor(), { name: file.name, bytes });
-    return Response.json({ result } satisfies StyleCaptureResponseBody);
+    text = await readStyleDocument({ name: file.name, bytes: new Uint8Array(await file.arrayBuffer()) });
   } catch (error) {
     if (error instanceof DocumentExtractionError) {
       const { status, message } = DOCUMENT_EXTRACTION_ERRORS[error.reason];
       return errorResponse(status, message);
     }
-    console.error("[api/style-capture] capture failed", error);
-    const { status, message } = toErrorResponseInfo(error);
-    return errorResponse(status, message);
+    console.error("[api/style-capture] text extraction failed", error);
+    return errorResponse(UNEXPECTED_ERROR.status, UNEXPECTED_ERROR.message);
   }
+
+  const taskId = enqueueTask(captureStyleTask, {
+    title: `Estilo de ${file.name}`,
+    payload: { fileName: file.name, text },
+  });
+  return Response.json({ taskId } satisfies TaskCreatedResponseBody, { status: HTTP_ACCEPTED });
 }

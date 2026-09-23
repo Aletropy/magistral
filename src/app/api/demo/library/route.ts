@@ -1,20 +1,9 @@
-import { loadDemoLibrary } from "@/lib/demo/loadDemo";
-import { errorResponse, type DemoLoadedResponseBody } from "@/lib/http/api";
-import { getEmbedder } from "@/lib/llm/getEmbedder";
-import { describeDraftingFailure } from "@/lib/minuta/errors";
-import { getLibraryRepository } from "@/lib/rag/getLibraryRepository";
+import { HTTP_ACCEPTED, type TaskCreatedResponseBody } from "@/lib/http/api";
+import { libraryDemoTask } from "@/lib/rag/libraryTasks";
+import { enqueueTask } from "@/lib/tasks/getTaskWorker";
 
-/** The first run downloads the local embedding model (~190 MB). */
-export const maxDuration = 600;
-
-/** Indexes the example norms (idempotent). */
+/** Queues indexing of the example norms (idempotent); the first run also downloads the local model. */
 export async function POST(): Promise<Response> {
-  try {
-    const added = await loadDemoLibrary(getLibraryRepository(), getEmbedder());
-    return Response.json({ added } satisfies DemoLoadedResponseBody);
-  } catch (error) {
-    console.error("[api/demo/library] load failed", error);
-    const { status, message } = describeDraftingFailure(error);
-    return errorResponse(status, message);
-  }
+  const taskId = enqueueTask(libraryDemoTask, { title: "Carregar normas de exemplo", payload: {} });
+  return Response.json({ taskId } satisfies TaskCreatedResponseBody, { status: HTTP_ACCEPTED });
 }

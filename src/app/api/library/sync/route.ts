@@ -1,21 +1,9 @@
-import { errorResponse, type LibrarySyncResponseBody } from "@/lib/http/api";
-import { getEmbedder } from "@/lib/llm/getEmbedder";
-import { describeDraftingFailure } from "@/lib/minuta/errors";
-import { resolveLibraryDir } from "@/lib/rag/config";
-import { getLibraryRepository } from "@/lib/rag/getLibraryRepository";
-import { syncLibraryFolder } from "@/lib/rag/syncFolder";
+import { HTTP_ACCEPTED, type TaskCreatedResponseBody } from "@/lib/http/api";
+import { librarySyncTask } from "@/lib/rag/libraryTasks";
+import { enqueueTask } from "@/lib/tasks/getTaskWorker";
 
-/** A first sync of a large folder embeds every document. */
-export const maxDuration = 600;
-
+/** Queues a sync of the library folder. */
 export async function POST(): Promise<Response> {
-  const folder = resolveLibraryDir();
-  try {
-    const report = await syncLibraryFolder(getLibraryRepository(), getEmbedder(), folder);
-    return Response.json({ folder, report } satisfies LibrarySyncResponseBody);
-  } catch (error) {
-    console.error("[api/library/sync] sync failed", error);
-    const { status, message } = describeDraftingFailure(error);
-    return errorResponse(status, message);
-  }
+  const taskId = enqueueTask(librarySyncTask, { title: "Sincronizar pasta da biblioteca", payload: {} });
+  return Response.json({ taskId } satisfies TaskCreatedResponseBody, { status: HTTP_ACCEPTED });
 }

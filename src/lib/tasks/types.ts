@@ -101,3 +101,10 @@ const ACTIVE_STATUSES: ReadonlySet<TaskStatus> = new Set(["pending", "running"])
 export function isTaskActive(status: TaskStatus): boolean {
   return ACTIVE_STATUSES.has(status);
 }
+
+/** Kinds whose input is uploaded files; they can't be retried once the files were cleaned up. */
+const KINDS_WITH_FILES: ReadonlySet<TaskKind> = new Set(["library.upload"]);
+
+export function taskNeedsFiles(kind: TaskKind): boolean {
+  return KINDS_WITH_FILES.has(kind);
+}

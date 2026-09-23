@@ -11,7 +11,7 @@ import {
 
 /** Sends the document text to Gemini with a JSON schema and returns the validated style profile. */
 export function createGeminiStyleExtractor(client: GoogleGenAI): StyleExtractor {
-  return async (documentText) => {
+  return async (documentText, options = {}) => {
     const { system, user, temperature } = buildStyleExtractionPrompt(documentText, STYLE_EXTRACTION_TEMPERATURE);
     const response = await client.models.generateContent({
       model: STYLE_EXTRACTION_MODEL,
@@ -22,6 +22,7 @@ export function createGeminiStyleExtractor(client: GoogleGenAI): StyleExtractor 
         maxOutputTokens: STYLE_EXTRACTION_MAX_OUTPUT_TOKENS,
         responseMimeType: "application/json",
         responseJsonSchema: STYLE_EXTRACTION_JSON_SCHEMA,
+        abortSignal: options.signal,
       },
     });
 

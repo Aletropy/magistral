@@ -1,40 +1,26 @@
 "use client";
 
-import { useCallback, useState } from "react";
-import {
-  NETWORK_ERROR_MESSAGE,
-  STYLE_CAPTURE_ENDPOINT,
-  UPLOAD_FILE_FIELD,
-  readErrorMessage,
-  type StyleCaptureResponseBody,
-} from "@/lib/http/api";
-import type { StyleCaptureResult } from "@/lib/style/captureStyle";
+import { useCallback } from "react";
+import { STYLE_CAPTURE_ENDPOINT, UPLOAD_FILE_FIELD } from "@/lib/http/api";
+import { styleCaptureResultSchema } from "@/lib/style/styleCaptureResult";
+import type { TaskDetail } from "@/lib/tasks/types";
+import { useBackgroundTask } from "./useBackgroundTask";
 
 const CAPTURE_FAILED = "Não foi possível analisar o documento. Tente novamente.";
 
-export function useStyleCapture() {
-  const [result, setResult] = useState<StyleCaptureResult | null>(null);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+/** Sends the reference document; the style analysis runs in the background and its result is restored by URL. */
+export function useStyleCapture(initialTask: TaskDetail | null = null) {
+  const background = useBackgroundTask(styleCaptureResultSchema, initialTask);
+  const { start } = background;
 
-  const analyze = useCallback(async (file: File) => {
-    setIsAnalyzing(true);
-    setError(null);
-    try {
+  const analyze = useCallback(
+    (file: File) => {
       const body = new FormData();
       body.append(UPLOAD_FILE_FIELD, file);
-      const response = await fetch(STYLE_CAPTURE_ENDPOINT, { method: "POST", body });
-      if (!response.ok) {
-        setError(await readErrorMessage(response, CAPTURE_FAILED));
-        return;
-      }
-      setResult(((await response.json()) as StyleCaptureResponseBody).result);
-    } catch {
-      setError(NETWORK_ERROR_MESSAGE);
-    } finally {
-      setIsAnalyzing(false);
-    }
-  }, []);
+      return start(() => fetch(STYLE_CAPTURE_ENDPOINT, { method: "POST", body }), CAPTURE_FAILED);
+    },
+    [start],
+  );
 
-  return { result, isAnalyzing, error, analyze };
+  return { background, result: background.result, isAnalyzing: background.isBusy, error: background.startError, analyze };
 }

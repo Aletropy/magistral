@@ -18,7 +18,7 @@ export function SavedMinutaView({ initial }: { initial: MinutaResponseBody }) {
   return (
     <div className="flex flex-col gap-3">
       {saveError && <p className="text-sm text-destructive">{saveError}</p>}
-      <ResultPanel result={minuta} isGenerating={false} error={null} onReviewApplied={handleReviewApplied} />
+      <ResultPanel result={minuta} isLoading={false} error={null} onReviewApplied={handleReviewApplied} />
     </div>
   );
 }

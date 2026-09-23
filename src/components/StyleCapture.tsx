@@ -4,13 +4,15 @@ import { useState, type FormEvent } from "react";
 import { ApplyStyleToPersona, type EditablePersona } from "@/components/ApplyStyleToPersona";
 import { PersonaEditor } from "@/components/PersonaEditor";
 import { StyleProfileCard } from "@/components/StyleProfileCard";
+import { FollowedTaskStatus } from "@/components/tasks/FollowedTaskStatus";
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/FormField";
 import { FileInput } from "@/components/ui/FileInput";
 import { useStyleCapture } from "@/hooks/useStyleCapture";
 import { DOCUMENT_ACCEPT, MAX_UPLOAD_MEBIBYTES } from "@/lib/documents/formats";
 import { EMPTY_PERSONA, type PersonaFormValues } from "@/lib/personas/schema";
-import type { StyleCaptureResult } from "@/lib/style/captureStyle";
+import type { StyleCaptureResult } from "@/lib/style/styleCaptureResult";
+import type { TaskDetail } from "@/lib/tasks/types";
 import { plural } from "@/lib/text/plural";
 
 function toPersonaDraft(capture: StyleCaptureResult): PersonaFormValues {
@@ -25,9 +27,15 @@ function toPersonaDraft(capture: StyleCaptureResult): PersonaFormValues {
   };
 }
 
-export function StyleCapture({ personas }: { personas: EditablePersona[] }) {
+interface StyleCaptureProps {
+  personas: EditablePersona[];
+  /** A capture task the page was opened with (`?tarefa=`). */
+  initialTask: TaskDetail | null;
+}
+
+export function StyleCapture({ personas, initialTask }: StyleCaptureProps) {
   const [file, setFile] = useState<File | null>(null);
-  const { result, isAnalyzing, error, analyze } = useStyleCapture();
+  const { background, result, isAnalyzing, error, analyze } = useStyleCapture(initialTask);
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -40,7 +48,7 @@ export function StyleCapture({ personas }: { personas: EditablePersona[] }) {
         <FormField
           label="Documento de referência"
           htmlFor="reference"
-          hint={`PDF com texto selecionável ou DOCX, até ${MAX_UPLOAD_MEBIBYTES} MB. O arquivo não é guardado; só o perfil e os trechos que você salvar.`}
+          hint={`PDF com texto selecionável ou DOCX, até ${MAX_UPLOAD_MEBIBYTES} MB. O arquivo não é guardado: o texto fica só até a análise terminar, e depois apenas o perfil e os trechos que você salvar.`}
         >
           <FileInput
             id="reference"
@@ -50,13 +58,14 @@ export function StyleCapture({ personas }: { personas: EditablePersona[] }) {
           />
         </FormField>
         <Button type="submit" size="lg" className="self-start" disabled={!file || isAnalyzing}>
-          {isAnalyzing ? "Analisando o estilo… pode levar até alguns minutos" : "Analisar estilo"}
+          {isAnalyzing ? "Analisando em segundo plano…" : "Analisar estilo"}
         </Button>
         {error && (
           <p role="alert" className="rounded-md border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
             {error}
           </p>
         )}
+        <FollowedTaskStatus background={background} runningTitle="Analisando o estilo do documento" />
       </form>
 
       {result && (

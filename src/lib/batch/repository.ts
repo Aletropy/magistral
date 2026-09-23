@@ -60,6 +60,8 @@ export interface NewBatchRow {
 export interface BatchRepository {
   createJob(name: string, template: MinutaRequest, rows: NewBatchRow[]): string;
   listJobs(): BatchJobSummary[];
+  /** How many jobs still have pending or running items. */
+  countActiveJobs(): number;
   getJob(id: string): BatchJobDetail | null;
   deleteJob(id: string): boolean;
   /** Atomically marks up to `limit` due pending items as running and returns them, oldest job first. */
@@ -132,6 +134,9 @@ export function createBatchRepository(db: DatabaseSync): BatchRepository {
      )
      RETURNING id, job_id, position, row_data, attempts`,
   );
+  const countActive = db.prepare(
+    "SELECT COUNT(DISTINCT job_id) AS count FROM batch_items WHERE status IN ('pending', 'running')",
+  );
   const selectTemplate = db.prepare("SELECT request_template FROM batch_jobs WHERE id = ?");
   const complete = db.prepare(
     "UPDATE batch_items SET status = 'done', markdown = ?, error = NULL WHERE id = ? AND status = 'running'",
@@ -167,6 +172,7 @@ export function createBatchRepository(db: DatabaseSync): BatchRepository {
     },
 
     listJobs: () => selectJobs.all().map(toSummary),
+    countActiveJobs: () => z.object({ count: z.number() }).parse(countActive.get()).count,
 
     getJob(id) {
       const row = selectJob.get(id);

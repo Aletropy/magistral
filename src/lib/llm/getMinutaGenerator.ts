@@ -34,7 +34,7 @@ export function getMinutaGenerator(operation: LlmOperation): MinutaGenerator {
   const provider = resolveLlmProvider(process.env[LLM_PROVIDER_ENV_VAR]);
   const usage = getUsageRepository();
 
-  return withUsageAudit((prompt) => GENERATOR_FACTORIES[provider]()(prompt), {
+  return withUsageAudit((prompt, options) => GENERATOR_FACTORIES[provider]()(prompt, options), {
     operation,
     provider,
     configuredModel: CONFIGURED_MODELS[provider](),

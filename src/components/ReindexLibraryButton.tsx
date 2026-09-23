@@ -1,24 +1,32 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { FollowedTaskStatus } from "@/components/tasks/FollowedTaskStatus";
 import { Button } from "@/components/ui/button";
-import { useLibraryActions } from "@/hooks/useLibraryActions";
-import type { LibraryReindexResponseBody } from "@/lib/http/api";
+import { useBackgroundTask } from "@/hooks/useBackgroundTask";
+import { LIBRARY_REINDEX_ENDPOINT } from "@/lib/http/api";
+import { libraryReindexResultSchema } from "@/lib/rag/taskResults";
+import type { TaskDetail } from "@/lib/tasks/types";
 
-export function ReindexLibraryButton() {
-  const router = useRouter();
-  const { isPending, error, reindex } = useLibraryActions();
+const REINDEX_FAILED = "Não foi possível reindexar a biblioteca. Tente novamente.";
 
-  async function handleClick() {
-    if (await reindex<LibraryReindexResponseBody>()) router.refresh();
-  }
+export function ReindexLibraryButton({ initialTask }: { initialTask: TaskDetail | null }) {
+  const background = useBackgroundTask(libraryReindexResultSchema, initialTask);
+  const { isBusy, startError } = background;
 
   return (
-    <div className="flex flex-col items-start gap-1">
-      <Button type="button" variant="outline" disabled={isPending} onClick={handleClick}>
-        {isPending ? "Reindexando… (pode levar alguns minutos)" : "Reindexar biblioteca"}
+    <div className="flex flex-col items-start gap-2">
+      <Button
+        type="button"
+        variant="outline"
+        disabled={isBusy}
+        onClick={() => void background.start(() => fetch(LIBRARY_REINDEX_ENDPOINT, { method: "POST" }), REINDEX_FAILED)}
+      >
+        {isBusy ? "Reindexando em segundo plano…" : "Reindexar biblioteca"}
       </Button>
-      {error && <p className="text-sm text-destructive">{error}</p>}
+      {startError && <p className="text-sm text-destructive">{startError}</p>}
+      <div className="w-full">
+        <FollowedTaskStatus background={background} runningTitle="Reindexando a biblioteca" />
+      </div>
     </div>
   );
 }

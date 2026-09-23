@@ -22,8 +22,8 @@ export function getStyleExtractor(): StyleExtractor {
   const provider = styleProvider();
   const extract: StyleExtractor =
     provider === "openrouter"
-      ? (text) => createOpenRouterStyleExtractor(getOpenRouterClient(), getOpenRouterModels())(text)
-      : (text) => createGeminiStyleExtractor(getGeminiClient())(text);
+      ? (text, options) => createOpenRouterStyleExtractor(getOpenRouterClient(), getOpenRouterModels())(text, options)
+      : (text, options) => createGeminiStyleExtractor(getGeminiClient())(text, options);
 
   return withUsageAudit(extract, {
     operation: "style_capture",

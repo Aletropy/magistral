@@ -1,36 +1,27 @@
-import { errorResponse, parseJsonBody, type MinutaResponseBody } from "@/lib/http/api";
-import { draftMinuta } from "@/lib/minuta/draftMinuta";
-import { describeDraftingFailure, MinutaRequestError } from "@/lib/minuta/errors";
+import { HTTP_ACCEPTED, HTTP_BAD_REQUEST, errorResponse, parseJsonBody, type TaskCreatedResponseBody } from "@/lib/http/api";
+import { UNEXPECTED_ERROR } from "@/lib/llm/errors";
+import { loadDraftInputs } from "@/lib/minuta/draftMinuta";
+import { draftMinutaTask, draftTaskTitle } from "@/lib/minuta/draftMinutaTask";
+import { MinutaRequestError } from "@/lib/minuta/errors";
 import { minutaRequestSchema } from "@/lib/minuta/schema";
-import { getMinutaRepository } from "@/lib/minutas/getMinutaRepository";
-import { titleFromMarkdown } from "@/lib/minutas/titleFromMarkdown";
-import { resolveDocumentTypeLabel } from "@/lib/prompt/buildUserPrompt";
-import { LibraryIndexMismatchError } from "@/lib/rag/errors";
+import { enqueueTask } from "@/lib/tasks/getTaskWorker";
 
-/** Long contracts with thinking enabled can take minutes to draft. */
-export const maxDuration = 300;
-
+/**
+ * Queues the minuta for drafting and answers at once with the task id: free models take minutes, and the
+ * user can keep working meanwhile. The request is checked first, so bad input still fails right away.
+ */
 export async function POST(request: Request): Promise<Response> {
   const parsed = await parseJsonBody(request, minutaRequestSchema);
   if ("response" in parsed) return parsed.response;
 
   try {
-    const { result, personaName } = await draftMinuta(parsed.data, "minuta");
-    const documentTypeLabel = resolveDocumentTypeLabel(parsed.data);
-    // Every generation goes to the history, so a refresh or a click elsewhere never loses minutes of work.
-    const id = getMinutaRepository().create({
-      title: titleFromMarkdown(result.markdown, documentTypeLabel),
-      personaName,
-      documentTypeLabel,
-      request: parsed.data,
-      result,
-    });
-    return Response.json({ ...result, id } satisfies MinutaResponseBody);
+    loadDraftInputs(parsed.data);
   } catch (error) {
-    if (!(error instanceof MinutaRequestError || error instanceof LibraryIndexMismatchError)) {
-      console.error("[api/minuta] generation failed", error);
-    }
-    const { status, message } = describeDraftingFailure(error);
-    return errorResponse(status, message);
+    if (error instanceof MinutaRequestError) return errorResponse(HTTP_BAD_REQUEST, error.message);
+    console.error("[api/minuta] request check failed", error);
+    return errorResponse(UNEXPECTED_ERROR.status, UNEXPECTED_ERROR.message);
   }
+
+  const taskId = enqueueTask(draftMinutaTask, { title: draftTaskTitle(parsed.data), payload: parsed.data });
+  return Response.json({ taskId } satisfies TaskCreatedResponseBody, { status: HTTP_ACCEPTED });
 }

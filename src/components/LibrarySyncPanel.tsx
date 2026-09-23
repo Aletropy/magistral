@@ -1,12 +1,14 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { FollowedTaskStatus } from "@/components/tasks/FollowedTaskStatus";
 import { Button } from "@/components/ui/button";
-import { useLibraryActions } from "@/hooks/useLibraryActions";
-import type { LibrarySyncResponseBody } from "@/lib/http/api";
-import type { FolderSyncReport } from "@/lib/rag/syncFolder";
+import { useBackgroundTask } from "@/hooks/useBackgroundTask";
+import { LIBRARY_SYNC_ENDPOINT } from "@/lib/http/api";
+import { librarySyncResultSchema, type FolderSyncReport } from "@/lib/rag/taskResults";
+import type { TaskDetail } from "@/lib/tasks/types";
 import { plural } from "@/lib/text/plural";
+
+const SYNC_FAILED = "Não foi possível sincronizar a pasta. Tente novamente.";
 
 function summarize(report: FolderSyncReport): string {
   return [
@@ -20,17 +22,10 @@ function summarize(report: FolderSyncReport): string {
     .join(" · ");
 }
 
-export function LibrarySyncPanel({ folder }: { folder: string }) {
-  const router = useRouter();
-  const [report, setReport] = useState<FolderSyncReport | null>(null);
-  const { isPending, error, sync } = useLibraryActions();
-
-  async function handleSync() {
-    const body = await sync<LibrarySyncResponseBody>();
-    if (!body) return;
-    setReport(body.report);
-    router.refresh();
-  }
+export function LibrarySyncPanel({ folder, initialTask }: { folder: string; initialTask: TaskDetail | null }) {
+  const background = useBackgroundTask(librarySyncResultSchema, initialTask);
+  const { isBusy, startError, result } = background;
+  const report = result?.report ?? null;
 
   return (
     <section className="flex flex-col gap-3 rounded-lg border bg-card p-4">
@@ -40,10 +35,17 @@ export function LibrarySyncPanel({ folder }: { folder: string }) {
         valem) e sincronize. Arquivos novos são indexados, alterados são reindexados e apagados saem da
         biblioteca. O tipo é deduzido do nome (lei, decreto, parecer).
       </p>
-      <Button type="button" variant="outline" className="self-start" disabled={isPending} onClick={handleSync}>
-        {isPending ? "Sincronizando…" : "Sincronizar pasta"}
+      <Button
+        type="button"
+        variant="outline"
+        className="self-start"
+        disabled={isBusy}
+        onClick={() => void background.start(() => fetch(LIBRARY_SYNC_ENDPOINT, { method: "POST" }), SYNC_FAILED)}
+      >
+        {isBusy ? "Sincronizando em segundo plano…" : "Sincronizar pasta"}
       </Button>
-      {error && <p className="text-sm text-destructive">{error}</p>}
+      {startError && <p className="text-sm text-destructive">{startError}</p>}
+      <FollowedTaskStatus background={background} runningTitle="Sincronizando a pasta" />
       {report && (
         <div className="flex flex-col gap-1 text-sm">
           <p>{summarize(report)}</p>

@@ -1,10 +1,11 @@
 import type { z } from "zod";
 import type { BatchJobDetail } from "@/lib/batch/types";
 import type { Clause } from "@/lib/clauses/types";
+import type { AppNotification } from "@/lib/notifications/types";
 import type { ExportFormat } from "@/lib/export/formats";
 import type { Persona } from "@/lib/personas/types";
-import type { FolderSyncReport } from "@/lib/rag/syncFolder";
-import type { StyleCaptureResult } from "@/lib/style/captureStyle";
+import type { StyleCaptureResult } from "@/lib/style/styleCaptureResult";
+import type { TaskDetail, TaskSummary } from "@/lib/tasks/types";
 
 export const MINUTA_ENDPOINT = "/api/minuta";
 export const EXPORT_ENDPOINT = "/api/export";
@@ -56,7 +57,61 @@ export function personaEndpoint(id: string): string {
   return `${PERSONAS_ENDPOINT}/${encodeURIComponent(id)}`;
 }
 
+export const TASKS_ENDPOINT = "/api/tasks";
+
+export function taskEndpoint(id: string): string {
+  return `${TASKS_ENDPOINT}/${encodeURIComponent(id)}`;
+}
+
+export function taskCancelEndpoint(id: string): string {
+  return `${taskEndpoint(id)}/cancel`;
+}
+
+export function taskRetryEndpoint(id: string): string {
+  return `${taskEndpoint(id)}/retry`;
+}
+
+export const NOTIFICATIONS_ENDPOINT = "/api/notifications";
+export const NOTIFICATIONS_READ_ENDPOINT = `${NOTIFICATIONS_ENDPOINT}/read`;
+export const ACTIVITY_ENDPOINT = "/api/activity";
+/** Query parameter of the activity endpoint: the last notification id the client has seen. */
+export const ACTIVITY_SINCE_PARAM = "since";
+
+export function activityEndpoint(since: number | null): string {
+  return since === null ? ACTIVITY_ENDPOINT : `${ACTIVITY_ENDPOINT}?${ACTIVITY_SINCE_PARAM}=${since}`;
+}
+
+/** Every slow action answers 202 with the id of the background task doing the work. */
+export interface TaskCreatedResponseBody {
+  taskId: string;
+}
+
+export interface TaskResponseBody {
+  task: TaskDetail;
+}
+
+export interface TasksResponseBody {
+  tasks: TaskSummary[];
+}
+
+export interface NotificationsResponseBody {
+  notifications: AppNotification[];
+  unreadCount: number;
+}
+
+export interface ActivityResponseBody {
+  activeTasks: TaskSummary[];
+  /** Batch jobs with items still pending or running. */
+  activeBatches: number;
+  unreadCount: number;
+  /** Notifications after the `since` cursor, oldest first; empty on the first poll. */
+  notifications: AppNotification[];
+  /** The cursor for the next poll. */
+  latestId: number;
+}
+
 export const HTTP_CREATED = 201;
+export const HTTP_ACCEPTED = 202;
 export const HTTP_NO_CONTENT = 204;
 export const HTTP_BAD_REQUEST = 400;
 export const HTTP_NOT_FOUND = 404;
@@ -132,29 +187,6 @@ export function minutaEndpoint(id: string): string {
 
 export interface StyleCaptureResponseBody {
   result: StyleCaptureResult;
-}
-
-export type LibraryUploadStatus = "added" | "duplicate" | "failed";
-
-export interface LibraryUploadOutcome {
-  fileName: string;
-  status: LibraryUploadStatus;
-  /** Why the file was skipped or failed, in pt-BR. */
-  message?: string;
-}
-
-export interface LibraryUploadResponseBody {
-  outcomes: LibraryUploadOutcome[];
-}
-
-export interface LibraryReindexResponseBody {
-  chunks: number;
-  model: string;
-}
-
-export interface LibrarySyncResponseBody {
-  folder: string;
-  report: FolderSyncReport;
 }
 
 export interface ClauseResponseBody {

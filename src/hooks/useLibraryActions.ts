@@ -1,64 +1,29 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import {
-  LIBRARY_REINDEX_ENDPOINT,
-  LIBRARY_SOURCES_ENDPOINT,
-  LIBRARY_SYNC_ENDPOINT,
-  NETWORK_ERROR_MESSAGE,
-  UPLOAD_FILE_FIELD,
-  UPLOAD_KIND_FIELD,
-  librarySourceEndpoint,
-  readErrorMessage,
-} from "@/lib/http/api";
-import type { LibrarySourceKind } from "@/lib/rag/types";
+import { NETWORK_ERROR_MESSAGE, librarySourceEndpoint, readErrorMessage } from "@/lib/http/api";
 
-const REQUEST_FAILED = "Não foi possível concluir a operação na biblioteca. Tente novamente.";
+const REMOVE_FAILED = "Não foi possível remover o documento. Tente novamente.";
 
-/** Upload, folder sync and delete for the library; each call resolves to the parsed body, or null on failure. */
+/** Removing a source is quick, so it stays a plain request; the slow library actions run as tasks. */
 export function useLibraryActions() {
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const run = useCallback(async <T,>(request: () => Promise<Response>, parse: (response: Response) => Promise<T>) => {
+  const remove = useCallback(async (id: number) => {
     setIsPending(true);
     setError(null);
     try {
-      const response = await request();
-      if (response.ok) return await parse(response);
-      setError(await readErrorMessage(response, REQUEST_FAILED));
+      const response = await fetch(librarySourceEndpoint(id), { method: "DELETE" });
+      if (response.ok) return true;
+      setError(await readErrorMessage(response, REMOVE_FAILED));
     } catch {
       setError(NETWORK_ERROR_MESSAGE);
     } finally {
       setIsPending(false);
     }
-    return null;
+    return false;
   }, []);
 
-  const upload = useCallback(
-    <T,>(files: File[], kind: LibrarySourceKind) => {
-      const body = new FormData();
-      files.forEach((file) => body.append(UPLOAD_FILE_FIELD, file));
-      body.append(UPLOAD_KIND_FIELD, kind);
-      return run(() => fetch(LIBRARY_SOURCES_ENDPOINT, { method: "POST", body }), (response) => response.json() as Promise<T>);
-    },
-    [run],
-  );
-
-  const sync = useCallback(
-    <T,>() => run(() => fetch(LIBRARY_SYNC_ENDPOINT, { method: "POST" }), (response) => response.json() as Promise<T>),
-    [run],
-  );
-
-  const reindex = useCallback(
-    <T,>() => run(() => fetch(LIBRARY_REINDEX_ENDPOINT, { method: "POST" }), (response) => response.json() as Promise<T>),
-    [run],
-  );
-
-  const remove = useCallback(
-    (id: number) => run(() => fetch(librarySourceEndpoint(id), { method: "DELETE" }), async () => true),
-    [run],
-  );
-
-  return { isPending, error, upload, sync, reindex, remove };
+  return { isPending, error, remove };
 }

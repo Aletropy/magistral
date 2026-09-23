@@ -1,10 +1,13 @@
 import { connection } from "next/server";
 import { MinutaStudio } from "@/components/MinutaStudio";
+import { loadGenerationState } from "@/lib/minuta/loadGenerationState";
 import { loadMinutaFormOptions } from "@/lib/minuta/loadMinutaFormOptions";
+import { readTaskParam } from "@/lib/tasks/readTaskParam";
 
-export default async function Home() {
+export default async function Home({ searchParams }: PageProps<"/">) {
   await connection();
   const options = loadMinutaFormOptions();
+  const initialGeneration = loadGenerationState(readTaskParam(await searchParams));
 
   return (
     <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-8 px-4 py-10 sm:px-8">
@@ -15,7 +18,7 @@ export default async function Home() {
           receba uma minuta pronta para revisar e baixar em Word ou PDF.
         </p>
       </header>
-      <MinutaStudio {...options} />
+      <MinutaStudio {...options} initialGeneration={initialGeneration} />
     </main>
   );
 }

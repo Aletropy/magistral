@@ -3,11 +3,15 @@ import { connection } from "next/server";
 import { StyleCapture } from "@/components/StyleCapture";
 import { getPersonaRepository } from "@/lib/personas/getPersonaRepository";
 import { toPersonaInput } from "@/lib/personas/toPersonaInput";
+import { getTaskRepository } from "@/lib/tasks/getTaskRepository";
+import { readTaskParam } from "@/lib/tasks/readTaskParam";
 
 export const metadata: Metadata = { title: "Capturar estilo" };
 
-export default async function StyleCapturePage() {
+export default async function StyleCapturePage({ searchParams }: PageProps<"/personas/capturar">) {
   await connection();
+  const taskId = readTaskParam(await searchParams);
+  const task = taskId ? getTaskRepository().get(taskId) : null;
   const personas = getPersonaRepository()
     .list()
     .map((persona) => ({ id: persona.id, input: toPersonaInput(persona) }));
@@ -22,7 +26,7 @@ export default async function StyleCapturePage() {
           servir de exemplo.
         </p>
       </header>
-      <StyleCapture personas={personas} />
+      <StyleCapture personas={personas} initialTask={task?.kind === "style.capture" ? task : null} />
     </main>
   );
 }

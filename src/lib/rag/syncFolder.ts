@@ -6,18 +6,10 @@ import { DOCUMENT_EXTRACTION_ERRORS } from "@/lib/documents/messages";
 import type { EmbeddingModel } from "@/lib/llm/embeddings";
 import type { LibraryWorkOptions } from "./embedAll";
 import { LibraryIndexMismatchError } from "./errors";
+import type { FolderSyncReport } from "./taskResults";
 import { inferKindFromFileName, prepareSource, sha256Of } from "./prepareSource";
 import type { LibraryRepository } from "./repository";
 
-export interface FolderSyncReport {
-  added: string[];
-  updated: string[];
-  removed: string[];
-  unchanged: number;
-  /** Files whose content is already in the library under another name. */
-  duplicates: string[];
-  failed: { path: string; message: string }[];
-}
 
 /** Supported files under `root`, as POSIX-style paths relative to it. */
 async function listDocuments(root: string): Promise<string[]> {

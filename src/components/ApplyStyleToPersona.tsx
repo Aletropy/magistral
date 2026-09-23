@@ -7,7 +7,7 @@ import { NATIVE_SELECT_CLASS } from "@/components/ui/nativeSelect";
 import { usePersonaMutations } from "@/hooks/usePersonaMutations";
 import { personaEditPath } from "@/lib/personas/paths";
 import type { PersonaInput } from "@/lib/personas/schema";
-import type { StyleCaptureResult } from "@/lib/style/captureStyle";
+import type { StyleCaptureResult } from "@/lib/style/styleCaptureResult";
 
 export interface EditablePersona {
   id: string;

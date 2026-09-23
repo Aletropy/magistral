@@ -13,7 +13,8 @@ import { parseMarkdown } from "@/lib/markdown/parseMarkdown";
 
 interface ResultPanelProps {
   result: MinutaResponseBody | null;
-  isGenerating: boolean;
+  /** The minuta is ready and being fetched. */
+  isLoading: boolean;
   /** Replaces the minuta's Markdown with the version reviewed in the redline. */
   onReviewApplied: (markdown: string) => void;
   error: string | null;
@@ -27,21 +28,19 @@ function Notice({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function ResultPanel({ result, isGenerating, error, onReviewApplied }: ResultPanelProps) {
+export function ResultPanel({ result, isLoading, error, onReviewApplied }: ResultPanelProps) {
   const blocks = useMemo(() => (result ? parseMarkdown(result.markdown) : []), [result]);
 
   return (
-    <section className="flex flex-col gap-4" aria-live="polite" aria-busy={isGenerating}>
+    <section className="flex flex-col gap-4" aria-live="polite" aria-busy={isLoading}>
       {error && (
         <p role="alert" className="rounded-md border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
           {error}
         </p>
       )}
-      {isGenerating ? (
+      {isLoading ? (
         <Notice>
-          <span className="animate-pulse">
-            Redigindo a minuta com a persona escolhida… isso pode levar alguns minutos.
-          </span>
+          <span className="animate-pulse">Abrindo a minuta pronta…</span>
         </Notice>
       ) : result ? (
         <>

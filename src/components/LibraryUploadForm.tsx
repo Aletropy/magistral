@@ -1,14 +1,16 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/FormField";
 import { FileInput } from "@/components/ui/FileInput";
 import { NATIVE_SELECT_CLASS } from "@/components/ui/nativeSelect";
-import { useLibraryActions } from "@/hooks/useLibraryActions";
+import { FollowedTaskStatus } from "@/components/tasks/FollowedTaskStatus";
+import { useBackgroundTask } from "@/hooks/useBackgroundTask";
 import { DOCUMENT_ACCEPT, MAX_FILES_PER_UPLOAD, MAX_UPLOAD_MEBIBYTES } from "@/lib/documents/formats";
-import type { LibraryUploadOutcome, LibraryUploadResponseBody } from "@/lib/http/api";
+import { LIBRARY_SOURCES_ENDPOINT, UPLOAD_FILE_FIELD, UPLOAD_KIND_FIELD } from "@/lib/http/api";
+import { libraryUploadResultSchema, type LibraryUploadOutcome } from "@/lib/rag/taskResults";
+import type { TaskDetail } from "@/lib/tasks/types";
 import { LIBRARY_SOURCE_KINDS, LIBRARY_SOURCE_KIND_LABELS, type LibrarySourceKind } from "@/lib/rag/types";
 
 const OUTCOME_LABELS: Record<LibraryUploadOutcome["status"], string> = {
@@ -17,19 +19,22 @@ const OUTCOME_LABELS: Record<LibraryUploadOutcome["status"], string> = {
   failed: "✗ Falhou",
 };
 
-export function LibraryUploadForm() {
-  const router = useRouter();
+const UPLOAD_FAILED = "Não foi possível enviar os documentos. Tente novamente.";
+
+/** Uploads documents to the library; indexing runs in the background and the outcomes show when it ends. */
+export function LibraryUploadForm({ initialTask }: { initialTask: TaskDetail | null }) {
   const [files, setFiles] = useState<File[]>([]);
   const [kind, setKind] = useState<LibrarySourceKind>("lei");
-  const [outcomes, setOutcomes] = useState<LibraryUploadOutcome[]>([]);
-  const { isPending, error, upload } = useLibraryActions();
+  const background = useBackgroundTask(libraryUploadResultSchema, initialTask);
+  const { isBusy, startError, result } = background;
+  const outcomes = result?.outcomes ?? [];
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const body = await upload<LibraryUploadResponseBody>(files, kind);
-    if (!body) return;
-    setOutcomes(body.outcomes);
-    router.refresh();
+    const body = new FormData();
+    files.forEach((file) => body.append(UPLOAD_FILE_FIELD, file));
+    body.append(UPLOAD_KIND_FIELD, kind);
+    void background.start(() => fetch(LIBRARY_SOURCES_ENDPOINT, { method: "POST", body }), UPLOAD_FAILED);
   }
 
   return (
@@ -41,13 +46,13 @@ export function LibraryUploadForm() {
           htmlFor="library-files"
           hint={`PDF com texto ou DOCX, até ${MAX_UPLOAD_MEBIBYTES} MB cada, ${MAX_FILES_PER_UPLOAD} por envio.`}
         >
-          <FileInput id="library-files" multiple accept={DOCUMENT_ACCEPT} disabled={isPending} onFiles={setFiles} />
+          <FileInput id="library-files" multiple accept={DOCUMENT_ACCEPT} disabled={isBusy} onFiles={setFiles} />
         </FormField>
         <FormField label="Tipo" htmlFor="library-kind">
           <select
             id="library-kind"
             className={NATIVE_SELECT_CLASS}
-            disabled={isPending}
+            disabled={isBusy}
             value={kind}
             onChange={(event) => setKind(event.target.value as LibrarySourceKind)}
           >
@@ -59,10 +64,11 @@ export function LibraryUploadForm() {
           </select>
         </FormField>
       </div>
-      <Button type="submit" className="self-start" disabled={isPending || files.length === 0}>
-        {isPending ? "Indexando documentos…" : "Adicionar à biblioteca"}
+      <Button type="submit" className="self-start" disabled={isBusy || files.length === 0}>
+        {isBusy ? "Indexando em segundo plano…" : "Adicionar à biblioteca"}
       </Button>
-      {error && <p className="text-sm text-destructive">{error}</p>}
+      {startError && <p className="text-sm text-destructive">{startError}</p>}
+      <FollowedTaskStatus background={background} runningTitle="Indexando os documentos" />
       {outcomes.length > 0 && (
         <ul className="flex flex-col gap-1 text-sm">
           {outcomes.map((outcome) => (

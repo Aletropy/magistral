@@ -3,10 +3,9 @@ import { connection } from "next/server";
 import { DeleteLibrarySourceButton } from "@/components/DeleteLibrarySourceButton";
 import { LibrarySyncPanel } from "@/components/LibrarySyncPanel";
 import { LibraryUploadForm } from "@/components/LibraryUploadForm";
-import { LoadExamplesButton } from "@/components/LoadExamplesButton";
+import { LoadLibraryExamplesButton } from "@/components/LoadLibraryExamplesButton";
 import { ReindexLibraryButton } from "@/components/ReindexLibraryButton";
 import { WarningCallout } from "@/components/ui/WarningCallout";
-import { DEMO_LIBRARY_ENDPOINT } from "@/lib/http/api";
 import { getActiveEmbeddingIdentity } from "@/lib/llm/getEmbedder";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -15,13 +14,23 @@ import { getLibraryRepository } from "@/lib/rag/getLibraryRepository";
 import { FULL_CONTEXT_MAX_CHARS } from "@/lib/rag/selectContext";
 import { LIBRARY_INDEX_MISMATCH_MESSAGE } from "@/lib/rag/errors";
 import { LIBRARY_SOURCE_KIND_LABELS } from "@/lib/rag/types";
+import { getTaskRepository } from "@/lib/tasks/getTaskRepository";
+import { readTaskParam } from "@/lib/tasks/readTaskParam";
+import type { TaskDetail, TaskKind } from "@/lib/tasks/types";
 import { plural } from "@/lib/text/plural";
 import { formatDateTime, formatInteger } from "@/lib/usage/format";
 
 export const metadata: Metadata = { title: "Biblioteca jurídica" };
 
-export default async function LibraryPage() {
+/** The library task the page was opened with (`?tarefa=`), for the component that started that kind. */
+function taskOfKind(task: TaskDetail | null, kind: TaskKind): TaskDetail | null {
+  return task?.kind === kind ? task : null;
+}
+
+export default async function LibraryPage({ searchParams }: PageProps<"/biblioteca">) {
   await connection();
+  const taskId = readTaskParam(await searchParams);
+  const task = taskId ? getTaskRepository().get(taskId) : null;
   const library = getLibraryRepository();
   const sources = library.listSources();
   const totalChars = library.totalChars();
@@ -51,13 +60,13 @@ export default async function LibraryPage() {
       {needsReindex && (
         <WarningCallout className="flex flex-col gap-3">
           <p>{LIBRARY_INDEX_MISMATCH_MESSAGE}</p>
-          <ReindexLibraryButton />
+          <ReindexLibraryButton initialTask={taskOfKind(task, "library.reindex")} />
         </WarningCallout>
       )}
 
       <div className="grid items-start gap-4 lg:grid-cols-2">
-        <LibraryUploadForm />
-        <LibrarySyncPanel folder={resolveLibraryDir()} />
+        <LibraryUploadForm initialTask={taskOfKind(task, "library.upload")} />
+        <LibrarySyncPanel folder={resolveLibraryDir()} initialTask={taskOfKind(task, "library.sync")} />
       </div>
 
       <div className="rounded-lg border bg-card">
@@ -80,12 +89,7 @@ export default async function LibraryPage() {
                   <div className="flex flex-col items-start gap-3 py-4">
                     A biblioteca está vazia. Envie leis, decretos e pareceres, ou experimente com uma lei e um
                     decreto fictícios de exemplo.
-                    <LoadExamplesButton
-                      endpoint={DEMO_LIBRARY_ENDPOINT}
-                      label="Carregar exemplos"
-                      pendingLabel="Indexando exemplos…"
-                      note="Na primeira vez, o modelo de busca (cerca de 190 MB) é baixado; pode levar alguns minutos."
-                    />
+                    <LoadLibraryExamplesButton initialTask={taskOfKind(task, "library.demo")} />
                   </div>
                 </TableCell>
               </TableRow>

@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useEffect, useRef } from "react";
 import { MinutaForm } from "@/components/MinutaForm";
 import { ResultPanel } from "@/components/ResultPanel";
-import { useMinutaGeneration } from "@/hooks/useMinutaGeneration";
+import { FollowedTaskStatus } from "@/components/tasks/FollowedTaskStatus";
+import { useMinutaGeneration, type MinutaGenerationInitialState } from "@/hooks/useMinutaGeneration";
 import { useReviewPersistence } from "@/hooks/useReviewPersistence";
 import type { ClauseOption } from "@/lib/clauses/types";
 import { minutaPath } from "@/lib/minutas/paths";
@@ -14,10 +15,12 @@ interface MinutaStudioProps {
   personas: PersonaSummary[];
   clauses: ClauseOption[];
   librarySourceCount: number;
+  initialGeneration?: MinutaGenerationInitialState;
 }
 
-export function MinutaStudio({ personas, clauses, librarySourceCount }: MinutaStudioProps) {
-  const { result, isGenerating, error, generate, replaceMarkdown } = useMinutaGeneration();
+export function MinutaStudio({ personas, clauses, librarySourceCount, initialGeneration }: MinutaStudioProps) {
+  const { background, result, isWorking, showTaskStatus, isLoadingResult, error, generate, replaceMarkdown } =
+    useMinutaGeneration(initialGeneration);
   const { persist, saveError } = useReviewPersistence();
   const resultRef = useRef<HTMLDivElement>(null);
   const resultId = result?.id;
@@ -38,11 +41,12 @@ export function MinutaStudio({ personas, clauses, librarySourceCount }: MinutaSt
         personas={personas}
         clauses={clauses}
         librarySourceCount={librarySourceCount}
-        isSubmitting={isGenerating}
-        onSubmit={generate}
+        isSubmitting={isWorking}
+        submittingLabel="Gerando em segundo plano…"
+        onSubmit={(request) => void generate(request)}
       />
       <div ref={resultRef} className="flex scroll-mt-4 flex-col gap-3">
-        {result && !isGenerating && (
+        {result && !isWorking && (
           <p className="text-sm text-muted-foreground">
             Salva no{" "}
             <Link href={minutaPath(result.id)} className="text-primary hover:underline">
@@ -52,7 +56,14 @@ export function MinutaStudio({ personas, clauses, librarySourceCount }: MinutaSt
           </p>
         )}
         {saveError && <p className="text-sm text-destructive">{saveError}</p>}
-        <ResultPanel result={result} isGenerating={isGenerating} error={error} onReviewApplied={handleReviewApplied} />
+        {showTaskStatus ? (
+          <>
+            {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
+            <FollowedTaskStatus background={background} runningTitle="Redigindo a minuta" />
+          </>
+        ) : (
+          <ResultPanel result={result} isLoading={isLoadingResult} error={error} onReviewApplied={handleReviewApplied} />
+        )}
       </div>
     </div>
   );

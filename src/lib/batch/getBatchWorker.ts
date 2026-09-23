@@ -1,6 +1,8 @@
 import "server-only";
 import { describeDraftingFailure } from "@/lib/minuta/errors";
+import { getNotificationRepository } from "@/lib/notifications/getNotificationRepository";
 import { isRetryableFailure } from "@/lib/queue/retryPolicy";
+import { describeFinishedJob } from "./describeFinishedJob";
 import { getBatchRepository } from "./getBatchRepository";
 import { processBatchItem } from "./processBatchItem";
 import { createBatchWorker, type BatchWorker } from "./worker";
@@ -14,6 +16,7 @@ export function getBatchWorker(): BatchWorker {
     processItem: processBatchItem,
     isRetryable: (error) => isRetryableFailure(describeDraftingFailure(error)),
     describeError: (error) => describeDraftingFailure(error).message,
+    onJobFinished: (job) => getNotificationRepository().create({ ...describeFinishedJob(job), taskId: null }),
   });
   return globalForWorker.magistralBatchWorker;
 }

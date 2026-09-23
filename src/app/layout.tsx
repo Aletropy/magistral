@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Geist } from "next/font/google";
+import { ActivityProvider } from "@/components/activity/ActivityProvider";
 import { AppNav } from "@/components/AppNav";
+import { Toaster } from "@/components/ui/sonner";
 import { THEME_INIT_SCRIPT } from "@/lib/theme/theme";
 import "./globals.css";
 
@@ -22,8 +24,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>
       <body className="flex min-h-full flex-col">
-        <AppNav />
-        {children}
+        <ActivityProvider>
+          <AppNav />
+          {children}
+          <Toaster position="bottom-right" closeButton />
+        </ActivityProvider>
       </body>
     </html>
   );

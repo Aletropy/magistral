@@ -1,8 +1,21 @@
-import { HTTP_NOT_FOUND, HTTP_NO_CONTENT, errorResponse, parseJsonBody } from "@/lib/http/api";
+import {
+  HTTP_NOT_FOUND,
+  HTTP_NO_CONTENT,
+  errorResponse,
+  parseJsonBody,
+  type MinutaResponseBody,
+} from "@/lib/http/api";
 import { UNEXPECTED_ERROR } from "@/lib/llm/errors";
 import { getMinutaRepository } from "@/lib/minutas/getMinutaRepository";
 import { MINUTA_NOT_FOUND_MESSAGE } from "@/lib/minutas/messages";
 import { minutaUpdateSchema } from "@/lib/minutas/schema";
+
+/** A saved minuta with its drafting report, as the result panel shows it. */
+export async function GET(_request: Request, ctx: RouteContext<"/api/minutas/[id]">): Promise<Response> {
+  const minuta = getMinutaRepository().get((await ctx.params).id);
+  if (!minuta) return errorResponse(HTTP_NOT_FOUND, MINUTA_NOT_FOUND_MESSAGE);
+  return Response.json({ ...minuta.result, id: minuta.id } satisfies MinutaResponseBody);
+}
 
 /** Saves a reviewed version of the minuta's text. */
 export async function PUT(request: Request, ctx: RouteContext<"/api/minutas/[id]">): Promise<Response> {

@@ -4,6 +4,7 @@ import { Menu, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, type KeyboardEvent } from "react";
+import { NotificationBell } from "@/components/activity/NotificationBell";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
 import { BATCHES_PATH } from "@/lib/batch/paths";
@@ -11,6 +12,7 @@ import { CLAUSES_PATH } from "@/lib/clauses/paths";
 import { HISTORY_PATH, HOME_PATH } from "@/lib/minutas/paths";
 import { PERSONAS_PATH } from "@/lib/personas/paths";
 import { LIBRARY_PATH } from "@/lib/rag/paths";
+import { TASKS_PATH } from "@/lib/tasks/paths";
 import { USAGE_PATH } from "@/lib/usage/paths";
 import { cn } from "@/lib/utils";
 
@@ -21,6 +23,7 @@ const NAV_LINKS = [
   { href: LIBRARY_PATH, label: "Biblioteca" },
   { href: CLAUSES_PATH, label: "Cláusulas" },
   { href: BATCHES_PATH, label: "Lotes" },
+  { href: TASKS_PATH, label: "Tarefas" },
   { href: USAGE_PATH, label: "Uso" },
 ] as const;
 
@@ -72,6 +75,7 @@ export function AppNav() {
         </Link>
         <NavLinks pathname={pathname} className="hidden gap-1 lg:flex" />
         <div className="ml-auto flex items-center gap-1">
+          <NotificationBell />
           <ThemeToggle />
           <Button
             type="button"

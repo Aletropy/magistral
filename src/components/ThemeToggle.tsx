@@ -1,21 +1,9 @@
 "use client";
 
 import { Moon, Sun } from "lucide-react";
-import { useSyncExternalStore } from "react";
 import { Button } from "@/components/ui/button";
+import { useCurrentTheme } from "@/hooks/useCurrentTheme";
 import { currentTheme, setTheme, type Theme } from "@/lib/theme/theme";
-
-/** Re-renders when the <html> class changes, whether from this button or from the OS preference. */
-function subscribe(onChange: () => void): () => void {
-  const observer = new MutationObserver(onChange);
-  observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
-  return () => observer.disconnect();
-}
-
-/** The server can't know the theme; null keeps the first client render identical to the server's. */
-function serverTheme(): Theme | null {
-  return null;
-}
 
 const LABELS: Record<Theme | "unknown", string> = {
   light: "Ativar tema escuro",
@@ -24,7 +12,7 @@ const LABELS: Record<Theme | "unknown", string> = {
 };
 
 export function ThemeToggle() {
-  const theme = useSyncExternalStore(subscribe, currentTheme, serverTheme);
+  const theme = useCurrentTheme();
   const label = LABELS[theme ?? "unknown"];
 
   return (
