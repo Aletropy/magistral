@@ -34,5 +34,10 @@ export function useMinutaGeneration() {
     }
   }, []);
 
-  return { result, isGenerating, error, generate };
+  /** Swaps in a reviewed version of the Markdown; the other response fields stay as generated. */
+  const replaceMarkdown = useCallback((markdown: string) => {
+    setResult((previous) => (previous ? { ...previous, markdown } : previous));
+  }, []);
+
+  return { result, isGenerating, error, generate, replaceMarkdown };
 }

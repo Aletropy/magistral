@@ -7,7 +7,9 @@ import {
   closestCenter,
   useSensor,
   useSensors,
+  type Announcements,
   type DragEndEvent,
+  type ScreenReaderInstructions,
 } from "@dnd-kit/core";
 import {
   SortableContext,
@@ -26,6 +28,11 @@ import type { DocumentTypeId } from "@/lib/minuta/documentTypes";
 
 /** A fixed id keeps dnd-kit's accessibility ids identical on the server and the client. */
 const DND_CONTEXT_ID = "approved-clauses";
+
+const SCREEN_READER_INSTRUCTIONS: ScreenReaderInstructions = {
+  draggable:
+    "Para reordenar, pressione espaço para pegar a cláusula, use as setas para cima e para baixo para movê-la e espaço de novo para soltar. Esc cancela.",
+};
 
 export type ClauseOption = Pick<Clause, "id" | "title" | "category" | "documentTypes" | "body">;
 
@@ -89,6 +96,16 @@ export function ApprovedClausesField({ clauses, documentType, value, error, disa
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
   const byId = new Map(clauses.map((clause) => [clause.id, clause]));
+  const titleOf = (id: string | number) => byId.get(String(id))?.title ?? "";
+  const positionOf = (id: string | number) => value.indexOf(String(id)) + 1;
+  const announcements: Announcements = {
+    onDragStart: ({ active }) => `Cláusula “${titleOf(active.id)}” selecionada, posição ${positionOf(active.id)}.`,
+    onDragOver: ({ active, over }) =>
+      over ? `“${titleOf(active.id)}” sobre a posição ${positionOf(over.id)}.` : `“${titleOf(active.id)}” fora da lista.`,
+    onDragEnd: ({ active, over }) =>
+      over ? `“${titleOf(active.id)}” movida para a posição ${positionOf(over.id)}.` : `“${titleOf(active.id)}” solta.`,
+    onDragCancel: ({ active }) => `Movimento cancelado; “${titleOf(active.id)}” voltou à posição original.`,
+  };
   const selected = value.flatMap((id) => byId.get(id) ?? []);
   const available = clauses.filter((clause) => !value.includes(clause.id) && clauseAppliesTo(clause, documentType));
   const isFull = value.length >= MAX_APPROVED_CLAUSES;
@@ -111,7 +128,13 @@ export function ApprovedClausesField({ clauses, documentType, value, error, disa
       </p>
 
       {selected.length > 0 && (
-        <DndContext id={DND_CONTEXT_ID} sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <DndContext
+          id={DND_CONTEXT_ID}
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          accessibility={{ announcements, screenReaderInstructions: SCREEN_READER_INSTRUCTIONS }}
+          onDragEnd={handleDragEnd}
+        >
           <SortableContext items={value} strategy={verticalListSortingStrategy}>
             <ol className="flex flex-col gap-1.5">
               {selected.map((clause, index) => (

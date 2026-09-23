@@ -5,12 +5,14 @@ import { useMemo, useState, type KeyboardEvent } from "react";
 import { EditableList } from "@/components/EditableList";
 import { ForbiddenTermsWarning } from "@/components/ForbiddenTermsWarning";
 import { MinutaPreview } from "@/components/MinutaPreview";
+import { RedlineViewer } from "@/components/RedlineViewer";
 import { StyleSlidersField } from "@/components/StyleSlidersField";
 import { TagInput } from "@/components/TagInput";
 import { TemperatureField } from "@/components/TemperatureField";
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/FormField";
 import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { usePersonaMutations } from "@/hooks/usePersonaMutations";
 import { usePlaygroundRun } from "@/hooks/usePlaygroundRun";
@@ -190,7 +192,18 @@ export function PersonaPlayground({ personaId, persona }: PersonaPlaygroundProps
           ) : result ? (
             <>
               <ForbiddenTermsWarning terms={result.forbiddenTermsFound} />
-              <MinutaPreview blocks={blocks} />
+              <Tabs defaultValue="rewritten">
+                <TabsList>
+                  <TabsTrigger value="rewritten">Texto</TabsTrigger>
+                  <TabsTrigger value="diff">Diferenças</TabsTrigger>
+                </TabsList>
+                <TabsContent value="rewritten">
+                  <MinutaPreview blocks={blocks} />
+                </TabsContent>
+                <TabsContent value="diff">
+                  <RedlineViewer original={result.sampleText} revised={result.markdown} />
+                </TabsContent>
+              </Tabs>
             </>
           ) : (
             <div className="flex min-h-64 items-center justify-center rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">

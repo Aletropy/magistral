@@ -15,6 +15,7 @@ export function clauseEndpoint(id: string): string {
   return `${CLAUSES_ENDPOINT}/${encodeURIComponent(id)}`;
 }
 
+export const EXTRACT_TEXT_ENDPOINT = "/api/documents/extract";
 export const LIBRARY_SOURCES_ENDPOINT = "/api/library/sources";
 export const LIBRARY_SYNC_ENDPOINT = "/api/library/sync";
 
@@ -66,6 +67,17 @@ export interface MinutaResponseBody extends RewriteResponseBody {
   retrievalStrategy: "full" | "search" | null;
   /** False when the model moved the approved clauses out of the order the user chose. */
   approvedClauseOrderKept: boolean;
+  /** The approved clauses as the user wrote them, in order, so the redline can show what the AI changed. */
+  approvedClauses: ApprovedClauseText[];
+}
+
+export interface ApprovedClauseText {
+  title: string;
+  body: string;
+}
+
+export interface ExtractTextResponseBody {
+  text: string;
 }
 
 export type PlaygroundResponseBody = RewriteResponseBody;

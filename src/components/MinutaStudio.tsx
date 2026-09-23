@@ -13,7 +13,7 @@ interface MinutaStudioProps {
 }
 
 export function MinutaStudio({ personas, clauses, librarySourceCount }: MinutaStudioProps) {
-  const { result, isGenerating, error, generate } = useMinutaGeneration();
+  const { result, isGenerating, error, generate, replaceMarkdown } = useMinutaGeneration();
 
   return (
     <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,26rem)_minmax(0,1fr)]">
@@ -24,7 +24,7 @@ export function MinutaStudio({ personas, clauses, librarySourceCount }: MinutaSt
         isSubmitting={isGenerating}
         onSubmit={generate}
       />
-      <ResultPanel result={result} isGenerating={isGenerating} error={error} />
+      <ResultPanel result={result} isGenerating={isGenerating} error={error} onReviewApplied={replaceMarkdown} />
     </div>
   );
 }

@@ -5,7 +5,7 @@ import {
   type MinutaResponseBody,
 } from "@/lib/http/api";
 import { getClauseRepository } from "@/lib/clauses/getClauseRepository";
-import { isApprovedClauseOrderKept } from "@/lib/clauses/checkApprovedClauseOrder";
+import { isApprovedClauseOrderKept } from "@/lib/clauses/locateClauseSections";
 import { APPROVED_CLAUSE_MISSING_MESSAGE } from "@/lib/clauses/messages";
 import { generateMinuta } from "@/lib/llm/generateMinuta";
 import { getEmbedder } from "@/lib/llm/getEmbedder";
@@ -56,6 +56,7 @@ export async function POST(request: Request): Promise<Response> {
         markdown,
         approvedClauses.map((clause) => clause.title),
       ),
+      approvedClauses: approvedClauses.map(({ title, body }) => ({ title, body })),
     } satisfies MinutaResponseBody);
   } catch (error) {
     console.error("[api/minuta] generation failed", error);

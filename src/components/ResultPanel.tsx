@@ -4,6 +4,8 @@ import { useMemo } from "react";
 import { DownloadButtons } from "@/components/DownloadButtons";
 import { ConsultedSources } from "@/components/ConsultedSources";
 import { ForbiddenTermsWarning } from "@/components/ForbiddenTermsWarning";
+import { RedlinePanel } from "@/components/RedlinePanel";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MinutaPreview } from "@/components/MinutaPreview";
 import type { MinutaResponseBody } from "@/lib/http/api";
 import { parseMarkdown } from "@/lib/markdown/parseMarkdown";
@@ -11,6 +13,8 @@ import { parseMarkdown } from "@/lib/markdown/parseMarkdown";
 interface ResultPanelProps {
   result: MinutaResponseBody | null;
   isGenerating: boolean;
+  /** Replaces the minuta's Markdown with the version reviewed in the redline. */
+  onReviewApplied: (markdown: string) => void;
   error: string | null;
 }
 
@@ -22,7 +26,7 @@ function Notice({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function ResultPanel({ result, isGenerating, error }: ResultPanelProps) {
+export function ResultPanel({ result, isGenerating, error, onReviewApplied }: ResultPanelProps) {
   const blocks = useMemo(() => (result ? parseMarkdown(result.markdown) : []), [result]);
 
   return (
@@ -49,7 +53,22 @@ export function ResultPanel({ result, isGenerating, error }: ResultPanelProps) {
             </p>
           )}
           <ConsultedSources sources={result.consultedSources} strategy={result.retrievalStrategy} />
-          <MinutaPreview blocks={blocks} />
+          <Tabs defaultValue="document">
+            <TabsList>
+              <TabsTrigger value="document">Documento</TabsTrigger>
+              <TabsTrigger value="redline">Comparar (redline)</TabsTrigger>
+            </TabsList>
+            <TabsContent value="document">
+              <MinutaPreview blocks={blocks} />
+            </TabsContent>
+            <TabsContent value="redline">
+              <RedlinePanel
+                markdown={result.markdown}
+                approvedClauses={result.approvedClauses}
+                onApply={onReviewApplied}
+              />
+            </TabsContent>
+          </Tabs>
         </>
       ) : (
         <Notice>Preencha o formulário e clique em “Gerar minuta” para ver o documento aqui.</Notice>
