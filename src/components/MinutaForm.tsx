@@ -1,0 +1,133 @@
+"use client";
+
+import { useState, type FormEvent } from "react";
+import { PartiesField } from "@/components/PartiesField";
+import { PersonaSelector } from "@/components/PersonaSelector";
+import { FormField } from "@/components/ui/FormField";
+import { INPUT_CLASS, PRIMARY_BUTTON_CLASS } from "@/components/ui/styles";
+import {
+  DEFAULT_DOCUMENT_TYPE_ID,
+  DOCUMENT_TYPE_IDS,
+  DOCUMENT_TYPE_LABELS,
+  OTHER_DOCUMENT_TYPE_ID,
+  type DocumentTypeId,
+} from "@/lib/minuta/documentTypes";
+import {
+  MAX_CLAUSES_CHARS,
+  MAX_CUSTOM_DOCUMENT_TYPE_CHARS,
+  collectFieldErrors,
+  minutaRequestSchema,
+  type MinutaFormValues,
+  type MinutaRequest,
+} from "@/lib/minuta/schema";
+import { DEFAULT_PERSONA_ID } from "@/lib/personas/catalog";
+
+const CLAUSES_ROWS = 6;
+
+const INITIAL_VALUES: MinutaFormValues = {
+  documentType: DEFAULT_DOCUMENT_TYPE_ID,
+  customDocumentType: "",
+  parties: [
+    { name: "", role: "Contratante", qualification: "" },
+    { name: "", role: "Contratada", qualification: "" },
+  ],
+  clauses: "",
+  persona: DEFAULT_PERSONA_ID,
+};
+
+interface MinutaFormProps {
+  isSubmitting: boolean;
+  onSubmit: (request: MinutaRequest) => void;
+}
+
+export function MinutaForm({ isSubmitting, onSubmit }: MinutaFormProps) {
+  const [values, setValues] = useState<MinutaFormValues>(INITIAL_VALUES);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  function update<K extends keyof MinutaFormValues>(field: K, value: MinutaFormValues[K]) {
+    setValues((previous) => ({ ...previous, [field]: value }));
+  }
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const result = minutaRequestSchema.safeParse(values);
+    if (!result.success) {
+      setErrors(collectFieldErrors(result.error));
+      return;
+    }
+    setErrors({});
+    onSubmit(result.data);
+  }
+
+  return (
+    <form className="flex flex-col gap-6" noValidate onSubmit={handleSubmit}>
+      <FormField label="Tipo de documento" htmlFor="documentType" error={errors.documentType}>
+        <select
+          id="documentType"
+          className={INPUT_CLASS}
+          disabled={isSubmitting}
+          value={values.documentType}
+          onChange={(event) => update("documentType", event.target.value as DocumentTypeId)}
+        >
+          {DOCUMENT_TYPE_IDS.map((id) => (
+            <option key={id} value={id}>
+              {DOCUMENT_TYPE_LABELS[id]}
+            </option>
+          ))}
+        </select>
+      </FormField>
+
+      {values.documentType === OTHER_DOCUMENT_TYPE_ID && (
+        <FormField label="Qual documento?" htmlFor="customDocumentType" error={errors.customDocumentType}>
+          <input
+            id="customDocumentType"
+            className={INPUT_CLASS}
+            placeholder="Ex.: Termo de Cessão de Direitos Autorais"
+            maxLength={MAX_CUSTOM_DOCUMENT_TYPE_CHARS}
+            disabled={isSubmitting}
+            value={values.customDocumentType}
+            aria-invalid={Boolean(errors.customDocumentType)}
+            onChange={(event) => update("customDocumentType", event.target.value)}
+          />
+        </FormField>
+      )}
+
+      <PartiesField
+        parties={values.parties}
+        errors={errors}
+        disabled={isSubmitting}
+        onChange={(parties) => update("parties", parties)}
+      />
+
+      <FormField
+        label="Cláusulas específicas (opcional)"
+        htmlFor="clauses"
+        error={errors.clauses}
+        hint={`${values.clauses.length}/${MAX_CLAUSES_CHARS} caracteres. Descreva prazos, valores, multas, foro…`}
+      >
+        <textarea
+          id="clauses"
+          className={INPUT_CLASS}
+          rows={CLAUSES_ROWS}
+          maxLength={MAX_CLAUSES_CHARS}
+          disabled={isSubmitting}
+          placeholder="Ex.: Pagamento mensal de R$ 5.000 até o dia 10; multa de 2% por atraso; foro de São Paulo."
+          value={values.clauses}
+          aria-invalid={Boolean(errors.clauses)}
+          onChange={(event) => update("clauses", event.target.value)}
+        />
+      </FormField>
+
+      <PersonaSelector
+        value={values.persona}
+        error={errors.persona}
+        disabled={isSubmitting}
+        onChange={(persona) => update("persona", persona)}
+      />
+
+      <button type="submit" className={PRIMARY_BUTTON_CLASS} disabled={isSubmitting}>
+        {isSubmitting ? "Gerando minuta…" : "Gerar minuta"}
+      </button>
+    </form>
+  );
+}
