@@ -29,3 +29,16 @@ export interface GenerationOptions {
 
 /** Provider-specific call that turns a prompt into the minuta's Markdown, or throws. */
 export type MinutaGenerator = (prompt: MinutaPrompt, options?: GenerationOptions) => Promise<GenerationResult>;
+
+/** A JSON Schema the answer must follow, with the name providers show in structured-output requests. */
+export interface JsonSchemaSpec {
+  name: string;
+  schema: Record<string, unknown>;
+}
+
+/** A call whose answer is JSON following `schema` (the text is parsed and validated by the caller). */
+export type StructuredGenerator = (
+  prompt: MinutaPrompt,
+  schema: JsonSchemaSpec,
+  options?: GenerationOptions,
+) => Promise<GenerationResult>;

@@ -1,5 +1,4 @@
 import { describe, expect, it, vi } from "vitest";
-import type { StyleExtraction } from "@/lib/style/styleProfileSchema";
 import {
   CONFIGURATION_ERROR,
   DAILY_QUOTA_EXHAUSTED,
@@ -10,8 +9,8 @@ import {
 import { OpenRouterApiError, type ChatCompletion, type OpenRouterClient } from "./api";
 import { DEFAULT_OPENROUTER_MODELS, OPENROUTER_BASE_URL, resolveOpenRouterModels } from "./config";
 import { openRouterErrorInfo } from "./errors";
-import { createOpenRouterStyleExtractor } from "./extractStyle";
 import { createOpenRouterGenerator } from "./generate";
+import { createOpenRouterJsonGenerator } from "./generateJson";
 import { createOpenRouterClient, rotateModels } from "./httpClient";
 
 const PROMPT = { system: "Você é um advogado.", user: "Redija um NDA.", temperature: 0.3 };
@@ -70,43 +69,26 @@ describe("createOpenRouterGenerator", () => {
 
 });
 
-describe("createOpenRouterStyleExtractor", () => {
+describe("createOpenRouterJsonGenerator", () => {
+  const SCHEMA = {
+    name: "perfil",
+    schema: { $schema: "https://json-schema.org/draft/2020-12/schema", type: "object" },
+  };
+
   it("requests strict JSON only from providers that support it, without the $schema keyword", async () => {
-    const extraction: StyleExtraction = {
-      profile: {
-        structuralFramework: "Cláusulas.",
-        sectionOrder: [],
-        vocabularyComplexity: "média",
-        vocabularyNotes: "",
-        sentenceLength: { averageWords: 20, shortPercent: 30, mediumPercent: 50, longPercent: 20, notes: "" },
-        headerConventions: "Caixa alta.",
-        headerExamples: [],
-        citationFormatting: "nenhuma",
-        tone: "Direto.",
-        recurringExpressions: [],
-        formattingRules: [],
-      },
-      suggestedName: "Contratos",
-      suggestedSystemInstruction: "Você é um advogado.",
-      suggestedToneParameters: [],
-      keyExcerpts: [],
-    };
-    const { client, chat } = fakeClient(completion({ message: { content: JSON.stringify(extraction), refusal: null } }));
+    const { client, chat } = fakeClient(completion({ message: { content: '{"tom":"direto"}', refusal: null } }));
+    const { signal } = new AbortController();
 
-    await expect(createOpenRouterStyleExtractor(client, MODELS)("Texto.")).resolves.toMatchObject({ extraction });
-    const request = chat.mock.calls[0][0];
-    expect(request.provider).toEqual({ require_parameters: true });
-    expect(request.response_format?.json_schema.strict).toBe(true);
-    expect(request.response_format?.json_schema.schema).not.toHaveProperty("$schema");
-  });
-
-  it("rejects malformed JSON as invalid output", async () => {
-    const { client } = fakeClient(completion({ message: { content: "{perfil", refusal: null } }));
-    await expect(createOpenRouterStyleExtractor(client, MODELS)("Texto.")).rejects.toMatchObject({
-      reason: "invalid_output",
+    await expect(createOpenRouterJsonGenerator(client, MODELS)(PROMPT, SCHEMA, { signal })).resolves.toMatchObject({
+      text: '{"tom":"direto"}',
     });
+    const [request, options] = chat.mock.calls[0];
+    expect(request.provider).toEqual({ require_parameters: true });
+    expect(request.response_format?.json_schema).toEqual({ name: "perfil", strict: true, schema: { type: "object" } });
+    expect(options).toEqual({ signal });
   });
 });
+
 
 describe("createOpenRouterClient", () => {
   function fetchReturning(status: number, body: unknown) {
