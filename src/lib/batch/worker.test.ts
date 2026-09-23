@@ -3,7 +3,8 @@ import { IN_MEMORY_DATABASE, openDatabase } from "@/lib/db/openDatabase";
 import type { MinutaRequest } from "@/lib/minuta/schema";
 import { createBatchRepository, type BatchRepository } from "./repository";
 import type { ClaimedBatchItem } from "./types";
-import { BATCH_MAX_ATTEMPTS, createBatchWorker, retryDelayMs } from "./worker";
+import { retryDelayMs } from "@/lib/queue/retryPolicy";
+import { BATCH_MAX_ATTEMPTS, createBatchWorker } from "./worker";
 
 const TEMPLATE: MinutaRequest = {
   documentType: "outro",
@@ -141,6 +142,35 @@ describe("createBatchWorker", () => {
     worker.start();
     await vi.waitFor(() => expect(batches.getJob(jobId)!.counts.done).toBe(3));
     worker.stop();
+  });
+
+  it("reports a finished job exactly once, and again after its failed items are retried", async () => {
+    const finished: string[] = [];
+    const batches = createBatchRepository(openDatabase(IN_MEMORY_DATABASE));
+    const jobId = batches.createJob("Lote", TEMPLATE, ROWS);
+    let fail = true;
+    const worker = createBatchWorker({
+      batches,
+      processItem: async (item) => {
+        if (fail && item.row.nome === "Carla") throw new Error("inválido");
+        return "# ok";
+      },
+      isRetryable: () => false,
+      describeError: () => "erro",
+      onJobFinished: (job) => finished.push(`${job.counts.done}/${job.counts.failed}`),
+      concurrency: 2,
+      now: () => START,
+    });
+
+    await worker.tick();
+    expect(finished).toEqual([]);
+    await worker.tick();
+    expect(finished).toEqual(["2/1"]);
+
+    fail = false;
+    batches.retryFailedItems(jobId, START);
+    await worker.tick();
+    expect(finished).toEqual(["2/1", "3/0"]);
   });
 
   it("ignores the result of an item whose job was deleted mid-flight", async () => {

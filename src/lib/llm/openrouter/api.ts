@@ -65,7 +65,12 @@ export interface ChatRequest {
   provider?: { require_parameters: boolean };
 }
 
+export interface ChatCallOptions {
+  /** Aborts the request; the call then rejects with an abort error and is never retried. */
+  signal?: AbortSignal;
+}
+
 /** The one call the app makes to OpenRouter; injectable so tests can fake it. */
 export interface OpenRouterClient {
-  chat(request: ChatRequest): Promise<ChatCompletion>;
+  chat(request: ChatRequest, options?: ChatCallOptions): Promise<ChatCompletion>;
 }

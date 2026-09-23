@@ -1,5 +1,6 @@
 import type { ClauseRepository } from "@/lib/clauses/repository";
 import type { EmbeddingModel } from "@/lib/llm/embeddings";
+import type { LibraryWorkOptions } from "@/lib/rag/embedAll";
 import { ingestText } from "@/lib/rag/ingest";
 import type { LibraryRepository } from "@/lib/rag/repository";
 import { normalizeForMatch } from "@/lib/text/normalizeForMatch";
@@ -15,10 +16,17 @@ export function loadDemoClauses(clauses: ClauseRepository): number {
 }
 
 /** Indexes the example norms that aren't in the library yet; returns how many were added. */
-export async function loadDemoLibrary(library: LibraryRepository, embedding: EmbeddingModel): Promise<number> {
+export async function loadDemoLibrary(
+  library: LibraryRepository,
+  embedding: EmbeddingModel,
+  options: LibraryWorkOptions = {},
+): Promise<number> {
   let added = 0;
-  for (const document of DEMO_LIBRARY) {
-    if ((await ingestText(library, embedding, document)).status === "added") added++;
+  for (const [index, document] of DEMO_LIBRARY.entries()) {
+    options.signal?.throwIfAborted();
+    const outcome = await ingestText(library, embedding, document, { signal: options.signal });
+    if (outcome.status === "added") added++;
+    options.onProgress?.(index + 1, DEMO_LIBRARY.length);
   }
   return added;
 }

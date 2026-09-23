@@ -1,3 +1,4 @@
+import { isAbortError } from "@/lib/llm/abort";
 import { LlmConfigurationError, MinutaGenerationError } from "@/lib/llm/errors";
 import { NO_USAGE, type TokenUsage } from "@/lib/llm/types";
 import { estimateCostUsd } from "./pricing";
@@ -16,6 +17,7 @@ export interface UsageAuditOptions {
 function failureStatus(error: unknown): LlmCallStatus {
   if (error instanceof MinutaGenerationError) return error.reason;
   if (error instanceof LlmConfigurationError) return "configuration";
+  if (isAbortError(error)) return "canceled";
   return "upstream";
 }
 

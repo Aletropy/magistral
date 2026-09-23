@@ -22,5 +22,10 @@ export interface GenerationResult {
   usage: TokenUsage;
 }
 
+export interface GenerationOptions {
+  /** Cancels the call; the provider request is aborted and the promise rejects with an abort error. */
+  signal?: AbortSignal;
+}
+
 /** Provider-specific call that turns a prompt into the minuta's Markdown, or throws. */
-export type MinutaGenerator = (prompt: MinutaPrompt) => Promise<GenerationResult>;
+export type MinutaGenerator = (prompt: MinutaPrompt, options?: GenerationOptions) => Promise<GenerationResult>;

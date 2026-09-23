@@ -1,9 +1,11 @@
+import { isAbortError } from "./abort";
 import { anthropicErrorInfo } from "./anthropic/errors";
 import {
   CONFIGURATION_ERROR,
   GENERATION_FAILURES,
   LlmConfigurationError,
   MinutaGenerationError,
+  OPERATION_CANCELED,
   UNEXPECTED_ERROR,
   type ErrorResponseInfo,
 } from "./errors";
@@ -14,5 +16,6 @@ import { openRouterErrorInfo } from "./openrouter/errors";
 export function toErrorResponseInfo(error: unknown): ErrorResponseInfo {
   if (error instanceof LlmConfigurationError) return CONFIGURATION_ERROR;
   if (error instanceof MinutaGenerationError) return GENERATION_FAILURES[error.reason];
+  if (isAbortError(error)) return OPERATION_CANCELED;
   return openRouterErrorInfo(error) ?? anthropicErrorInfo(error) ?? geminiErrorInfo(error) ?? UNEXPECTED_ERROR;
 }

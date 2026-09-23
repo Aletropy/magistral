@@ -10,16 +10,19 @@ import {
 
 /** Claude Opus 5 rejects sampling parameters, so the persona's temperature is not sent. */
 export function createAnthropicGenerator(client: Anthropic): MinutaGenerator {
-  return async ({ system, user }) => {
-    const stream = client.beta.messages.stream({
-      model: ANTHROPIC_MODEL,
-      max_tokens: ANTHROPIC_MAX_TOKENS,
-      thinking: { type: "adaptive" },
-      betas: [REFUSAL_FALLBACK_BETA],
-      fallbacks: REFUSAL_FALLBACK_MODE,
-      system,
-      messages: [{ role: "user", content: user }],
-    });
+  return async ({ system, user }, options = {}) => {
+    const stream = client.beta.messages.stream(
+      {
+        model: ANTHROPIC_MODEL,
+        max_tokens: ANTHROPIC_MAX_TOKENS,
+        thinking: { type: "adaptive" },
+        betas: [REFUSAL_FALLBACK_BETA],
+        fallbacks: REFUSAL_FALLBACK_MODE,
+        system,
+        messages: [{ role: "user", content: user }],
+      },
+      { signal: options.signal },
+    );
     const message = await stream.finalMessage();
     // Anthropic bills thinking as output and includes it in output_tokens.
     const usage: TokenUsage = {

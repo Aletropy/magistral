@@ -44,13 +44,24 @@ describe("createAnthropicGenerator", () => {
         betas: [REFUSAL_FALLBACK_BETA],
         fallbacks: REFUSAL_FALLBACK_MODE,
       }),
+      { signal: undefined },
     );
+  });
+
+  it("passes the cancel signal to the SDK", async () => {
+    const { client, stream } = fakeClient({ stop_reason: "end_turn", content: [{ type: "text", text: "# ACORDO" }] });
+    const { signal } = new AbortController();
+    await createAnthropicGenerator(client)(PROMPT, { signal });
+    expect(stream).toHaveBeenCalledWith(expect.anything(), { signal });
   });
 
   it("does not send the temperature, which Claude Opus 5 rejects", async () => {
     const { client, stream } = fakeClient({ stop_reason: "end_turn", content: [{ type: "text", text: "# ACORDO" }] });
     await createAnthropicGenerator(client)(PROMPT);
-    expect(stream).toHaveBeenCalledWith(expect.not.objectContaining({ temperature: expect.anything() }));
+    expect(stream).toHaveBeenCalledWith(
+      expect.not.objectContaining({ temperature: expect.anything() }),
+      expect.anything(),
+    );
   });
 
   it.each([

@@ -1,11 +1,10 @@
+import { retryDelayMs } from "@/lib/queue/retryPolicy";
 import type { BatchRepository } from "./repository";
-import type { ClaimedBatchItem } from "./types";
+import type { BatchJobSummary, ClaimedBatchItem } from "./types";
 
 export const BATCH_CONCURRENCY = 2;
-/** With the backoff below, an item keeps trying for about 4 minutes, enough to ride out per-minute rate limits. */
+/** With the shared backoff, an item keeps trying for about 4 minutes, enough to ride out per-minute rate limits. */
 export const BATCH_MAX_ATTEMPTS = 5;
-export const BATCH_RETRY_BASE_MS = 15_000;
-export const BATCH_RETRY_MAX_MS = 120_000;
 export const BATCH_POLL_INTERVAL_MS = 5_000;
 
 export interface BatchWorkerOptions {
@@ -16,6 +15,8 @@ export interface BatchWorkerOptions {
   isRetryable: (error: unknown) => boolean;
   /** A pt-BR message for the item list. */
   describeError: (error: unknown) => string;
+  /** Called once when a job has no pending or running items left. */
+  onJobFinished?: (job: BatchJobSummary) => void;
   concurrency?: number;
   maxAttempts?: number;
   pollIntervalMs?: number;
@@ -32,17 +33,13 @@ export interface BatchWorker {
   tick(): Promise<number>;
 }
 
-/** Exponential backoff: 15 s, 30 s, 60 s, 120 s (the cap). */
-export function retryDelayMs(attempt: number): number {
-  return Math.min(BATCH_RETRY_BASE_MS * 2 ** (attempt - 1), BATCH_RETRY_MAX_MS);
-}
-
 export function createBatchWorker(options: BatchWorkerOptions): BatchWorker {
   const {
     batches,
     processItem,
     isRetryable,
     describeError,
+    onJobFinished,
     concurrency = BATCH_CONCURRENCY,
     maxAttempts = BATCH_MAX_ATTEMPTS,
     pollIntervalMs = BATCH_POLL_INTERVAL_MS,
@@ -61,6 +58,16 @@ export function createBatchWorker(options: BatchWorkerOptions): BatchWorker {
       } else {
         batches.failItem(item.id, message);
       }
+    }
+    const finished = batches.markFinishedIfDone(item.jobId, now());
+    if (finished) notifyFinished(finished);
+  }
+
+  function notifyFinished(job: BatchJobSummary): void {
+    try {
+      onJobFinished?.(job);
+    } catch (error) {
+      console.error("[batch] job-finished hook failed", error);
     }
   }
 

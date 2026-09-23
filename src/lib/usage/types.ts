@@ -24,6 +24,7 @@ export const LLM_CALL_STATUSES = [
   "invalid_output",
   "configuration",
   "upstream",
+  "canceled",
 ] as const;
 export type LlmCallStatus = (typeof LLM_CALL_STATUSES)[number];
 

@@ -4,16 +4,19 @@ import { checkCompletion } from "./checkCompletion";
 import { OPENROUTER_MAX_TOKENS } from "./config";
 
 export function createOpenRouterGenerator(client: OpenRouterClient, models: string[]): MinutaGenerator {
-  return async ({ system, user, temperature }) =>
+  return async ({ system, user, temperature }, options = {}) =>
     checkCompletion(
-      await client.chat({
-        models,
-        messages: [
-          { role: "system", content: system },
-          { role: "user", content: user },
-        ],
-        temperature,
-        max_tokens: OPENROUTER_MAX_TOKENS,
-      }),
+      await client.chat(
+        {
+          models,
+          messages: [
+            { role: "system", content: system },
+            { role: "user", content: user },
+          ],
+          temperature,
+          max_tokens: OPENROUTER_MAX_TOKENS,
+        },
+        { signal: options.signal },
+      ),
     );
 }

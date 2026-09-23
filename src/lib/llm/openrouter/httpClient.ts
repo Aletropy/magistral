@@ -1,7 +1,9 @@
+import { abortErrorOf } from "../abort";
 import {
   OpenRouterApiError,
   chatCompletionSchema,
   openRouterErrorBodySchema,
+  type ChatCallOptions,
   type ChatCompletion,
   type ChatRequest,
   type OpenRouterClient,
@@ -32,7 +34,8 @@ async function readError(response: Response): Promise<OpenRouterApiError> {
 
 /** A fetch-based OpenRouter client; errors come back as OpenRouterApiError with the upstream status. */
 export function createOpenRouterClient(apiKey: string, fetchImpl: typeof fetch = fetch): OpenRouterClient {
-  async function send(request: ChatRequest): Promise<ChatCompletion> {
+  async function send(request: ChatRequest, cancel?: AbortSignal): Promise<ChatCompletion> {
+    const timeout = AbortSignal.timeout(OPENROUTER_TIMEOUT_MS);
     let response: Response;
     let body: unknown;
     try {
@@ -45,14 +48,16 @@ export function createOpenRouterClient(apiKey: string, fetchImpl: typeof fetch =
           "X-Title": OPENROUTER_APP_TITLE,
         },
         body: JSON.stringify(request),
-        signal: AbortSignal.timeout(OPENROUTER_TIMEOUT_MS),
+        signal: cancel ? AbortSignal.any([timeout, cancel]) : timeout,
       });
       if (!response.ok) throw await readError(response);
       // The timeout also covers reading the body, which is where a slow model spends most of its time.
       body = await response.json();
     } catch (error) {
+      // A cancelled call must surface as an abort, never as a 503 that would be retried.
+      if (cancel?.aborted) throw abortErrorOf(cancel);
       if (error instanceof OpenRouterApiError) throw error;
-      const timedOut = error instanceof DOMException && error.name === "TimeoutError";
+      const timedOut = timeout.aborted || (error instanceof DOMException && error.name === "TimeoutError");
       throw new OpenRouterApiError(timedOut ? HTTP_GATEWAY_TIMEOUT : HTTP_SERVICE_UNAVAILABLE, String(error));
     }
     // OpenRouter can answer 200 with an error object when the upstream provider failed.
@@ -67,12 +72,13 @@ export function createOpenRouterClient(apiKey: string, fetchImpl: typeof fetch =
   }
 
   return {
-    async chat(request: ChatRequest) {
+    async chat(request: ChatRequest, options: ChatCallOptions = {}) {
+      const { signal } = options;
       try {
-        return checkFinish(await send(request));
+        return checkFinish(await send(request, signal));
       } catch (error) {
         if (!(error instanceof OpenRouterApiError) || !RETRYABLE_STATUSES.has(error.status)) throw error;
-        return checkFinish(await send({ ...request, models: rotateModels(request.models) }));
+        return checkFinish(await send({ ...request, models: rotateModels(request.models) }, signal));
       }
     },
   };

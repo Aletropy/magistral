@@ -1,6 +1,7 @@
 import { mkdtemp, rm, unlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import type { DatabaseSync } from "node:sqlite";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { IN_MEMORY_DATABASE, openDatabase } from "@/lib/db/openDatabase";
 import { reciprocalRankFusion, toFtsQuery } from "./hybridSearch";
@@ -138,10 +139,12 @@ describe("syncLibraryFolder", () => {
 });
 
 describe("embedding model changes", () => {
+  let db: DatabaseSync;
   let library: LibraryRepository;
 
   beforeEach(async () => {
-    library = createLibraryRepository(openDatabase(IN_MEMORY_DATABASE));
+    db = openDatabase(IN_MEMORY_DATABASE);
+    library = createLibraryRepository(db);
     const bytes = await docxFromMarkdown(ISS_LAW);
     await ingestDocument(library, fakeEmbedder("modelo-antigo"), { fileName: "iss.docx", bytes, kind: "lei", folderPath: null });
   });
@@ -169,6 +172,29 @@ describe("embedding model changes", () => {
 
     const context = await selectLibraryContext(library, other, "hospedagem", 1);
     expect(context.sources[0].text).toContain("hospedagem");
+  });
+
+  it("drops the vectors of a source deleted while the reindex was embedding", async () => {
+    const other = fakeEmbedder("modelo-novo", 384);
+    const [doomed] = library.listSources();
+    const embed = other.embed.getMockImplementation()!;
+    other.embed.mockImplementationOnce(async (texts, task) => {
+      library.deleteSource(doomed.id);
+      return embed(texts, task);
+    });
+
+    await reindexLibrary(library, other);
+    const vectors = db.prepare("SELECT COUNT(*) AS count FROM library_chunk_vectors").get() as { count: number };
+    expect(vectors.count).toBe(0);
+  });
+
+  it("stops between embedding batches once cancelled, leaving the index untouched", async () => {
+    const controller = new AbortController();
+    controller.abort();
+    const other = fakeEmbedder("modelo-novo", 384);
+    await expect(reindexLibrary(library, other, { signal: controller.signal })).rejects.toThrow();
+    expect(other.embed).not.toHaveBeenCalled();
+    expect(library.indexInfo()).toMatchObject({ model: "modelo-antigo" });
   });
 
   it("adopts the new model once the library is empty again", async () => {

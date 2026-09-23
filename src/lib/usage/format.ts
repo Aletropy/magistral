@@ -30,6 +30,7 @@ export const LLM_CALL_STATUS_LABELS: Record<LlmCallStatus, string> = {
   invalid_output: "Resposta inválida",
   configuration: "Configuração",
   upstream: "Falha na API",
+  canceled: "Cancelada",
 };
 
 export function formatUsd(value: number | null): string {

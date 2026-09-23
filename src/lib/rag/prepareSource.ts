@@ -6,7 +6,7 @@ import { MAX_LIBRARY_DOCUMENT_CHARS } from "@/lib/documents/formats";
 import type { EmbeddingModel } from "@/lib/llm/embeddings";
 import { normalizeForMatch } from "@/lib/text/normalizeForMatch";
 import { chunkLegalText, type TextChunk } from "./chunkLegalText";
-import { embedAll } from "./embedAll";
+import { embedAll, type LibraryWorkOptions } from "./embedAll";
 import type { NewLibrarySource } from "./repository";
 import type { LibrarySourceKind } from "./types";
 
@@ -61,6 +61,7 @@ export interface LibraryText {
 export async function prepareTextSource(
   embedding: EmbeddingModel,
   document: LibraryText & { folderPath: string | null; sha256: string },
+  options: LibraryWorkOptions = {},
 ): Promise<PreparedSource> {
   if (document.text.length > MAX_LIBRARY_DOCUMENT_CHARS) throw new DocumentExtractionError("too_long");
 
@@ -69,6 +70,7 @@ export async function prepareTextSource(
     embedding,
     chunks.map((chunk) => toEmbeddingText(document.title, chunk)),
     "document",
+    options,
   );
 
   return {
@@ -86,14 +88,19 @@ export async function prepareTextSource(
 }
 
 /** Extracts, chunks and embeds a file; nothing is written until the caller stores the result. */
-export async function prepareSource(embedding: EmbeddingModel, document: LibraryDocument): Promise<PreparedSource> {
+export async function prepareSource(
+  embedding: EmbeddingModel,
+  document: LibraryDocument,
+  options: LibraryWorkOptions = {},
+): Promise<PreparedSource> {
   const text = await extractText({ name: document.fileName, bytes: document.bytes });
-  return prepareTextSource(embedding, {
+  const source = {
     title: titleFromFileName(document.fileName),
     kind: document.kind,
     fileName: path.basename(document.fileName),
     text,
     folderPath: document.folderPath,
     sha256: sha256Of(document.bytes),
-  });
+  };
+  return prepareTextSource(embedding, source, options);
 }

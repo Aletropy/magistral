@@ -55,6 +55,7 @@ describe("createOpenRouterGenerator", () => {
           { role: "user", content: PROMPT.user },
         ],
       }),
+      { signal: undefined },
     );
   });
 
@@ -164,6 +165,18 @@ describe("createOpenRouterClient", () => {
     );
     const fetchImpl = vi.fn<typeof fetch>().mockResolvedValue(slowBody);
     await expect(createOpenRouterClient("k", fetchImpl).chat(REQUEST)).rejects.toMatchObject({ status: 504 });
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+  });
+
+  it("rejects a cancelled call as an abort, without retrying it as an outage", async () => {
+    const controller = new AbortController();
+    const fetchImpl = vi.fn<typeof fetch>().mockImplementation(async () => {
+      controller.abort();
+      throw new DOMException("This operation was aborted", "AbortError");
+    });
+    await expect(
+      createOpenRouterClient("k", fetchImpl).chat(REQUEST, { signal: controller.signal }),
+    ).rejects.toMatchObject({ name: "AbortError" });
     expect(fetchImpl).toHaveBeenCalledTimes(1);
   });
 

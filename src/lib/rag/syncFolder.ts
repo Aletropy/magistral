@@ -4,6 +4,7 @@ import { DocumentExtractionError } from "@/lib/documents/errors";
 import { detectDocumentFormat } from "@/lib/documents/formats";
 import { DOCUMENT_EXTRACTION_ERRORS } from "@/lib/documents/messages";
 import type { EmbeddingModel } from "@/lib/llm/embeddings";
+import type { LibraryWorkOptions } from "./embedAll";
 import { LibraryIndexMismatchError } from "./errors";
 import { inferKindFromFileName, prepareSource, sha256Of } from "./prepareSource";
 import type { LibraryRepository } from "./repository";
@@ -36,7 +37,9 @@ export async function syncLibraryFolder(
   library: LibraryRepository,
   embedding: EmbeddingModel,
   root: string,
+  options: LibraryWorkOptions = {},
 ): Promise<FolderSyncReport> {
+  const { signal, onProgress } = options;
   await mkdir(root, { recursive: true });
   if (!library.isCompatible(embedding)) throw new LibraryIndexMismatchError();
   const report: FolderSyncReport = { added: [], updated: [], removed: [], unchanged: 0, duplicates: [], failed: [] };
@@ -48,7 +51,9 @@ export async function syncLibraryFolder(
       .map((source) => [source.folderPath!, source]),
   );
 
-  for (const relativePath of files) {
+  for (const [index, relativePath] of files.entries()) {
+    signal?.throwIfAborted();
+    onProgress?.(index, files.length);
     const bytes = new Uint8Array(await readFile(path.join(root, relativePath)));
     const sha256 = sha256Of(bytes);
     const previous = folderSources.get(relativePath);
@@ -63,12 +68,13 @@ export async function syncLibraryFolder(
     }
 
     try {
-      const prepared = await prepareSource(embedding, {
+      const document = {
         fileName: path.posix.basename(relativePath),
         bytes,
         kind: previous?.kind ?? inferKindFromFileName(relativePath),
         folderPath: relativePath,
-      });
+      };
+      const prepared = await prepareSource(embedding, document, { signal });
       library.addSource(prepared.source, prepared.chunks, prepared.embeddings, embedding, previous?.id);
       (previous ? report.updated : report.added).push(relativePath);
     } catch (error) {

@@ -72,6 +72,11 @@ export interface BatchRepository {
   retryFailedItems(jobId: string, now: Date): number;
   /** Requeues items left running by a previous process; returns how many. */
   resetRunningItems(): number;
+  /**
+   * Marks the job as finished when nothing is pending or running, returning its summary only the first
+   * time, so concurrent items finishing together notify once. A retry of failed items resets the mark.
+   */
+  markFinishedIfDone(jobId: string, now: Date): BatchJobSummary | null;
   finishedItems(jobId: string): FinishedBatchItem[];
 }
 
@@ -139,6 +144,13 @@ export function createBatchRepository(db: DatabaseSync): BatchRepository {
     `UPDATE batch_items SET status = 'pending', attempts = 0, error = NULL, next_attempt_at = ?
      WHERE job_id = ? AND status = 'failed'`,
   );
+  const clearFinished = db.prepare("UPDATE batch_jobs SET notified_at = NULL WHERE id = ?");
+  const markFinished = db.prepare(
+    `UPDATE batch_jobs SET notified_at = ?
+     WHERE id = ? AND notified_at IS NULL
+       AND NOT EXISTS (SELECT 1 FROM batch_items WHERE job_id = ? AND status IN ('pending', 'running'))
+     RETURNING id`,
+  );
   const resetRunning = db.prepare("UPDATE batch_items SET status = 'pending' WHERE status = 'running'");
   const selectFinished = db.prepare(
     "SELECT position, label, markdown FROM batch_items WHERE job_id = ? AND status = 'done' ORDER BY position",
@@ -188,8 +200,19 @@ export function createBatchRepository(db: DatabaseSync): BatchRepository {
     completeItem: (id, markdown) => void complete.run(markdown, id),
     failItem: (id, error) => void fail.run(error, id),
     retryItem: (id, error, retryAt) => void retry.run(error, retryAt.toISOString(), id),
-    retryFailedItems: (jobId, now) => Number(retryFailed.run(now.toISOString(), jobId).changes),
+    retryFailedItems(jobId, now) {
+      return withTransaction(db, () => {
+        const requeued = Number(retryFailed.run(now.toISOString(), jobId).changes);
+        if (requeued > 0) clearFinished.run(jobId);
+        return requeued;
+      });
+    },
     resetRunningItems: () => Number(resetRunning.run().changes),
+    markFinishedIfDone(jobId, now) {
+      if (!markFinished.get(now.toISOString(), jobId, jobId)) return null;
+      const row = selectJob.get(jobId);
+      return row ? toSummary(row) : null;
+    },
     finishedItems: (jobId) => selectFinished.all(jobId).map((row) => finishedRowSchema.parse(row)),
   };
 }

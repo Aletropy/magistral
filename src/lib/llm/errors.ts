@@ -54,6 +54,12 @@ export const UPSTREAM_FAILURE: ErrorResponseInfo = {
   status: 502,
   message: "Não foi possível gerar a minuta. Tente novamente.",
 };
+/** nginx's "client closed request": the caller cancelled, so no one is waiting for this answer. */
+const HTTP_CLIENT_CLOSED_REQUEST = 499;
+export const OPERATION_CANCELED: ErrorResponseInfo = {
+  status: HTTP_CLIENT_CLOSED_REQUEST,
+  message: "A operação foi cancelada.",
+};
 export const UNEXPECTED_ERROR: ErrorResponseInfo = {
   status: 500,
   message: "Ocorreu um erro inesperado. Tente novamente.",

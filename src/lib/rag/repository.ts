@@ -137,6 +137,7 @@ export function createLibraryRepository(db: DatabaseSync): LibraryRepository {
     "INSERT INTO library_meta (key, value) VALUES (?, ?) ON CONFLICT (key) DO UPDATE SET value = excluded.value",
   );
   const countChunks = db.prepare("SELECT COUNT(*) AS count FROM library_chunks");
+  const selectChunkExists = db.prepare("SELECT 1 FROM library_chunks WHERE id = ?");
 
   function indexInfo(): LibraryIndexInfo {
     const meta = new Map(selectMeta.all().map((row) => {
@@ -192,7 +193,10 @@ export function createLibraryRepository(db: DatabaseSync): LibraryRepository {
       withTransaction(db, () => {
         db.exec("DELETE FROM library_chunk_vectors");
         adoptModel(model, indexInfo());
-        for (const { chunkId, embedding } of vectors) insertVector.run(BigInt(chunkId), new Float32Array(embedding));
+        for (const { chunkId, embedding } of vectors) {
+          // A source deleted while the embeddings were computed must not come back as orphan vectors.
+          if (selectChunkExists.get(chunkId)) insertVector.run(BigInt(chunkId), new Float32Array(embedding));
+        }
       });
     },
 

@@ -194,6 +194,54 @@ function createMinutasTable(db: DatabaseSync): void {
   `);
 }
 
+function createTaskTables(db: DatabaseSync): void {
+  db.exec(`
+    CREATE TABLE tasks (
+      id TEXT PRIMARY KEY,
+      kind TEXT NOT NULL,
+      lane TEXT NOT NULL,
+      title TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'pending',
+      payload TEXT NOT NULL,
+      result TEXT,
+      error TEXT,
+      attempts INTEGER NOT NULL DEFAULT 0,
+      next_attempt_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+      progress_current INTEGER,
+      progress_total INTEGER,
+      progress_label TEXT,
+      created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+      started_at TEXT,
+      finished_at TEXT
+    );
+    CREATE INDEX tasks_queue ON tasks (lane, status, next_attempt_at);
+    CREATE INDEX tasks_created_at ON tasks (created_at);
+
+    CREATE TABLE task_files (
+      task_id TEXT NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+      position INTEGER NOT NULL,
+      name TEXT NOT NULL,
+      bytes BLOB NOT NULL,
+      outcome TEXT,
+      PRIMARY KEY (task_id, position)
+    );
+
+    CREATE TABLE notifications (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      level TEXT NOT NULL,
+      title TEXT NOT NULL,
+      body TEXT NOT NULL,
+      href TEXT,
+      task_id TEXT REFERENCES tasks(id) ON DELETE SET NULL,
+      created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+      read_at TEXT
+    );
+    CREATE INDEX notifications_unread ON notifications (read_at);
+
+    ALTER TABLE batch_jobs ADD COLUMN notified_at TEXT;
+  `);
+}
+
 /** Ordered schema changes. Append new migrations; never edit or reorder existing ones. */
 export const MIGRATIONS: readonly Migration[] = [
   createPersonaTables,
@@ -205,6 +253,7 @@ export const MIGRATIONS: readonly Migration[] = [
   createBatchTables,
   createLibraryMetaTable,
   createMinutasTable,
+  createTaskTables,
 ];
 
 function readSchemaVersion(db: DatabaseSync): number {
