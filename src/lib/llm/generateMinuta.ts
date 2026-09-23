@@ -11,13 +11,12 @@ export async function generateMinuta(
   request: MinutaRequest,
   persona: Persona,
 ): Promise<string> {
-  const markdown = (
-    await generate({
-      system: buildSystemPrompt(persona),
-      user: buildUserPrompt(request),
-      temperature: persona.temperature,
-    })
-  ).trim();
+  const { text } = await generate({
+    system: buildSystemPrompt(persona),
+    user: buildUserPrompt(request),
+    temperature: persona.temperature,
+  });
+  const markdown = text.trim();
   if (!markdown) throw new MinutaGenerationError("empty");
 
   return markdown;

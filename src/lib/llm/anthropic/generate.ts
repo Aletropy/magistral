@@ -1,6 +1,6 @@
 import type Anthropic from "@anthropic-ai/sdk";
 import { MinutaGenerationError } from "../errors";
-import type { MinutaGenerator } from "../types";
+import type { MinutaGenerator, TokenUsage } from "../types";
 import {
   ANTHROPIC_MAX_TOKENS,
   ANTHROPIC_MODEL,
@@ -21,10 +21,20 @@ export function createAnthropicGenerator(client: Anthropic): MinutaGenerator {
       messages: [{ role: "user", content: user }],
     });
     const message = await stream.finalMessage();
+    // Anthropic bills thinking as output and includes it in output_tokens.
+    const usage: TokenUsage = {
+      inputTokens: message.usage.input_tokens,
+      outputTokens: message.usage.output_tokens,
+      thinkingTokens: 0,
+    };
 
-    if (message.stop_reason === "refusal") throw new MinutaGenerationError("refusal");
-    if (message.stop_reason === "max_tokens") throw new MinutaGenerationError("truncated");
+    if (message.stop_reason === "refusal") throw new MinutaGenerationError("refusal", usage);
+    if (message.stop_reason === "max_tokens") throw new MinutaGenerationError("truncated", usage);
 
-    return message.content.flatMap((block) => (block.type === "text" ? [block.text] : [])).join("");
+    return {
+      text: message.content.flatMap((block) => (block.type === "text" ? [block.text] : [])).join(""),
+      model: message.model,
+      usage,
+    };
   };
 }

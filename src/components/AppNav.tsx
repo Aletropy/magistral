@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 const NAV_LINKS = [
   { href: "/", label: "Gerar minuta" },
   { href: PERSONAS_PATH, label: "Personas" },
+  { href: "/uso", label: "Uso" },
 ] as const;
 
 function isActive(pathname: string, href: string): boolean {

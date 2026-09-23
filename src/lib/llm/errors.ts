@@ -1,3 +1,5 @@
+import type { TokenUsage } from "./types";
+
 /** The server is missing or has invalid LLM settings (API key, provider name). */
 export class LlmConfigurationError extends Error {
   constructor(message: string) {
@@ -10,11 +12,14 @@ export type GenerationFailureReason = "refusal" | "truncated" | "empty";
 
 export class MinutaGenerationError extends Error {
   readonly reason: GenerationFailureReason;
+  /** Tokens the provider billed before the failure, when it answered at all. */
+  readonly usage?: TokenUsage;
 
-  constructor(reason: GenerationFailureReason) {
+  constructor(reason: GenerationFailureReason, usage?: TokenUsage) {
     super(`Minuta generation failed: ${reason}`);
     this.name = "MinutaGenerationError";
     this.reason = reason;
+    this.usage = usage;
   }
 }
 

@@ -10,6 +10,7 @@ interface FakeResponse {
   text?: string;
   candidates?: { finishReason?: FinishReason }[];
   promptFeedback?: { blockReason?: string };
+  usageMetadata?: { promptTokenCount?: number; candidatesTokenCount?: number; thoughtsTokenCount?: number };
 }
 
 function fakeClient(response: FakeResponse) {
@@ -19,13 +20,18 @@ function fakeClient(response: FakeResponse) {
 }
 
 describe("createGeminiGenerator", () => {
-  it("returns the response text and sends the system prompt and temperature in the config", async () => {
+  it("returns the text, model and usage and sends the system prompt and temperature in the config", async () => {
     const { client, generateContent } = fakeClient({
       text: "# ACORDO",
       candidates: [{ finishReason: FinishReason.STOP }],
+      usageMetadata: { promptTokenCount: 900, candidatesTokenCount: 2100, thoughtsTokenCount: 700 },
     });
 
-    await expect(createGeminiGenerator(client)(PROMPT)).resolves.toBe("# ACORDO");
+    await expect(createGeminiGenerator(client)(PROMPT)).resolves.toEqual({
+      text: "# ACORDO",
+      model: GEMINI_MODEL,
+      usage: { inputTokens: 900, outputTokens: 2100, thinkingTokens: 700 },
+    });
     expect(generateContent).toHaveBeenCalledWith(
       expect.objectContaining({
         model: GEMINI_MODEL,
@@ -42,26 +48,23 @@ describe("createGeminiGenerator", () => {
     "treats finish reason %s as a refusal",
     async (finishReason) => {
       const { client } = fakeClient({ text: "", candidates: [{ finishReason }] });
-      await expect(createGeminiGenerator(client)(PROMPT)).rejects.toEqual(
-        new MinutaGenerationError("refusal"),
-      );
+      await expect(createGeminiGenerator(client)(PROMPT)).rejects.toMatchObject({ reason: "refusal" });
     },
   );
 
   it("treats a blocked prompt as a refusal", async () => {
     const { client } = fakeClient({ promptFeedback: { blockReason: "SAFETY" } });
-    await expect(createGeminiGenerator(client)(PROMPT)).rejects.toEqual(
-      new MinutaGenerationError("refusal"),
-    );
+    await expect(createGeminiGenerator(client)(PROMPT)).rejects.toMatchObject({ reason: "refusal" });
   });
 
-  it("reports output cut at the token limit as truncated", async () => {
+  it("reports output cut at the token limit as truncated, keeping the billed usage", async () => {
     const { client } = fakeClient({
       text: "# ACORDO",
       candidates: [{ finishReason: FinishReason.MAX_TOKENS }],
+      usageMetadata: { promptTokenCount: 900, candidatesTokenCount: 60000, thoughtsTokenCount: 5536 },
     });
     await expect(createGeminiGenerator(client)(PROMPT)).rejects.toEqual(
-      new MinutaGenerationError("truncated"),
+      new MinutaGenerationError("truncated", { inputTokens: 900, outputTokens: 60000, thinkingTokens: 5536 }),
     );
   });
 });

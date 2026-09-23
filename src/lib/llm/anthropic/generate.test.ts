@@ -1,6 +1,5 @@
 import type Anthropic from "@anthropic-ai/sdk";
 import { describe, expect, it, vi } from "vitest";
-import { MinutaGenerationError } from "../errors";
 import { ANTHROPIC_MODEL, REFUSAL_FALLBACK_BETA, REFUSAL_FALLBACK_MODE } from "./config";
 import { createAnthropicGenerator } from "./generate";
 
@@ -11,14 +10,19 @@ interface FakeMessage {
   content: { type: string; text?: string }[];
 }
 
-function fakeClient(message: FakeMessage) {
+const SERVED_MODEL = "claude-opus-4-8";
+const USAGE = { input_tokens: 1200, output_tokens: 3400 };
+const EXPECTED_USAGE = { inputTokens: 1200, outputTokens: 3400, thinkingTokens: 0 };
+
+function fakeClient(fake: FakeMessage) {
+  const message = { ...fake, model: SERVED_MODEL, usage: USAGE };
   const stream = vi.fn(() => ({ finalMessage: () => Promise.resolve(message) }));
   const client = { beta: { messages: { stream } } } as unknown as Anthropic;
   return { client, stream };
 }
 
 describe("createAnthropicGenerator", () => {
-  it("joins the text blocks, ignores other block types and enables refusal fallback", async () => {
+  it("joins the text blocks, reports the served model and usage, and enables refusal fallback", async () => {
     const { client, stream } = fakeClient({
       stop_reason: "end_turn",
       content: [
@@ -28,7 +32,11 @@ describe("createAnthropicGenerator", () => {
       ],
     });
 
-    await expect(createAnthropicGenerator(client)(PROMPT)).resolves.toBe("# ACORDO\n\nTexto.");
+    await expect(createAnthropicGenerator(client)(PROMPT)).resolves.toEqual({
+      text: "# ACORDO\n\nTexto.",
+      model: SERVED_MODEL,
+      usage: EXPECTED_USAGE,
+    });
     expect(stream).toHaveBeenCalledWith(
       expect.objectContaining({
         model: ANTHROPIC_MODEL,
@@ -48,10 +56,11 @@ describe("createAnthropicGenerator", () => {
   it.each([
     ["refusal", "refusal"],
     ["max_tokens", "truncated"],
-  ] as const)("throws on stop_reason %s (%s)", async (stopReason, reason) => {
+  ] as const)("throws on stop_reason %s (%s), keeping the billed usage", async (stopReason, reason) => {
     const { client } = fakeClient({ stop_reason: stopReason, content: [{ type: "text", text: "…" }] });
-    await expect(createAnthropicGenerator(client)(PROMPT)).rejects.toEqual(
-      new MinutaGenerationError(reason),
-    );
+    await expect(createAnthropicGenerator(client)(PROMPT)).rejects.toMatchObject({
+      reason,
+      usage: EXPECTED_USAGE,
+    });
   });
 });

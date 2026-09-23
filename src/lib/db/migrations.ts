@@ -46,8 +46,28 @@ function createPersonaTables(db: DatabaseSync): void {
   }
 }
 
+function createLlmCallsTable(db: DatabaseSync): void {
+  db.exec(`
+    CREATE TABLE llm_calls (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+      operation TEXT NOT NULL,
+      provider TEXT NOT NULL,
+      model TEXT NOT NULL,
+      input_tokens INTEGER NOT NULL,
+      output_tokens INTEGER NOT NULL,
+      thinking_tokens INTEGER NOT NULL,
+      latency_ms INTEGER NOT NULL,
+      estimated_cost_usd REAL,
+      status TEXT NOT NULL
+    );
+
+    CREATE INDEX llm_calls_created_at ON llm_calls (created_at);
+  `);
+}
+
 /** Ordered schema changes. Append new migrations; never edit or reorder existing ones. */
-export const MIGRATIONS: readonly Migration[] = [createPersonaTables];
+export const MIGRATIONS: readonly Migration[] = [createPersonaTables, createLlmCallsTable];
 
 function readSchemaVersion(db: DatabaseSync): number {
   const row = db.prepare("PRAGMA user_version").get() as { user_version: number };

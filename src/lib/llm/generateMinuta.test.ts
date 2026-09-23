@@ -3,7 +3,11 @@ import type { MinutaRequest } from "@/lib/minuta/schema";
 import type { Persona } from "@/lib/personas/types";
 import { MinutaGenerationError } from "./errors";
 import { generateMinuta } from "./generateMinuta";
-import type { MinutaGenerator } from "./types";
+import { NO_USAGE, type GenerationResult, type MinutaGenerator } from "./types";
+
+function result(text: string): GenerationResult {
+  return { text, model: "gemini-2.5-flash", usage: NO_USAGE };
+}
 
 const REQUEST: MinutaRequest = {
   documentType: "nda",
@@ -31,7 +35,7 @@ const PERSONA: Persona = {
 
 describe("generateMinuta", () => {
   it("sends the persona system prompt, its temperature and the request as the user prompt", async () => {
-    const generate = vi.fn<MinutaGenerator>().mockResolvedValue("# ACORDO");
+    const generate = vi.fn<MinutaGenerator>().mockResolvedValue(result("# ACORDO"));
     await generateMinuta(generate, REQUEST, PERSONA);
 
     const [{ system, user, temperature }] = generate.mock.calls[0];
@@ -41,12 +45,12 @@ describe("generateMinuta", () => {
   });
 
   it("returns the trimmed Markdown", async () => {
-    const generate: MinutaGenerator = async () => "\n# ACORDO\n\nTexto.  ";
+    const generate: MinutaGenerator = async () => result("\n# ACORDO\n\nTexto.  ");
     await expect(generateMinuta(generate, REQUEST, PERSONA)).resolves.toBe("# ACORDO\n\nTexto.");
   });
 
   it("rejects an empty answer", async () => {
-    const generate: MinutaGenerator = async () => "   ";
+    const generate: MinutaGenerator = async () => result("   ");
     await expect(generateMinuta(generate, REQUEST, PERSONA)).rejects.toEqual(new MinutaGenerationError("empty"));
   });
 });

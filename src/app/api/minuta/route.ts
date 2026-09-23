@@ -22,7 +22,7 @@ export async function POST(request: Request): Promise<Response> {
     const persona = getPersonaRepository().get(parsed.data.persona);
     if (!persona) return errorResponse(HTTP_BAD_REQUEST, PERSONA_NOT_FOUND_MESSAGE);
 
-    const markdown = await generateMinuta(getMinutaGenerator(), parsed.data, persona);
+    const markdown = await generateMinuta(getMinutaGenerator("minuta"), parsed.data, persona);
     return Response.json({ markdown } satisfies MinutaResponseBody);
   } catch (error) {
     console.error("[api/minuta] generation failed", error);
