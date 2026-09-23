@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { connection } from "next/server";
 import { RecentCallsTable } from "@/components/RecentCallsTable";
 import { StatTile } from "@/components/StatTile";
@@ -5,6 +6,8 @@ import { UsageGroupTable } from "@/components/UsageGroupTable";
 import { formatDay, formatInteger, formatLatency, formatUsd } from "@/lib/usage/format";
 import { getUsageRepository } from "@/lib/usage/getUsageRepository";
 import { LLM_OPERATIONS, LLM_OPERATION_LABELS, type LlmOperation } from "@/lib/usage/types";
+
+export const metadata: Metadata = { title: "Uso e custos" };
 
 const USAGE_WINDOW_DAYS = 30;
 const RECENT_CALLS_LIMIT = 25;

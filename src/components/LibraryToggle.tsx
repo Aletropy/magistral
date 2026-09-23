@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { LIBRARY_PATH } from "@/lib/rag/paths";
+import { plural } from "@/lib/text/plural";
 
 interface LibraryToggleProps {
   checked: boolean;
@@ -34,7 +35,7 @@ export function LibraryToggle({ checked, sourceCount, disabled, onChange }: Libr
               .
             </>
           ) : (
-            `A IA cita apenas normas dos ${sourceCount} documento(s) da biblioteca local, sem inventar leis.`
+            `A IA fundamenta a minuta só com os ${plural(sourceCount, "documento", "documentos")} da biblioteca, sem inventar leis.`
           )}
         </span>
       </span>

@@ -1,5 +1,8 @@
+import type { Metadata } from "next";
 import { PersonaEditor } from "@/components/PersonaEditor";
 import { EMPTY_PERSONA } from "@/lib/personas/schema";
+
+export const metadata: Metadata = { title: "Nova persona" };
 
 export default function NewPersonaPage() {
   return (

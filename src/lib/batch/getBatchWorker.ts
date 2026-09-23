@@ -7,8 +7,14 @@ import { createBatchWorker, type BatchWorker } from "./worker";
 const HTTP_TOO_MANY_REQUESTS = 429;
 const HTTP_BAD_GATEWAY = 502;
 const HTTP_SERVICE_UNAVAILABLE = 503;
-/** Rate limits and an overloaded or flaky upstream are worth retrying; bad input and config errors are not. */
-const RETRYABLE_STATUSES = new Set([HTTP_TOO_MANY_REQUESTS, HTTP_BAD_GATEWAY, HTTP_SERVICE_UNAVAILABLE]);
+const HTTP_GATEWAY_TIMEOUT = 504;
+/** Rate limits and an overloaded, flaky or slow upstream are worth retrying; bad input and config errors are not. */
+const RETRYABLE_STATUSES = new Set([
+  HTTP_TOO_MANY_REQUESTS,
+  HTTP_BAD_GATEWAY,
+  HTTP_SERVICE_UNAVAILABLE,
+  HTTP_GATEWAY_TIMEOUT,
+]);
 
 /** One worker per server process, kept on globalThis so dev hot reloads don't start more. */
 const globalForWorker = globalThis as typeof globalThis & { magistralBatchWorker?: BatchWorker };

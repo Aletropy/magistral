@@ -12,6 +12,6 @@ export async function processBatchItem(item: ClaimedBatchItem): Promise<string> 
     const [issue] = parsed.error.issues;
     throw new MinutaRequestError(`Dados da linha inválidos (${issue.path.join(".")}): ${issue.message}`);
   }
-  const { markdown } = await draftMinuta(parsed.data, "batch");
-  return markdown;
+  const { result } = await draftMinuta(parsed.data, "batch");
+  return result.markdown;
 }

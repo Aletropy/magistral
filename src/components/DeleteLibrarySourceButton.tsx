@@ -20,7 +20,7 @@ export function DeleteLibrarySourceButton({ id, title, fromFolder }: DeleteLibra
 
   return (
     <ConfirmDeleteButton
-      title={`Remover “${title}” da biblioteca?`}
+      title={`Remover “${title}” da biblioteca jurídica?`}
       description={
         fromFolder
           ? "O índice deste documento será apagado. O arquivo continua na pasta e volta na próxima sincronização; apague-o da pasta para removê-lo de vez."

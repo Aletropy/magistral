@@ -80,7 +80,7 @@ export function PersonaEditor({ personaId, initialValues }: PersonaEditorProps) 
         label="Descrição (opcional)"
         htmlFor="description"
         error={errors.description}
-        hint="Aparece no seletor de personalidade do formulário."
+        hint="Aparece ao escolher a persona no formulário da minuta."
       >
         <Textarea
           id="description"
@@ -97,7 +97,7 @@ export function PersonaEditor({ personaId, initialValues }: PersonaEditorProps) 
         label="Instrução de sistema"
         htmlFor="systemInstruction"
         error={errors.systemInstruction}
-        hint="Primeira linha do prompt: quem a IA é e como escreve."
+        hint="Quem a IA deve ser e como escreve. É a primeira coisa que ela lê."
       >
         <Textarea
           id="systemInstruction"
@@ -122,8 +122,10 @@ export function PersonaEditor({ personaId, initialValues }: PersonaEditorProps) 
         disabled={isPending}
         onChange={(toneParameters) => update("toneParameters", toneParameters)}
         renderItem={({ id, value, invalid, onChange }) => (
-          <Input
+          <Textarea
             id={id}
+            rows={1}
+            className="min-h-9"
             maxLength={MAX_TONE_PARAMETER_CHARS}
             value={value}
             aria-invalid={invalid}

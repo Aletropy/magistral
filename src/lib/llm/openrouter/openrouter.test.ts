@@ -1,6 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
 import type { StyleExtraction } from "@/lib/style/styleProfileSchema";
-import { CONFIGURATION_ERROR, DAILY_QUOTA_EXHAUSTED, RATE_LIMITED, SERVICE_UNAVAILABLE } from "../errors";
+import {
+  CONFIGURATION_ERROR,
+  DAILY_QUOTA_EXHAUSTED,
+  RATE_LIMITED,
+  SERVICE_UNAVAILABLE,
+  UPSTREAM_TIMEOUT,
+} from "../errors";
 import { OpenRouterApiError, type ChatCompletion, type OpenRouterClient } from "./api";
 import { DEFAULT_OPENROUTER_MODELS, OPENROUTER_BASE_URL, resolveOpenRouterModels } from "./config";
 import { openRouterErrorInfo } from "./errors";
@@ -148,6 +154,19 @@ describe("createOpenRouterClient", () => {
     expect(limited).toHaveBeenCalledTimes(1);
   });
 
+  it("reports a timeout while reading the body as 504, without retrying", async () => {
+    const slowBody = new Response(
+      new ReadableStream({
+        start(controller) {
+          controller.error(new DOMException("The operation was aborted due to timeout", "TimeoutError"));
+        },
+      }),
+    );
+    const fetchImpl = vi.fn<typeof fetch>().mockResolvedValue(slowBody);
+    await expect(createOpenRouterClient("k", fetchImpl).chat(REQUEST)).rejects.toMatchObject({ status: 504 });
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+  });
+
   it("reports network failures as 503", async () => {
     const fetchImpl = vi.fn<typeof fetch>().mockRejectedValue(new TypeError("fetch failed"));
     await expect(createOpenRouterClient("k", fetchImpl).chat(REQUEST)).rejects.toMatchObject({ status: 503 });
@@ -163,6 +182,7 @@ describe("openRouterErrorInfo", () => {
     expect(openRouterErrorInfo(new OpenRouterApiError(429, "Rate limit exceeded: free-models-per-min"))).toBe(RATE_LIMITED);
     expect(openRouterErrorInfo(new OpenRouterApiError(402, "Insufficient credits"))).toBe(CONFIGURATION_ERROR);
     expect(openRouterErrorInfo(new OpenRouterApiError(503, "down"))).toBe(SERVICE_UNAVAILABLE);
+    expect(openRouterErrorInfo(new OpenRouterApiError(504, "slow"))).toBe(UPSTREAM_TIMEOUT);
     expect(openRouterErrorInfo(new Error("other"))).toBeNull();
   });
 });

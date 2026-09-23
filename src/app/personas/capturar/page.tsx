@@ -1,7 +1,10 @@
+import type { Metadata } from "next";
 import { connection } from "next/server";
 import { StyleCapture } from "@/components/StyleCapture";
 import { getPersonaRepository } from "@/lib/personas/getPersonaRepository";
 import { toPersonaInput } from "@/lib/personas/toPersonaInput";
+
+export const metadata: Metadata = { title: "Capturar estilo" };
 
 export default async function StyleCapturePage() {
   await connection();

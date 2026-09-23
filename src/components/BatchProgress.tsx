@@ -10,7 +10,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useBatchProgress } from "@/hooks/useBatchProgress";
 import { useResourceMutations } from "@/hooks/useResourceMutations";
 import { BATCHES_PATH } from "@/lib/batch/paths";
-import { BATCH_ITEM_STATUS_LABELS, type BatchItemStatus, type BatchJobDetail } from "@/lib/batch/types";
+import {
+  BATCH_ITEM_STATUS_LABELS,
+  type BatchItemStatus,
+  type BatchItemSummary,
+  type BatchJobDetail,
+} from "@/lib/batch/types";
 import { EXPORT_FORMATS, EXPORT_FORMAT_INFO } from "@/lib/export/formats";
 import {
   BATCHES_ENDPOINT,
@@ -29,6 +34,11 @@ const STATUS_VARIANTS: Record<BatchItemStatus, "secondary" | "outline" | "defaul
 };
 
 const ENDPOINTS = { collection: BATCHES_ENDPOINT, item: batchEndpoint };
+
+/** A pending item with an error is waiting for its automatic retry. */
+function describeItemError(item: BatchItemSummary): string {
+  return item.status === "pending" ? `Nova tentativa em breve: ${item.error}` : (item.error ?? "");
+}
 const MESSAGES = { saveFailed: "", deleteFailed: "Não foi possível excluir o lote. Tente novamente." };
 const RETRY_FAILED = "Não foi possível recolocar as minutas na fila.";
 
@@ -101,21 +111,28 @@ export function BatchProgress({ initialJob }: { initialJob: BatchJobDetail }) {
               <TableHead className="w-16 text-right">Linha</TableHead>
               <TableHead>Destinatário</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead className="text-right">Tentativas</TableHead>
-              <TableHead>Observação</TableHead>
+              <TableHead className="hidden text-right md:table-cell">Tentativas</TableHead>
+              <TableHead className="hidden md:table-cell">Observação</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {job.items.map((item) => (
               <TableRow key={item.id}>
                 <TableCell className="text-right tabular-nums">{item.position}</TableCell>
-                <TableCell className="font-medium">{item.label || "—"}</TableCell>
+                <TableCell className="whitespace-normal font-medium">
+                  {item.label || "—"}
+                  {item.error && (
+                    <span className="mt-1 block text-xs font-normal text-muted-foreground md:hidden">
+                      {describeItemError(item)}
+                    </span>
+                  )}
+                </TableCell>
                 <TableCell>
                   <Badge variant={STATUS_VARIANTS[item.status]}>{BATCH_ITEM_STATUS_LABELS[item.status]}</Badge>
                 </TableCell>
-                <TableCell className="text-right tabular-nums">{item.attempts}</TableCell>
-                <TableCell className="max-w-md text-xs text-muted-foreground">
-                  {item.error && (item.status === "pending" ? `Nova tentativa em breve: ${item.error}` : item.error)}
+                <TableCell className="hidden text-right tabular-nums md:table-cell">{item.attempts}</TableCell>
+                <TableCell className="hidden max-w-md whitespace-normal text-xs text-muted-foreground md:table-cell">
+                  {item.error && describeItemError(item)}
                 </TableCell>
               </TableRow>
             ))}

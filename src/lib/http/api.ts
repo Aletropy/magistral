@@ -31,6 +31,13 @@ export function batchDownloadEndpoint(id: string, format: ExportFormat): string 
   return `${batchEndpoint(id)}/download?format=${format}`;
 }
 
+export const DEMO_CLAUSES_ENDPOINT = "/api/demo/clauses";
+export const DEMO_LIBRARY_ENDPOINT = "/api/demo/library";
+
+export interface DemoLoadedResponseBody {
+  added: number;
+}
+
 export const EXTRACT_TEXT_ENDPOINT = "/api/documents/extract";
 export const LIBRARY_SOURCES_ENDPOINT = "/api/library/sources";
 export const LIBRARY_SYNC_ENDPOINT = "/api/library/sync";
@@ -77,7 +84,8 @@ export interface ConsultedSource {
   label: string;
 }
 
-export interface MinutaResponseBody extends RewriteResponseBody {
+/** Everything a generation produced; saved to the history as is. */
+export interface DraftResult extends RewriteResponseBody {
   /** Library excerpts the minuta was grounded in; empty when the library was not used. */
   consultedSources: ConsultedSource[];
   /** "full" when the whole library fit in the prompt, "search" when hybrid search picked excerpts. */
@@ -110,6 +118,17 @@ export interface ExtractTextResponseBody {
 }
 
 export type PlaygroundResponseBody = RewriteResponseBody;
+
+export interface MinutaResponseBody extends DraftResult {
+  /** The minuta's id in the history. */
+  id: string;
+}
+
+export const MINUTAS_ENDPOINT = "/api/minutas";
+
+export function minutaEndpoint(id: string): string {
+  return `${MINUTAS_ENDPOINT}/${encodeURIComponent(id)}`;
+}
 
 export interface StyleCaptureResponseBody {
   result: StyleCaptureResult;

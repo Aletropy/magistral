@@ -1,6 +1,9 @@
+import type { Metadata } from "next";
 import { connection } from "next/server";
 import { BatchCreator } from "@/components/BatchCreator";
 import { loadMinutaFormOptions } from "@/lib/minuta/loadMinutaFormOptions";
+
+export const metadata: Metadata = { title: "Novo lote" };
 
 export default async function NewBatchPage() {
   await connection();

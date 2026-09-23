@@ -6,11 +6,12 @@ import { PersonaEditor } from "@/components/PersonaEditor";
 import { StyleProfileCard } from "@/components/StyleProfileCard";
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/FormField";
-import { Input } from "@/components/ui/input";
+import { FileInput } from "@/components/ui/FileInput";
 import { useStyleCapture } from "@/hooks/useStyleCapture";
 import { DOCUMENT_ACCEPT, MAX_UPLOAD_MEBIBYTES } from "@/lib/documents/formats";
 import { EMPTY_PERSONA, type PersonaFormValues } from "@/lib/personas/schema";
 import type { StyleCaptureResult } from "@/lib/style/captureStyle";
+import { plural } from "@/lib/text/plural";
 
 function toPersonaDraft(capture: StyleCaptureResult): PersonaFormValues {
   return {
@@ -41,12 +42,11 @@ export function StyleCapture({ personas }: { personas: EditablePersona[] }) {
           htmlFor="reference"
           hint={`PDF com texto selecionável ou DOCX, até ${MAX_UPLOAD_MEBIBYTES} MB. O arquivo não é guardado; só o perfil e os trechos que você salvar.`}
         >
-          <Input
+          <FileInput
             id="reference"
-            type="file"
             accept={DOCUMENT_ACCEPT}
             disabled={isAnalyzing}
-            onChange={(event) => setFile(event.target.files?.[0] ?? null)}
+            onFiles={([chosen]) => setFile(chosen ?? null)}
           />
         </FormField>
         <Button type="submit" size="lg" className="self-start" disabled={!file || isAnalyzing}>
@@ -64,8 +64,12 @@ export function StyleCapture({ personas }: { personas: EditablePersona[] }) {
           <StyleProfileCard profile={result.profile} />
           {result.discardedExcerpts > 0 && (
             <p className="text-sm text-muted-foreground">
-              {result.discardedExcerpts} trecho(s) sugerido(s) pela IA foram descartados por não aparecerem
-              literalmente no documento.
+              {plural(
+                result.discardedExcerpts,
+                "trecho sugerido pela IA não aparece literalmente no documento e foi descartado",
+                "trechos sugeridos pela IA não aparecem literalmente no documento e foram descartados",
+              )}
+              .
             </p>
           )}
           {personas.length > 0 && <ApplyStyleToPersona personas={personas} capture={result} />}

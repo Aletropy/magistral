@@ -16,7 +16,7 @@ export function PersonaSelector({ personas, value, error, disabled, onChange }: 
   return (
     <fieldset className="flex flex-col gap-2" disabled={disabled}>
       <legend className="mb-1 flex w-full items-baseline justify-between text-sm font-medium">
-        Personalidade (tom de voz)
+        Persona (tom de voz)
         <Link href={PERSONAS_PATH} className="text-xs font-normal text-primary hover:underline">
           Gerenciar personas
         </Link>

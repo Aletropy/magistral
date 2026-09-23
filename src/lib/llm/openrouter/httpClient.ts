@@ -34,6 +34,7 @@ async function readError(response: Response): Promise<OpenRouterApiError> {
 export function createOpenRouterClient(apiKey: string, fetchImpl: typeof fetch = fetch): OpenRouterClient {
   async function send(request: ChatRequest): Promise<ChatCompletion> {
     let response: Response;
+    let body: unknown;
     try {
       response = await fetchImpl(`${OPENROUTER_BASE_URL}/chat/completions`, {
         method: "POST",
@@ -46,13 +47,14 @@ export function createOpenRouterClient(apiKey: string, fetchImpl: typeof fetch =
         body: JSON.stringify(request),
         signal: AbortSignal.timeout(OPENROUTER_TIMEOUT_MS),
       });
+      if (!response.ok) throw await readError(response);
+      // The timeout also covers reading the body, which is where a slow model spends most of its time.
+      body = await response.json();
     } catch (error) {
+      if (error instanceof OpenRouterApiError) throw error;
       const timedOut = error instanceof DOMException && error.name === "TimeoutError";
       throw new OpenRouterApiError(timedOut ? HTTP_GATEWAY_TIMEOUT : HTTP_SERVICE_UNAVAILABLE, String(error));
     }
-    if (!response.ok) throw await readError(response);
-
-    const body: unknown = await response.json();
     // OpenRouter can answer 200 with an error object when the upstream provider failed.
     const embeddedError = openRouterErrorBodySchema.safeParse(body);
     if (embeddedError.success) {

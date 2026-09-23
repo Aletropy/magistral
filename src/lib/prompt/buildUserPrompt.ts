@@ -7,7 +7,7 @@ const NO_QUALIFICATION = "não informada";
 const NO_SPECIFIC_CLAUSES =
   "Nenhuma cláusula específica foi solicitada; use as cláusulas usuais para este tipo de documento.";
 
-function resolveDocumentTypeLabel(request: MinutaRequest): string {
+export function resolveDocumentTypeLabel(request: MinutaRequest): string {
   return request.documentType === OTHER_DOCUMENT_TYPE_ID
     ? request.customDocumentType
     : DOCUMENT_TYPE_LABELS[request.documentType];

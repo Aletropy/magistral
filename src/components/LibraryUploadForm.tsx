@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/FormField";
-import { Input } from "@/components/ui/input";
+import { FileInput } from "@/components/ui/FileInput";
 import { NATIVE_SELECT_CLASS } from "@/components/ui/nativeSelect";
 import { useLibraryActions } from "@/hooks/useLibraryActions";
 import { DOCUMENT_ACCEPT, MAX_FILES_PER_UPLOAD, MAX_UPLOAD_MEBIBYTES } from "@/lib/documents/formats";
@@ -41,14 +41,7 @@ export function LibraryUploadForm() {
           htmlFor="library-files"
           hint={`PDF com texto ou DOCX, até ${MAX_UPLOAD_MEBIBYTES} MB cada, ${MAX_FILES_PER_UPLOAD} por envio.`}
         >
-          <Input
-            id="library-files"
-            type="file"
-            multiple
-            accept={DOCUMENT_ACCEPT}
-            disabled={isPending}
-            onChange={(event) => setFiles([...(event.target.files ?? [])])}
-          />
+          <FileInput id="library-files" multiple accept={DOCUMENT_ACCEPT} disabled={isPending} onFiles={setFiles} />
         </FormField>
         <FormField label="Tipo" htmlFor="library-kind">
           <select
@@ -67,7 +60,7 @@ export function LibraryUploadForm() {
         </FormField>
       </div>
       <Button type="submit" className="self-start" disabled={isPending || files.length === 0}>
-        {isPending ? "Indexando… (extração, divisão por artigos e embeddings)" : "Adicionar à biblioteca"}
+        {isPending ? "Indexando documentos…" : "Adicionar à biblioteca"}
       </Button>
       {error && <p className="text-sm text-destructive">{error}</p>}
       {outcomes.length > 0 && (

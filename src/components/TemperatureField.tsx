@@ -17,7 +17,7 @@ export function TemperatureField({ value, error, disabled, onChange }: Temperatu
     <div className="flex flex-col gap-2">
       <div className="flex items-baseline justify-between">
         <span id="temperature-label" className="text-sm font-medium">
-          Temperatura
+          Criatividade (temperatura)
         </span>
         <span className="text-sm tabular-nums">{value.toFixed(TEMPERATURE_DECIMALS)}</span>
       </div>
@@ -31,8 +31,8 @@ export function TemperatureField({ value, error, disabled, onChange }: Temperatu
         onValueChange={([temperature]) => onChange(temperature)}
       />
       <p className="text-xs text-muted-foreground">
-        Valores baixos (0,2) para pareceres rigorosos; altos (0,7) para textos persuasivos. Só o Gemini
-        usa este ajuste.
+        Valores baixos (0,2) para pareceres rigorosos; altos (0,7) para textos persuasivos. O Claude
+        (Anthropic) ignora este ajuste.
       </p>
       {error && <p className="text-xs text-destructive">{error}</p>}
     </div>

@@ -48,29 +48,52 @@ export function toEmbeddingText(title: string, chunk: TextChunk): string {
   return [title, chunk.context, chunk.label, chunk.text].filter(Boolean).join("\n");
 }
 
-/** Extracts, chunks and embeds a document; nothing is written until the caller stores the result. */
-export async function prepareSource(embedding: EmbeddingModel, document: LibraryDocument): Promise<PreparedSource> {
-  const text = await extractText({ name: document.fileName, bytes: document.bytes });
-  if (text.length > MAX_LIBRARY_DOCUMENT_CHARS) throw new DocumentExtractionError("too_long");
+/** A document already available as plain text (e.g. the built-in examples). */
+export interface LibraryText {
+  title: string;
+  kind: LibrarySourceKind;
+  /** Shown as the source's file name. */
+  fileName: string;
+  text: string;
+}
 
-  const title = titleFromFileName(document.fileName);
-  const chunks = chunkLegalText(text);
+/** Chunks and embeds text; nothing is written until the caller stores the result. */
+export async function prepareTextSource(
+  embedding: EmbeddingModel,
+  document: LibraryText & { folderPath: string | null; sha256: string },
+): Promise<PreparedSource> {
+  if (document.text.length > MAX_LIBRARY_DOCUMENT_CHARS) throw new DocumentExtractionError("too_long");
+
+  const chunks = chunkLegalText(document.text);
   const embeddings = await embedAll(
     embedding,
-    chunks.map((chunk) => toEmbeddingText(title, chunk)),
+    chunks.map((chunk) => toEmbeddingText(document.title, chunk)),
     "document",
   );
 
   return {
     source: {
-      title,
+      title: document.title,
       kind: document.kind,
-      fileName: path.basename(document.fileName),
+      fileName: document.fileName,
       folderPath: document.folderPath,
-      sha256: sha256Of(document.bytes),
-      charCount: text.length,
+      sha256: document.sha256,
+      charCount: document.text.length,
     },
     chunks,
     embeddings,
   };
+}
+
+/** Extracts, chunks and embeds a file; nothing is written until the caller stores the result. */
+export async function prepareSource(embedding: EmbeddingModel, document: LibraryDocument): Promise<PreparedSource> {
+  const text = await extractText({ name: document.fileName, bytes: document.bytes });
+  return prepareTextSource(embedding, {
+    title: titleFromFileName(document.fileName),
+    kind: document.kind,
+    fileName: path.basename(document.fileName),
+    text,
+    folderPath: document.folderPath,
+    sha256: sha256Of(document.bytes),
+  });
 }

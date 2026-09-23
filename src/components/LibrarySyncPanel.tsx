@@ -6,14 +6,15 @@ import { Button } from "@/components/ui/button";
 import { useLibraryActions } from "@/hooks/useLibraryActions";
 import type { LibrarySyncResponseBody } from "@/lib/http/api";
 import type { FolderSyncReport } from "@/lib/rag/syncFolder";
+import { plural } from "@/lib/text/plural";
 
 function summarize(report: FolderSyncReport): string {
   return [
-    `${report.added.length} adicionado(s)`,
-    `${report.updated.length} atualizado(s)`,
-    `${report.removed.length} removido(s)`,
+    plural(report.added.length, "adicionado", "adicionados"),
+    plural(report.updated.length, "atualizado", "atualizados"),
+    plural(report.removed.length, "removido", "removidos"),
     `${report.unchanged} sem mudança`,
-    report.duplicates.length > 0 && `${report.duplicates.length} duplicado(s) ignorado(s)`,
+    report.duplicates.length > 0 && plural(report.duplicates.length, "duplicado ignorado", "duplicados ignorados"),
   ]
     .filter(Boolean)
     .join(" · ");

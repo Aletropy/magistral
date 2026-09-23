@@ -1,7 +1,14 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { BatchProgress } from "@/components/BatchProgress";
 import { getBatchRepository } from "@/lib/batch/getBatchRepository";
+
+export async function generateMetadata({ params }: PageProps<"/lotes/[id]">): Promise<Metadata> {
+  const { id } = await params;
+  const item = getBatchRepository().getJob(id);
+  return { title: item?.name ?? "Lote" };
+}
 
 export default async function BatchPage({ params }: PageProps<"/lotes/[id]">) {
   await connection();

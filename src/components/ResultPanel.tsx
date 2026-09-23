@@ -40,7 +40,7 @@ export function ResultPanel({ result, isGenerating, error, onReviewApplied }: Re
       {isGenerating ? (
         <Notice>
           <span className="animate-pulse">
-            Redigindo a minuta com a personalidade escolhida… isso pode levar até alguns minutos.
+            Redigindo a minuta com a persona escolhida… isso pode levar alguns minutos.
           </span>
         </Notice>
       ) : result ? (
@@ -57,7 +57,7 @@ export function ResultPanel({ result, isGenerating, error, onReviewApplied }: Re
           <Tabs defaultValue="document">
             <TabsList>
               <TabsTrigger value="document">Documento</TabsTrigger>
-              <TabsTrigger value="redline">Comparar (redline)</TabsTrigger>
+              <TabsTrigger value="redline">Revisar alterações</TabsTrigger>
             </TabsList>
             <TabsContent value="document">
               <MinutaPreview blocks={blocks} />

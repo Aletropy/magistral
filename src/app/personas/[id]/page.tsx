@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
@@ -6,6 +7,12 @@ import { Button } from "@/components/ui/button";
 import { getPersonaRepository } from "@/lib/personas/getPersonaRepository";
 import { personaPlaygroundPath } from "@/lib/personas/paths";
 import { toPersonaInput } from "@/lib/personas/toPersonaInput";
+
+export async function generateMetadata({ params }: PageProps<"/personas/[id]">): Promise<Metadata> {
+  const { id } = await params;
+  const item = getPersonaRepository().get(id);
+  return { title: item ? `Editar ${item.name}` : "Persona" };
+}
 
 export default async function EditPersonaPage({ params }: PageProps<"/personas/[id]">) {
   await connection();
@@ -18,7 +25,7 @@ export default async function EditPersonaPage({ params }: PageProps<"/personas/[
       <header className="flex flex-wrap items-end justify-between gap-4">
         <h1 className="text-3xl font-bold tracking-tight">Editar “{persona.name}”</h1>
         <Button asChild variant="outline" size="lg">
-          <Link href={personaPlaygroundPath(id)}>Abrir no playground</Link>
+          <Link href={personaPlaygroundPath(id)}>Testar persona</Link>
         </Button>
       </header>
       <PersonaEditor personaId={id} initialValues={toPersonaInput(persona)} />

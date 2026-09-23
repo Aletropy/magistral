@@ -76,7 +76,8 @@ export function MinutaForm({
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const result = minutaRequestSchema.safeParse(values);
+    // The toggle can't be on for an empty library (e.g. emptied in another tab after it was checked).
+    const result = minutaRequestSchema.safeParse({ ...values, useLibrary: values.useLibrary && librarySourceCount > 0 });
     if (!result.success) {
       setErrors(collectFieldErrors(result.error));
       return;

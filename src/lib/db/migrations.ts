@@ -177,6 +177,23 @@ function createLibraryMetaTable(db: DatabaseSync): void {
   }
 }
 
+function createMinutasTable(db: DatabaseSync): void {
+  db.exec(`
+    CREATE TABLE minutas (
+      id TEXT PRIMARY KEY,
+      title TEXT NOT NULL,
+      persona_name TEXT NOT NULL,
+      document_type_label TEXT NOT NULL,
+      request TEXT NOT NULL,
+      result TEXT NOT NULL,
+      markdown TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+      updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+    );
+    CREATE INDEX minutas_created_at ON minutas (created_at);
+  `);
+}
+
 /** Ordered schema changes. Append new migrations; never edit or reorder existing ones. */
 export const MIGRATIONS: readonly Migration[] = [
   createPersonaTables,
@@ -187,6 +204,7 @@ export const MIGRATIONS: readonly Migration[] = [
   createClausesTable,
   createBatchTables,
   createLibraryMetaTable,
+  createMinutasTable,
 ];
 
 function readSchemaVersion(db: DatabaseSync): number {

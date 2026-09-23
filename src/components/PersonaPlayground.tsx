@@ -11,7 +11,6 @@ import { TagInput } from "@/components/TagInput";
 import { TemperatureField } from "@/components/TemperatureField";
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/FormField";
-import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { usePersonaMutations } from "@/hooks/usePersonaMutations";
@@ -86,7 +85,13 @@ export function PersonaPlayground({ personaId, persona }: PersonaPlaygroundProps
     <div className="flex flex-col gap-6" onKeyDown={handleKeyDown}>
       <div className="flex flex-wrap items-center gap-2">
         <Button size="lg" disabled={isBusy} onClick={handleRun}>
-          {isRunning ? "Reescrevendo…" : "Testar (Ctrl+Enter)"}
+          {isRunning ? (
+            "Reescrevendo…"
+          ) : (
+            <>
+              Testar<span className="hidden md:inline"> (Ctrl+Enter)</span>
+            </>
+          )}
         </Button>
         <Button size="lg" variant="outline" disabled={isBusy} onClick={handleSave}>
           {isSaving ? "Salvando…" : "Salvar na persona"}
@@ -149,8 +154,10 @@ export function PersonaPlayground({ personaId, persona }: PersonaPlaygroundProps
                 disabled={isSaving}
                 onChange={(toneParameters) => update("toneParameters", toneParameters)}
                 renderItem={({ id, value, onChange }) => (
-                  <Input
+                  <Textarea
                     id={id}
+                    rows={1}
+                    className="min-h-9"
                     maxLength={MAX_TONE_PARAMETER_CHARS}
                     value={value}
                     onChange={(event) => onChange(event.target.value)}

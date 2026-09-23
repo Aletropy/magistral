@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { RedlineViewer } from "@/components/RedlineViewer";
-import { Input } from "@/components/ui/input";
+import { FileInput } from "@/components/ui/FileInput";
 import { Textarea } from "@/components/ui/textarea";
 import { locateClauseSections, replaceSectionBody } from "@/lib/clauses/locateClauseSections";
 import { DOCUMENT_ACCEPT } from "@/lib/documents/formats";
@@ -121,11 +121,10 @@ export function RedlinePanel({ markdown, approvedClauses, onApply }: RedlinePane
               value={pasted}
               onChange={(event) => setPasted(event.target.value)}
             />
-            <Input
-              type="file"
-              aria-label="Carregar original em PDF ou DOCX"
+            <FileInput
+              ariaLabel="Carregar original em PDF ou DOCX"
               accept={DOCUMENT_ACCEPT}
-              onChange={(event) => void loadFile(event.target.files?.[0])}
+              onFiles={([chosen]) => void loadFile(chosen)}
             />
             {fileError && <p className="text-xs text-destructive">{fileError}</p>}
           </div>

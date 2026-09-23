@@ -15,7 +15,7 @@ export function DeleteClauseButton({ id, title }: { id: string; title: string })
   return (
     <ConfirmDeleteButton
       title={`Excluir “${title}”?`}
-      description="A cláusula sai da biblioteca. Minutas já geradas não mudam."
+      description="A cláusula deixa de ser oferecida no formulário. Minutas já geradas não mudam."
       isPending={isPending}
       error={error}
       onConfirm={handleConfirm}

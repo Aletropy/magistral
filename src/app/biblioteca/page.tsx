@@ -1,9 +1,12 @@
+import type { Metadata } from "next";
 import { connection } from "next/server";
 import { DeleteLibrarySourceButton } from "@/components/DeleteLibrarySourceButton";
 import { LibrarySyncPanel } from "@/components/LibrarySyncPanel";
 import { LibraryUploadForm } from "@/components/LibraryUploadForm";
+import { LoadExamplesButton } from "@/components/LoadExamplesButton";
 import { ReindexLibraryButton } from "@/components/ReindexLibraryButton";
 import { WarningCallout } from "@/components/ui/WarningCallout";
+import { DEMO_LIBRARY_ENDPOINT } from "@/lib/http/api";
 import { getActiveEmbeddingIdentity } from "@/lib/llm/getEmbedder";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -12,7 +15,10 @@ import { getLibraryRepository } from "@/lib/rag/getLibraryRepository";
 import { FULL_CONTEXT_MAX_CHARS } from "@/lib/rag/selectContext";
 import { LIBRARY_INDEX_MISMATCH_MESSAGE } from "@/lib/rag/errors";
 import { LIBRARY_SOURCE_KIND_LABELS } from "@/lib/rag/types";
+import { plural } from "@/lib/text/plural";
 import { formatDateTime, formatInteger } from "@/lib/usage/format";
+
+export const metadata: Metadata = { title: "Biblioteca jurídica" };
 
 export default async function LibraryPage() {
   await connection();
@@ -23,8 +29,8 @@ export default async function LibraryPage() {
   const needsReindex = indexInfo.chunkCount > 0 && indexInfo.model !== getActiveEmbeddingIdentity().id;
   const strategy =
     totalChars <= FULL_CONTEXT_MAX_CHARS
-      ? "cabe inteira no contexto da IA (recuperação completa)"
-      : "é consultada por busca híbrida (palavras-chave + semântica)";
+      ? "é enviada inteira à IA a cada minuta."
+      : "é grande: a IA recebe só os trechos mais relevantes para cada minuta.";
 
   return (
     <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 px-4 py-10 sm:px-8">
@@ -36,8 +42,8 @@ export default async function LibraryPage() {
         </p>
         {sources.length > 0 && (
           <p className="text-sm text-muted-foreground">
-            {formatInteger(sources.length)} documento(s), {formatInteger(totalChars)} caracteres: a biblioteca{" "}
-            {strategy}.
+            {plural(sources.length, "documento", "documentos")}, {plural(totalChars, "caractere", "caracteres")}. A
+            biblioteca {strategy}
           </p>
         )}
       </header>
@@ -59,37 +65,49 @@ export default async function LibraryPage() {
           <TableHeader>
             <TableRow>
               <TableHead>Documento</TableHead>
-              <TableHead>Tipo</TableHead>
-              <TableHead>Origem</TableHead>
-              <TableHead className="text-right">Trechos</TableHead>
-              <TableHead className="text-right">Caracteres</TableHead>
-              <TableHead>Adicionado em</TableHead>
+              <TableHead className="hidden md:table-cell">Tipo</TableHead>
+              <TableHead className="hidden md:table-cell">Origem</TableHead>
+              <TableHead className="hidden text-right md:table-cell">Trechos</TableHead>
+              <TableHead className="hidden text-right md:table-cell">Caracteres</TableHead>
+              <TableHead className="hidden md:table-cell">Adicionado em</TableHead>
               <TableHead className="text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {sources.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center text-muted-foreground">
-                  A biblioteca está vazia.
+                <TableCell colSpan={7} className="whitespace-normal text-muted-foreground">
+                  <div className="flex flex-col items-start gap-3 py-4">
+                    A biblioteca está vazia. Envie leis, decretos e pareceres, ou experimente com uma lei e um
+                    decreto fictícios de exemplo.
+                    <LoadExamplesButton
+                      endpoint={DEMO_LIBRARY_ENDPOINT}
+                      label="Carregar exemplos"
+                      pendingLabel="Indexando exemplos…"
+                      note="Na primeira vez, o modelo de busca (cerca de 190 MB) é baixado; pode levar alguns minutos."
+                    />
+                  </div>
                 </TableCell>
               </TableRow>
             ) : (
               sources.map((source) => (
                 <TableRow key={source.id}>
-                  <TableCell>
-                    <span className="flex flex-col">
+                  <TableCell className="whitespace-normal">
+                    <span className="flex flex-col gap-0.5">
                       <span className="font-medium">{source.title}</span>
-                      <span className="text-xs text-muted-foreground">{source.folderPath ?? source.fileName}</span>
+                      <span className="break-all text-xs text-muted-foreground">{source.folderPath ?? source.fileName}</span>
+                      <span className="text-xs text-muted-foreground md:hidden">
+                        {LIBRARY_SOURCE_KIND_LABELS[source.kind]} · {plural(source.chunkCount, "trecho", "trechos")}
+                      </span>
                     </span>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="hidden md:table-cell">
                     <Badge variant="secondary">{LIBRARY_SOURCE_KIND_LABELS[source.kind]}</Badge>
                   </TableCell>
-                  <TableCell>{source.folderPath ? "Pasta" : "Envio"}</TableCell>
-                  <TableCell className="text-right tabular-nums">{formatInteger(source.chunkCount)}</TableCell>
-                  <TableCell className="text-right tabular-nums">{formatInteger(source.charCount)}</TableCell>
-                  <TableCell className="tabular-nums">{formatDateTime(source.createdAt)}</TableCell>
+                  <TableCell className="hidden md:table-cell">{source.folderPath ? "Pasta" : "Envio"}</TableCell>
+                  <TableCell className="hidden text-right tabular-nums md:table-cell">{formatInteger(source.chunkCount)}</TableCell>
+                  <TableCell className="hidden text-right tabular-nums md:table-cell">{formatInteger(source.charCount)}</TableCell>
+                  <TableCell className="hidden tabular-nums md:table-cell">{formatDateTime(source.createdAt)}</TableCell>
                   <TableCell>
                     <div className="flex justify-end">
                       <DeleteLibrarySourceButton

@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { applyHunkDecisions, diffWords, type HunkDecision } from "@/lib/diff/wordDiff";
+import { plural } from "@/lib/text/plural";
 import { cn } from "@/lib/utils";
 
 interface RedlineViewerProps {
@@ -36,7 +37,7 @@ export function RedlineViewer({ original, revised, onApply }: RedlineViewerProps
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center gap-2 text-sm">
-        <span className="font-medium">{changeIds.length} alteração(ões)</span>
+        <span className="font-medium">{plural(changeIds.length, "alteração", "alterações")}</span>
         <span className="text-muted-foreground">
           <del className="bg-red-100 text-red-800">removido</del> ·{" "}
           <ins className="bg-green-100 text-green-800 no-underline">incluído</ins>
@@ -50,7 +51,7 @@ export function RedlineViewer({ original, revised, onApply }: RedlineViewerProps
               Rejeitar todas
             </Button>
             <Button type="button" size="sm" onClick={() => onApply(applyHunkDecisions(parts, decisions))}>
-              Aplicar à minuta ({changeIds.length - rejectedCount} aceita(s))
+              Aplicar à minuta ({plural(changeIds.length - rejectedCount, "aceita", "aceitas")})
             </Button>
           </span>
         )}

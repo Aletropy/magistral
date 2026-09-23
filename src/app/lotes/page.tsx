@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { connection } from "next/server";
 import { BatchProgressBar } from "@/components/BatchProgressBar";
@@ -7,6 +8,8 @@ import { getBatchRepository } from "@/lib/batch/getBatchRepository";
 import { NEW_BATCH_PATH, batchPath } from "@/lib/batch/paths";
 import { isJobActive } from "@/lib/batch/types";
 import { formatDateTime } from "@/lib/usage/format";
+
+export const metadata: Metadata = { title: "Lotes" };
 
 export default async function BatchesPage() {
   await connection();
@@ -32,9 +35,9 @@ export default async function BatchesPage() {
           <TableHeader>
             <TableRow>
               <TableHead>Lote</TableHead>
-              <TableHead>Criado em</TableHead>
-              <TableHead className="w-80">Progresso</TableHead>
-              <TableHead>Situação</TableHead>
+              <TableHead className="hidden md:table-cell">Criado em</TableHead>
+              <TableHead className="hidden w-80 md:table-cell">Progresso</TableHead>
+              <TableHead className="hidden md:table-cell">Situação</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -47,16 +50,19 @@ export default async function BatchesPage() {
             ) : (
               jobs.map((job) => (
                 <TableRow key={job.id}>
-                  <TableCell className="font-medium">
+                  <TableCell className="whitespace-normal font-medium">
                     <Link href={batchPath(job.id)} className="text-primary hover:underline">
                       {job.name}
                     </Link>
+                    <div className="mt-2 md:hidden">
+                      <BatchProgressBar job={job} />
+                    </div>
                   </TableCell>
-                  <TableCell className="tabular-nums">{formatDateTime(job.createdAt)}</TableCell>
-                  <TableCell>
+                  <TableCell className="hidden tabular-nums md:table-cell">{formatDateTime(job.createdAt)}</TableCell>
+                  <TableCell className="hidden md:table-cell">
                     <BatchProgressBar job={job} />
                   </TableCell>
-                  <TableCell>{isJobActive(job) ? "Em andamento" : "Concluído"}</TableCell>
+                  <TableCell className="hidden md:table-cell">{isJobActive(job) ? "Em andamento" : "Concluído"}</TableCell>
                 </TableRow>
               ))
             )}

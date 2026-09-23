@@ -6,8 +6,8 @@ interface ConsultedSourcesProps {
 }
 
 const STRATEGY_DESCRIPTIONS = {
-  full: "A biblioteca inteira coube no contexto da IA.",
-  search: "Trechos escolhidos por busca híbrida (palavras-chave + semântica).",
+  full: "A IA recebeu a biblioteca inteira.",
+  search: "A IA recebeu os trechos mais relevantes da biblioteca para esta minuta.",
 } as const;
 
 /** Lists the library excerpts a minuta was grounded in, so the user can check every citation. */

@@ -6,6 +6,7 @@ import { MinutaForm } from "@/components/MinutaForm";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/FormField";
+import { FileInput } from "@/components/ui/FileInput";
 import { Input } from "@/components/ui/input";
 import { WarningCallout } from "@/components/ui/WarningCallout";
 import { batchPath } from "@/lib/batch/paths";
@@ -27,8 +28,11 @@ import {
 } from "@/lib/http/api";
 import type { MinutaRequest } from "@/lib/minuta/schema";
 import type { MinutaFormOptions } from "@/lib/minuta/loadMinutaFormOptions";
+import { plural } from "@/lib/text/plural";
 
 const CREATE_FAILED = "Não foi possível criar o lote. Tente novamente.";
+/** Served from public/: a small CSV with fictitious debtors to try the batch flow. */
+const SAMPLE_SPREADSHEET_PATH = "/exemplos/devedores.csv";
 const FILE_EXTENSION = /\.[^.]+$/;
 
 function placeholder(column: string): string {
@@ -122,17 +126,16 @@ export function BatchCreator(options: MinutaFormOptions) {
             htmlFor="spreadsheet"
             hint={`A primeira linha tem os nomes das colunas; cada linha seguinte vira uma minuta (até ${MAX_BATCH_ROWS}).`}
           >
-            <Input
-              id="spreadsheet"
-              type="file"
-              accept={SPREADSHEET_ACCEPT}
-              onChange={(event) => void handleFile(event.target.files?.[0])}
-            />
+            <FileInput id="spreadsheet" accept={SPREADSHEET_ACCEPT} onFiles={([chosen]) => void handleFile(chosen)} />
           </FormField>
+          <a href={SAMPLE_SPREADSHEET_PATH} download className="self-start text-sm text-primary hover:underline">
+            Baixar planilha de exemplo (dados fictícios)
+          </a>
           {sheet && (
             <>
               <p className="text-sm">
-                {sheet.rows.length} linha(s). Clique numa coluna para copiar o marcador e cole-o nos campos abaixo:
+                {plural(sheet.rows.length, "linha", "linhas")}. Toque numa coluna para copiar o marcador e cole-o
+                nos campos do modelo:
               </p>
               <div className="flex flex-wrap gap-1.5">
                 {sheet.columns.map((column) => (
@@ -187,7 +190,7 @@ export function BatchCreator(options: MinutaFormOptions) {
             <p className="text-sm text-muted-foreground">Primeira linha preenchida:</p>
             <PreviewRow request={fillRequestTemplate(template, sheet.rows[0])} />
             <Button size="lg" className="self-start" disabled={isCreating || !name.trim()} onClick={handleCreate}>
-              {isCreating ? "Criando lote…" : `Iniciar lote (${sheet.rows.length} minutas)`}
+              {isCreating ? "Criando lote…" : `Iniciar lote (${plural(sheet.rows.length, "minuta", "minutas")})`}
             </Button>
             <p className="text-xs text-muted-foreground">
               As minutas são geradas em segundo plano, duas por vez, com novas tentativas automáticas quando a
@@ -195,7 +198,7 @@ export function BatchCreator(options: MinutaFormOptions) {
             </p>
           </div>
         ) : (
-          <div className="flex min-h-64 items-center justify-center rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
+          <div className="hidden min-h-64 items-center justify-center rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground lg:flex">
             {sheet
               ? "Preencha o modelo usando os marcadores e clique em “Pré-visualizar primeira linha”."
               : "Comece enviando a planilha com os dados de cada minuta."}

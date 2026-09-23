@@ -44,10 +44,10 @@ export const minutaRequestSchema = z
       error: `Use no máximo ${MAX_CLAUSES_CHARS} caracteres.`,
     }),
     persona: z
-      .string({ error: "Selecione uma personalidade válida." })
+      .string({ error: "Selecione uma persona válida." })
       .trim()
-      .min(1, { error: "Selecione uma personalidade." })
-      .max(MAX_PERSONA_ID_CHARS, { error: "Selecione uma personalidade válida." }),
+      .min(1, { error: "Selecione uma persona." })
+      .max(MAX_PERSONA_ID_CHARS, { error: "Selecione uma persona válida." }),
     /** Ground the minuta in the local legal library (RAG). */
     useLibrary: z.boolean(),
     /** Pre-approved clauses from the clause library, in the order they should appear. */

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { connection } from "next/server";
 import { DeletePersonaButton } from "@/components/DeletePersonaButton";
@@ -12,6 +13,8 @@ import {
   personaPlaygroundPath,
 } from "@/lib/personas/paths";
 
+export const metadata: Metadata = { title: "Personas" };
+
 const TEMPERATURE_DECIMALS = 2;
 
 export default async function PersonasPage() {
@@ -24,11 +27,11 @@ export default async function PersonasPage() {
         <div className="flex flex-col gap-2">
           <h1 className="text-3xl font-bold tracking-tight">Personas</h1>
           <p className="max-w-2xl text-muted-foreground">
-            Controle como a IA escreve: instrução de sistema, regras de tom, temperatura e exemplos
-            de estilo de cada persona.
+            Controle como a IA escreve: instrução, regras de tom, termos proibidos, criatividade e
+            exemplos de estilo de cada persona.
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button asChild size="lg" variant="outline">
             <Link href={STYLE_CAPTURE_PATH}>Capturar estilo de documento</Link>
           </Button>
@@ -44,29 +47,34 @@ export default async function PersonasPage() {
             <TableRow>
               <TableHead>Nome</TableHead>
               <TableHead className="hidden md:table-cell">Descrição</TableHead>
-              <TableHead className="text-right">Regras</TableHead>
-              <TableHead className="text-right">Temperatura</TableHead>
+              <TableHead className="hidden text-right md:table-cell">Regras</TableHead>
+              <TableHead className="hidden text-right md:table-cell">Criatividade</TableHead>
               <TableHead className="text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {personas.map((persona) => (
               <TableRow key={persona.id}>
-                <TableCell className="font-medium">
-                  <span className="flex items-center gap-2">
+                <TableCell className="whitespace-normal font-medium">
+                  <span className="flex flex-wrap items-center gap-2">
                     {persona.name}
                     {persona.isBuiltin && <Badge variant="secondary">Padrão</Badge>}
                   </span>
+                  {persona.description && (
+                    <span className="mt-1 block text-xs font-normal text-muted-foreground md:hidden">
+                      {persona.description}
+                    </span>
+                  )}
                 </TableCell>
                 <TableCell className="hidden max-w-md truncate text-muted-foreground md:table-cell">
                   {persona.description}
                 </TableCell>
-                <TableCell className="text-right tabular-nums">{persona.toneParameters.length}</TableCell>
-                <TableCell className="text-right tabular-nums">
+                <TableCell className="hidden text-right tabular-nums md:table-cell">{persona.toneParameters.length}</TableCell>
+                <TableCell className="hidden text-right tabular-nums md:table-cell">
                   {persona.temperature.toFixed(TEMPERATURE_DECIMALS)}
                 </TableCell>
                 <TableCell>
-                  <div className="flex items-start justify-end gap-2">
+                  <div className="flex flex-wrap items-start justify-end gap-2">
                     <Button asChild variant="outline" size="sm">
                       <Link href={personaPlaygroundPath(persona.id)}>Testar</Link>
                     </Button>

@@ -1,5 +1,8 @@
+import type { Metadata } from "next";
 import { ClauseEditor } from "@/components/ClauseEditor";
 import { EMPTY_CLAUSE } from "@/lib/clauses/schema";
+
+export const metadata: Metadata = { title: "Nova cláusula" };
 
 export default function NewClausePage() {
   return (

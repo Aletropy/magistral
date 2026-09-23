@@ -42,6 +42,10 @@ export const DAILY_QUOTA_EXHAUSTED: ErrorResponseInfo = {
   message:
     "A cota diária gratuita da IA acabou. Tente novamente amanhã ou configure uma chave com cobrança.",
 };
+export const UPSTREAM_TIMEOUT: ErrorResponseInfo = {
+  status: 504,
+  message: "A IA demorou demais para responder. Tente de novo; modelos gratuitos às vezes ficam lentos.",
+};
 export const SERVICE_UNAVAILABLE: ErrorResponseInfo = {
   status: 503,
   message: "O serviço de IA está indisponível agora. Tente novamente em alguns minutos.",

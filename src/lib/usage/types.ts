@@ -10,9 +10,9 @@ export type LlmOperation = (typeof LLM_OPERATIONS)[number];
 export const LLM_OPERATION_LABELS: Record<LlmOperation, string> = {
   minuta: "Geração de minuta",
   batch: "Geração em lote",
-  playground: "Playground de persona",
+  playground: "Teste de persona",
   style_capture: "Captura de estilo",
-  embedding: "Embeddings da biblioteca",
+  embedding: "Indexação da biblioteca",
 };
 
 /** "ok", a generation failure reason, or why the call never produced a response. */
