@@ -135,7 +135,7 @@ export function MinutaWizard({
   }
 
   return (
-    <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
+    <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
       <form className="flex flex-col gap-6 rounded-lg border bg-card p-4 sm:p-6" noValidate onSubmit={handleSubmit}>
         <WizardStepper steps={WIZARD_STEPS} current={current} furthest={furthest} onSelect={(id) => goTo(stepIndex(id))} />
 

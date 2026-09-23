@@ -16,7 +16,7 @@ interface AssistantShellProps {
 /** The conversation list beside the open conversation (stacked on phones). */
 export function AssistantShell({ conversations, activeId, children }: AssistantShellProps) {
   return (
-    <div className="grid items-start gap-6 lg:grid-cols-[17rem_minmax(0,1fr)]">
+    <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[17rem_minmax(0,1fr)]">
       <aside className={cn("lg:sticky lg:top-4", activeId ? "hidden lg:block" : "order-last lg:order-none")}>
         <ConversationList conversations={conversations} activeId={activeId} />
       </aside>
