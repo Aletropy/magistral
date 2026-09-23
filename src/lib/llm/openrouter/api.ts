@@ -47,7 +47,7 @@ export const chatCompletionSchema = z.object({
 export type ChatCompletion = z.infer<typeof chatCompletionSchema>;
 
 export interface ChatMessage {
-  role: "system" | "user";
+  role: "system" | "user" | "assistant";
   content: string;
 }
 

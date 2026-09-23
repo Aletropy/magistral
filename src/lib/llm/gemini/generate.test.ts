@@ -1,8 +1,12 @@
 import { FinishReason, type GoogleGenAI } from "@google/genai";
 import { describe, expect, it, vi } from "vitest";
+import { asMinutaGenerator } from "../chatPrompt";
 import { MinutaGenerationError } from "../errors";
 import { GEMINI_MODEL } from "./config";
-import { createGeminiGenerator } from "./generate";
+import { createGeminiChatGenerator } from "./generate";
+
+/** The single-turn drafting call, as getMinutaGenerator builds it. */
+const createGeminiGenerator = (client: GoogleGenAI) => asMinutaGenerator(createGeminiChatGenerator(client));
 
 const PROMPT = { system: "Você é um advogado.", user: "Redija um NDA.", temperature: 0.3 };
 
@@ -35,7 +39,7 @@ describe("createGeminiGenerator", () => {
     expect(generateContent).toHaveBeenCalledWith(
       expect.objectContaining({
         model: GEMINI_MODEL,
-        contents: PROMPT.user,
+        contents: [{ role: "user", parts: [{ text: PROMPT.user }] }],
         config: expect.objectContaining({
           systemInstruction: PROMPT.system,
           temperature: PROMPT.temperature,
@@ -65,6 +69,30 @@ describe("createGeminiGenerator", () => {
     });
     await expect(createGeminiGenerator(client)(PROMPT)).rejects.toEqual(
       new MinutaGenerationError("truncated", { inputTokens: 900, outputTokens: 60000, thinkingTokens: 5536 }),
+    );
+  });
+});
+
+describe("createGeminiChatGenerator", () => {
+  it("sends the conversation with Gemini's role names", async () => {
+    const { client, generateContent } = fakeClient({ text: "Resposta", candidates: [{ finishReason: FinishReason.STOP }] });
+    await createGeminiChatGenerator(client)({
+      system: "Você é um assistente.",
+      messages: [
+        { role: "user", content: "Olá" },
+        { role: "assistant", content: "Oi!" },
+        { role: "user", content: "E agora?" },
+      ],
+      temperature: 0.4,
+    });
+    expect(generateContent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        contents: [
+          { role: "user", parts: [{ text: "Olá" }] },
+          { role: "model", parts: [{ text: "Oi!" }] },
+          { role: "user", parts: [{ text: "E agora?" }] },
+        ],
+      }),
     );
   });
 });

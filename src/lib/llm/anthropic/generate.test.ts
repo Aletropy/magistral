@@ -1,7 +1,11 @@
 import type Anthropic from "@anthropic-ai/sdk";
 import { describe, expect, it, vi } from "vitest";
+import { asMinutaGenerator } from "../chatPrompt";
 import { ANTHROPIC_MODEL, REFUSAL_FALLBACK_BETA, REFUSAL_FALLBACK_MODE } from "./config";
-import { createAnthropicGenerator } from "./generate";
+import { createAnthropicChatGenerator } from "./generate";
+
+/** The single-turn drafting call, as getMinutaGenerator builds it. */
+const createAnthropicGenerator = (client: Anthropic) => asMinutaGenerator(createAnthropicChatGenerator(client));
 
 const PROMPT = { system: "Você é um advogado.", user: "Redija um NDA.", temperature: 0.3 };
 

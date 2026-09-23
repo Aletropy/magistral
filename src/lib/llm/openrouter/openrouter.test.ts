@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { asMinutaGenerator } from "../chatPrompt";
 import {
   CONFIGURATION_ERROR,
   DAILY_QUOTA_EXHAUSTED,
@@ -9,9 +10,12 @@ import {
 import { OpenRouterApiError, type ChatCompletion, type OpenRouterClient } from "./api";
 import { DEFAULT_OPENROUTER_MODELS, OPENROUTER_BASE_URL, resolveOpenRouterModels } from "./config";
 import { openRouterErrorInfo } from "./errors";
-import { createOpenRouterGenerator } from "./generate";
+import { createOpenRouterChatGenerator } from "./generate";
 import { createOpenRouterJsonGenerator } from "./generateJson";
 import { createOpenRouterClient, rotateModels } from "./httpClient";
+
+/** The single-turn drafting call, as getMinutaGenerator builds it. */
+const createOpenRouterGenerator = (client: OpenRouterClient, models: string[]) => asMinutaGenerator(createOpenRouterChatGenerator(client, models));
 
 const PROMPT = { system: "Você é um advogado.", user: "Redija um NDA.", temperature: 0.3 };
 const MODELS = ["a/primary:free", "b/fallback:free"];
@@ -67,6 +71,22 @@ describe("createOpenRouterGenerator", () => {
     await expect(createOpenRouterGenerator(client, MODELS)(PROMPT)).rejects.toMatchObject({ reason });
   });
 
+});
+
+describe("createOpenRouterChatGenerator", () => {
+  it("puts the system prompt first and keeps the assistant turns", async () => {
+    const { client, chat } = fakeClient(completion());
+    await createOpenRouterChatGenerator(client, MODELS)({
+      system: "Você é um assistente.",
+      messages: [
+        { role: "user", content: "Olá" },
+        { role: "assistant", content: "Oi!" },
+        { role: "user", content: "E agora?" },
+      ],
+      temperature: 0.4,
+    });
+    expect(chat.mock.calls[0][0].messages.map((message) => message.role)).toEqual(["system", "user", "assistant", "user"]);
+  });
 });
 
 describe("createOpenRouterJsonGenerator", () => {

@@ -1,18 +1,15 @@
-import type { MinutaGenerator } from "../types";
+import type { ChatGenerator } from "../types";
 import type { OpenRouterClient } from "./api";
 import { checkCompletion } from "./checkCompletion";
 import { OPENROUTER_MAX_TOKENS } from "./config";
 
-export function createOpenRouterGenerator(client: OpenRouterClient, models: string[]): MinutaGenerator {
-  return async ({ system, user, temperature }, options = {}) =>
+export function createOpenRouterChatGenerator(client: OpenRouterClient, models: string[]): ChatGenerator {
+  return async ({ system, messages, temperature }, options = {}) =>
     checkCompletion(
       await client.chat(
         {
           models,
-          messages: [
-            { role: "system", content: system },
-            { role: "user", content: user },
-          ],
+          messages: [{ role: "system", content: system }, ...messages],
           temperature,
           max_tokens: OPENROUTER_MAX_TOKENS,
         },

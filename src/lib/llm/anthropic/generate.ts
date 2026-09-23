@@ -1,6 +1,6 @@
 import type Anthropic from "@anthropic-ai/sdk";
 import { MinutaGenerationError } from "../errors";
-import type { MinutaGenerator, TokenUsage } from "../types";
+import type { ChatGenerator, TokenUsage } from "../types";
 import {
   ANTHROPIC_MAX_TOKENS,
   ANTHROPIC_MODEL,
@@ -9,8 +9,8 @@ import {
 } from "./config";
 
 /** Claude Opus 5 rejects sampling parameters, so the persona's temperature is not sent. */
-export function createAnthropicGenerator(client: Anthropic): MinutaGenerator {
-  return async ({ system, user }, options = {}) => {
+export function createAnthropicChatGenerator(client: Anthropic): ChatGenerator {
+  return async ({ system, messages }, options = {}) => {
     const stream = client.beta.messages.stream(
       {
         model: ANTHROPIC_MODEL,
@@ -19,7 +19,7 @@ export function createAnthropicGenerator(client: Anthropic): MinutaGenerator {
         betas: [REFUSAL_FALLBACK_BETA],
         fallbacks: REFUSAL_FALLBACK_MODE,
         system,
-        messages: [{ role: "user", content: user }],
+        messages,
       },
       { signal: options.signal },
     );

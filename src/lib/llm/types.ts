@@ -22,6 +22,19 @@ export interface GenerationResult {
   usage: TokenUsage;
 }
 
+/** One turn of a conversation. The history a provider receives starts and ends with a user turn. */
+export interface ChatTurn {
+  role: "user" | "assistant";
+  content: string;
+}
+
+/** A multi-turn prompt; a single-turn MinutaPrompt is the special case with one user turn. */
+export interface ChatPrompt {
+  system: string;
+  messages: ChatTurn[];
+  temperature: number;
+}
+
 export interface GenerationOptions {
   /** Cancels the call; the provider request is aborted and the promise rejects with an abort error. */
   signal?: AbortSignal;
@@ -29,6 +42,9 @@ export interface GenerationOptions {
 
 /** Provider-specific call that turns a prompt into the minuta's Markdown, or throws. */
 export type MinutaGenerator = (prompt: MinutaPrompt, options?: GenerationOptions) => Promise<GenerationResult>;
+
+/** Provider-specific call that answers the last user turn of a conversation, or throws. */
+export type ChatGenerator = (prompt: ChatPrompt, options?: GenerationOptions) => Promise<GenerationResult>;
 
 /** A JSON Schema the answer must follow, with the name providers show in structured-output requests. */
 export interface JsonSchemaSpec {

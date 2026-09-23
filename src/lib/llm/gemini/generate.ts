@@ -1,13 +1,16 @@
 import type { GoogleGenAI } from "@google/genai";
-import type { MinutaGenerator } from "../types";
+import type { ChatGenerator, ChatTurn } from "../types";
 import { checkGeminiResponse } from "./checkResponse";
 import { GEMINI_MAX_OUTPUT_TOKENS, GEMINI_MODEL } from "./config";
 
-export function createGeminiGenerator(client: GoogleGenAI): MinutaGenerator {
-  return async ({ system, user, temperature }, options = {}) => {
+/** Gemini calls the assistant's turns "model". */
+const GEMINI_ROLES: Record<ChatTurn["role"], string> = { user: "user", assistant: "model" };
+
+export function createGeminiChatGenerator(client: GoogleGenAI): ChatGenerator {
+  return async ({ system, messages, temperature }, options = {}) => {
     const response = await client.models.generateContent({
       model: GEMINI_MODEL,
-      contents: user,
+      contents: messages.map((turn) => ({ role: GEMINI_ROLES[turn.role], parts: [{ text: turn.content }] })),
       config: {
         systemInstruction: system,
         temperature,
