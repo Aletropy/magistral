@@ -5,14 +5,24 @@ import type { z } from "zod";
 import { useActivity } from "@/components/activity/ActivityProvider";
 import { replaceTaskParam } from "@/lib/browser/taskQueryParam";
 import { NETWORK_ERROR_MESSAGE, readErrorMessage, type TaskCreatedResponseBody } from "@/lib/http/api";
+import { TASK_QUERY_PARAM } from "@/lib/tasks/paths";
 import type { TaskDetail } from "@/lib/tasks/types";
 import { useTask } from "./useTask";
+
+export interface BackgroundTaskOptions {
+  /** The URL query parameter that remembers the task; pages following two tasks give each its own. */
+  queryParam?: string;
+}
 
 /**
  * Starts a slow action through an endpoint that answers 202 with a task id, then follows that task.
  * The id goes into the page URL (`?tarefa=`), so coming back from a notification restores the result.
  */
-export function useBackgroundTask<R>(resultSchema: z.ZodType<R>, initial: TaskDetail | null = null) {
+export function useBackgroundTask<R>(
+  resultSchema: z.ZodType<R>,
+  initial: TaskDetail | null = null,
+  { queryParam = TASK_QUERY_PARAM }: BackgroundTaskOptions = {},
+) {
   const { refresh: refreshActivity } = useActivity();
   const [taskId, setTaskId] = useState(initial?.id ?? null);
   const [isStarting, setIsStarting] = useState(false);
@@ -33,7 +43,7 @@ export function useBackgroundTask<R>(resultSchema: z.ZodType<R>, initial: TaskDe
         }
         const { taskId: queued } = (await response.json()) as TaskCreatedResponseBody;
         setTaskId(queued);
-        replaceTaskParam(queued);
+        replaceTaskParam(queued, queryParam);
         refreshActivity();
         return true;
       } catch {
@@ -43,14 +53,14 @@ export function useBackgroundTask<R>(resultSchema: z.ZodType<R>, initial: TaskDe
         setIsStarting(false);
       }
     },
-    [refreshActivity],
+    [refreshActivity, queryParam],
   );
 
   /** Stops following the task (it keeps its entry in /tarefas). */
   const dismiss = useCallback(() => {
     setTaskId(null);
-    replaceTaskParam(null);
-  }, []);
+    replaceTaskParam(null, queryParam);
+  }, [queryParam]);
 
   return {
     taskId,

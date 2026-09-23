@@ -27,6 +27,7 @@ import {
   type BatchCreatedResponseBody,
 } from "@/lib/http/api";
 import type { MinutaRequest } from "@/lib/minuta/schema";
+import { initialMinutaValues } from "@/lib/minuta/formDefaults";
 import type { MinutaFormOptions } from "@/lib/minuta/loadMinutaFormOptions";
 import { plural } from "@/lib/text/plural";
 
@@ -63,6 +64,12 @@ function PreviewRow({ request }: { request: MinutaRequest }) {
           <dd className="whitespace-pre-line">{request.clauses}</dd>
         </>
       )}
+      {request.baseDocument && (
+        <>
+          <dt className="text-muted-foreground">Documento base</dt>
+          <dd>{request.baseDocument.name || "Documento enviado"}</dd>
+        </>
+      )}
     </dl>
   );
 }
@@ -72,6 +79,7 @@ export function BatchCreator(options: MinutaFormOptions) {
   const router = useRouter();
   const [sheet, setSheet] = useState<Spreadsheet | null>(null);
   const [name, setName] = useState("");
+  const [values, setValues] = useState(() => initialMinutaValues(options.personas));
   const [template, setTemplate] = useState<MinutaRequest | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
@@ -163,8 +171,10 @@ export function BatchCreator(options: MinutaFormOptions) {
             <h2 className="text-sm font-medium">2. Modelo da minuta</h2>
             <MinutaForm
               {...options}
+              values={values}
+              onValuesChange={setValues}
               submitLabel="Pré-visualizar primeira linha"
-              submittingLabel="Criando lote…"
+              busyLabel="Criando lote…"
               isSubmitting={isCreating}
               onSubmit={setTemplate}
             />

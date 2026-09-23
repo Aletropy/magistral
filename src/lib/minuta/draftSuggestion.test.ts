@@ -16,7 +16,7 @@ const EXTRACTION: DraftExtraction = {
   documentType: "locacao",
   customDocumentType: "",
   parties: [{ name: "  Imobiliária Beta Ltda. ", role: "Locadora", qualification: "CNPJ 11.111.111/0001-11" }],
-  clauses: "- Aluguel de R$ 3.000\n- Reajuste pelo IPCA",
+  clauses: ["Aluguel de R$ 3.000", "- Reajuste pelo IPCA", " "],
   approvedClauseIds: ["foro", "desconhecida", "foro"],
   reviewNotes: ["Confira o CPF do locatário.", " "],
 };
@@ -33,6 +33,7 @@ describe("toSuggestedDraft", () => {
     expect(draft.parties[0].name).toBe("Imobiliária Beta Ltda.");
     expect(draft.parties[1]).toEqual({ name: "", role: "", qualification: "" });
     expect(draft.approvedClauseIds).toEqual(["foro"]);
+    expect(draft.clauses).toBe("- Aluguel de R$ 3.000\n- Reajuste pelo IPCA");
   });
 
   it("caps the parties and clips long names", () => {

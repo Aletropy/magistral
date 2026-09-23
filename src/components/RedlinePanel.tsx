@@ -4,21 +4,14 @@ import { useMemo, useState } from "react";
 import { RedlineViewer } from "@/components/RedlineViewer";
 import { FileInput } from "@/components/ui/FileInput";
 import { Textarea } from "@/components/ui/textarea";
+import { useDocumentText } from "@/hooks/useDocumentText";
 import { locateClauseSections, replaceSectionBody } from "@/lib/clauses/locateClauseSections";
 import { DOCUMENT_ACCEPT } from "@/lib/documents/formats";
-import {
-  EXTRACT_TEXT_ENDPOINT,
-  NETWORK_ERROR_MESSAGE,
-  UPLOAD_FILE_FIELD,
-  readErrorMessage,
-  type ApprovedClauseText,
-  type ExtractTextResponseBody,
-} from "@/lib/http/api";
+import type { ApprovedClauseText } from "@/lib/http/api";
 
 type OriginalSource = "clauses" | "pasted";
 
 const PASTE_ROWS = 8;
-const EXTRACT_FAILED = "Não foi possível ler o arquivo.";
 
 interface RedlinePanelProps {
   markdown: string;
@@ -66,24 +59,14 @@ export function RedlinePanel({ markdown, approvedClauses, onApply }: RedlinePane
   const hasClauses = approvedClauses.length > 0;
   const [source, setSource] = useState<OriginalSource>(hasClauses ? "clauses" : "pasted");
   const [pasted, setPasted] = useState("");
-  const [fileError, setFileError] = useState<string | null>(null);
+  const { error: fileError, read } = useDocumentText();
 
   async function loadFile(file: File | undefined) {
     if (!file) return;
-    setFileError(null);
-    try {
-      const body = new FormData();
-      body.append(UPLOAD_FILE_FIELD, file);
-      const response = await fetch(EXTRACT_TEXT_ENDPOINT, { method: "POST", body });
-      if (!response.ok) {
-        setFileError(await readErrorMessage(response, EXTRACT_FAILED));
-        return;
-      }
-      setPasted(((await response.json()) as ExtractTextResponseBody).text);
-      setSource("pasted");
-    } catch {
-      setFileError(NETWORK_ERROR_MESSAGE);
-    }
+    const text = await read(file);
+    if (text === null) return;
+    setPasted(text);
+    setSource("pasted");
   }
 
   return (

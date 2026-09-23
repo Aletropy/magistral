@@ -27,7 +27,8 @@ export const draftExtractionSchema = z.object({
   documentType: z.enum(DOCUMENT_TYPE_IDS),
   customDocumentType: z.string(),
   parties: z.array(partyExtractionSchema),
-  clauses: z.string(),
+  /** One condition per item; joined into the form's bullet list (models often drop line breaks in a string). */
+  clauses: z.array(z.string()),
   approvedClauseIds: z.array(z.string()),
   reviewNotes: z.array(z.string()),
 });
@@ -60,6 +61,17 @@ export const draftSuggestionResultSchema = z.object({
 export type DraftSuggestionResult = z.infer<typeof draftSuggestionResultSchema>;
 
 const EMPTY_PARTY = { name: "", role: "", qualification: "" };
+const BULLET = "- ";
+const LEADING_BULLET = /^[-•*]\s*/;
+
+/** The conditions as the form's bullet list, one per line. */
+function toClauseList(items: string[]): string {
+  return items
+    .map((item) => item.trim().replace(LEADING_BULLET, ""))
+    .filter(Boolean)
+    .map((item) => `${BULLET}${item}`)
+    .join("\n");
+}
 
 function clip(text: string, maxChars: number): string {
   return text.trim().slice(0, maxChars);
@@ -84,7 +96,7 @@ export function toSuggestedDraft(extraction: DraftExtraction, knownClauseIds: Re
     documentType: extraction.documentType,
     customDocumentType: clip(extraction.customDocumentType, MAX_CUSTOM_DOCUMENT_TYPE_CHARS),
     parties,
-    clauses: clip(extraction.clauses, MAX_CLAUSES_CHARS),
+    clauses: clip(toClauseList(extraction.clauses), MAX_CLAUSES_CHARS),
     approvedClauseIds: [...new Set(extraction.approvedClauseIds)]
       .filter((id) => knownClauseIds.has(id))
       .slice(0, MAX_APPROVED_CLAUSES),

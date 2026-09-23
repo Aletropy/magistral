@@ -18,7 +18,7 @@ const TYPE_OPTIONS = DOCUMENT_TYPE_IDS.filter((id) => id !== OTHER_DOCUMENT_TYPE
 const RULES = [
   `Classifique o documento em documentType, usando um destes códigos: ${TYPE_OPTIONS}. Se nenhum servir, use \`${OTHER_DOCUMENT_TYPE_ID}\` e descreva o tipo em customDocumentType (senão deixe customDocumentType vazio).`,
   "Em parties, liste cada parte com o nome ou razão social, o papel no documento (ex.: Contratante, Locatária, Parte Reveladora) e a qualificação (CPF/CNPJ, endereço, representante) exatamente como aparecem. Nunca invente dados; deixe vazio o que não estiver na fonte.",
-  "Em clauses, descreva em tópicos curtos (uma linha por tópico, começando com \"- \") as condições específicas que a nova minuta deve conter: objeto, prazos, valores, reajuste, multas, garantias, rescisão, foro e obrigações particulares.",
+  "Em clauses, liste, um item por condição, as condições específicas que a nova minuta deve conter: objeto, prazos, valores, reajuste, multas, garantias, rescisão, foro e obrigações particulares (ex.: \"Preço: R$ 2.500,00 mensais, até o dia 5\").",
   "Em approvedClauseIds, inclua somente ids do catálogo <clausulas_aprovadas> cujo assunto esteja presente na fonte; deixe a lista vazia se nenhum servir.",
   "Em reviewNotes, liste em frases curtas o que o usuário precisa conferir ou completar antes de gerar a minuta (dados faltantes, ambiguidades, dados que parecem ser de um modelo antigo).",
   "Escreva todos os textos em português do Brasil.",
