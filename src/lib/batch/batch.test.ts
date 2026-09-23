@@ -15,6 +15,7 @@ const TEMPLATE: MinutaRequest = {
   persona: "agressivo",
   useLibrary: false,
   approvedClauseIds: [],
+  baseDocument: null,
 };
 
 describe("parseCsv", () => {

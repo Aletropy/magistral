@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { collectFieldErrors } from "@/lib/validation/collectFieldErrors";
 import {
+  MAX_BASE_DOCUMENT_CHARS,
   MAX_CLAUSES_CHARS,
+  documentTypeStepSchema,
   minutaRequestSchema,
   type MinutaFormValues,
 } from "./schema";
@@ -67,5 +69,25 @@ describe("minutaRequestSchema", () => {
         customDocumentType: "Termo de Cessão de Direitos",
       }).success,
     ).toBe(true);
+  });
+
+  it("defaults the base document to null, so requests saved before it existed still parse", () => {
+    expect(minutaRequestSchema.parse(VALID_REQUEST).baseDocument).toBeNull();
+  });
+
+  it("accepts a base document within the limit and rejects a longer one", () => {
+    const baseDocument = { name: "modelo.docx", text: "  CLÁUSULA PRIMEIRA — DO OBJETO  " };
+    expect(minutaRequestSchema.parse({ ...VALID_REQUEST, baseDocument }).baseDocument).toEqual({
+      name: "modelo.docx",
+      text: "CLÁUSULA PRIMEIRA — DO OBJETO",
+    });
+    const tooLong = { name: "x.docx", text: "a".repeat(MAX_BASE_DOCUMENT_CHARS + 1) };
+    expect(fieldErrorsFor({ ...VALID_REQUEST, baseDocument: tooLong })).toHaveProperty(["baseDocument.text"]);
+  });
+
+  it("checks the custom document type in the wizard step even while other fields are still empty", () => {
+    const result = documentTypeStepSchema.safeParse({ documentType: "outro", customDocumentType: "  " });
+    expect(result.success).toBe(false);
+    expect(collectFieldErrors(result.error!)).toHaveProperty("customDocumentType");
   });
 });

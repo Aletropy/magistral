@@ -17,6 +17,7 @@ export async function generateMinuta(
     system: buildSystemPrompt(persona, {
       withLibrary: context.sources.length > 0,
       withApprovedClauses: context.approvedClauses.length > 0,
+      withBaseDocument: request.baseDocument !== null,
     }),
     user: buildUserPrompt(request, context),
     temperature: persona.temperature,

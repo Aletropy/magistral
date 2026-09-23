@@ -21,6 +21,7 @@ const REQUEST: MinutaRequest = {
   persona: "custom",
   useLibrary: false,
   approvedClauseIds: [],
+  baseDocument: null,
 };
 
 const PERSONA: Persona = {

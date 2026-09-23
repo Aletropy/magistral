@@ -16,6 +16,7 @@ const REQUEST: MinutaRequest = {
   persona: "moderno",
   useLibrary: false,
   approvedClauseIds: [],
+  baseDocument: null,
 };
 
 const RESULT: DraftResult = {

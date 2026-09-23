@@ -18,13 +18,26 @@ function formatParty(party: Party, index: number): string {
   return `${index + 1}. ${party.name}, na qualidade de ${party.role}. Qualificação: ${qualification}`;
 }
 
-function attribute(value: string): string {
+/** How much of a base document joins the library search query: its opening names the subject. */
+const BASE_DOCUMENT_QUERY_CHARS = 1500;
+/** Anything shaped like a closing tag, which could end a block early. */
+const CLOSING_TAG = /<\/\s*[\w-]+\s*>/g;
+
+export function attribute(value: string): string {
   return value.replace(/"/g, "'");
 }
 
-function formatSource(source: ContextSource): string {
+/**
+ * Makes user or document text safe to wrap in a tagged block: closing tags inside it are removed, so the
+ * text can't end the block and pose as instructions.
+ */
+export function sanitizeTagContent(text: string): string {
+  return text.replace(CLOSING_TAG, "");
+}
+
+export function formatSource(source: ContextSource): string {
   const context = source.context ? ` contexto="${attribute(source.context)}"` : "";
-  return `<fonte id="${source.ref}" titulo="${attribute(source.title)}" trecho="${attribute(source.label)}"${context}>\n${source.text}\n</fonte>`;
+  return `<fonte id="${source.ref}" titulo="${attribute(source.title)}" trecho="${attribute(source.label)}"${context}>\n${sanitizeTagContent(source.text)}\n</fonte>`;
 }
 
 function formatApprovedClause(clause: Clause, index: number): string {
@@ -45,10 +58,12 @@ export function buildUserPrompt(request: MinutaRequest, context: UserPromptConte
   const parties = request.parties.map(formatParty).join("\n");
   const clauses = request.clauses || NO_SPECIFIC_CLAUSES;
   const { sources, approvedClauses } = context;
+  const base = request.baseDocument;
 
   return [
     sources.length > 0 && `<fontes>\n${sources.map(formatSource).join("\n")}\n</fontes>`,
-    "Redija a minuta descrita abaixo.",
+    base && `<documento_base nome="${attribute(base.name)}">\n${sanitizeTagContent(base.text)}\n</documento_base>`,
+    base ? "Redija a minuta descrita abaixo, usando o documento base como modelo." : "Redija a minuta descrita abaixo.",
     `<tipo_de_documento>\n${resolveDocumentTypeLabel(request)}\n</tipo_de_documento>`,
     `<partes>\n${parties}\n</partes>`,
     approvedClauses.length > 0 &&
@@ -59,7 +74,8 @@ export function buildUserPrompt(request: MinutaRequest, context: UserPromptConte
     .join("\n\n");
 }
 
-/** What the library is searched with: the document type and the requested clauses. */
+/** What the library is searched with: the document type, the requested clauses and the base document's opening. */
 export function buildRetrievalQuery(request: MinutaRequest): string {
-  return [resolveDocumentTypeLabel(request), request.clauses].filter(Boolean).join("\n");
+  const base = request.baseDocument?.text.slice(0, BASE_DOCUMENT_QUERY_CHARS);
+  return [resolveDocumentTypeLabel(request), request.clauses, base].filter(Boolean).join("\n");
 }

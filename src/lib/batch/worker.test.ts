@@ -17,6 +17,7 @@ const TEMPLATE: MinutaRequest = {
   persona: "agressivo",
   useLibrary: false,
   approvedClauseIds: [],
+  baseDocument: null,
 };
 const ROWS = ["Ana", "Bruno", "Carla"].map((nome) => ({ label: nome, row: { nome } }));
 /** Just after "now": new items become due at their creation time. */
