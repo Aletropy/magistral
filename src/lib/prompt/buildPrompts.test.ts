@@ -4,7 +4,7 @@ import { BUILTIN_PERSONAS } from "@/lib/personas/seeds";
 import { DEFAULT_STYLE_SLIDERS, STYLE_SLIDERS } from "@/lib/personas/styleSliders";
 import type { PersonaStyle } from "@/lib/personas/types";
 import { buildSystemPrompt } from "./buildSystemPrompt";
-import { buildUserPrompt } from "./buildUserPrompt";
+import { buildRetrievalQuery, buildUserPrompt } from "./buildUserPrompt";
 
 const REQUEST: MinutaRequest = {
   documentType: "prestacao-servicos",
@@ -15,6 +15,7 @@ const REQUEST: MinutaRequest = {
   ],
   clauses: "",
   persona: "agressivo",
+  useLibrary: false,
 };
 
 const MINIMAL_STYLE: PersonaStyle = {
@@ -42,7 +43,7 @@ describe("buildSystemPrompt", () => {
   });
 
   it("produces a distinct prompt per persona", () => {
-    const prompts = new Set(BUILTIN_PERSONAS.map(buildSystemPrompt));
+    const prompts = new Set(BUILTIN_PERSONAS.map((persona) => buildSystemPrompt(persona)));
     expect(prompts.size).toBe(BUILTIN_PERSONAS.length);
   });
 
@@ -94,6 +95,31 @@ describe("buildSystemPrompt", () => {
     });
     expect(prompt).toContain(`## Ajustes de estilo\n- ${STYLE_SLIDERS.formality.instructions[5]}`);
     expect(prompt).toContain('- "outrossim"\n- "posto isto"');
+  });
+});
+
+describe("library grounding", () => {
+  const SOURCES = [
+    { ref: "F1", title: 'Lei "Complementar" 7', label: "Art. 5º", context: "TÍTULO I", text: "O imposto incide." },
+  ];
+
+  it("adds the grounding rules only when the prompt carries library sources", () => {
+    expect(buildSystemPrompt(MINIMAL_STYLE, { withLibrary: true })).toContain("## Fundamentação");
+    expect(buildSystemPrompt(MINIMAL_STYLE)).not.toContain("## Fundamentação");
+  });
+
+  it("puts the sources in a tagged block before the request, with safe attributes", () => {
+    const prompt = buildUserPrompt(REQUEST, SOURCES);
+    expect(prompt.startsWith(
+      `<fontes>\n<fonte id="F1" titulo="Lei 'Complementar' 7" trecho="Art. 5º" contexto="TÍTULO I">\nO imposto incide.\n</fonte>\n</fontes>`,
+    )).toBe(true);
+    expect(buildUserPrompt(REQUEST)).not.toContain("<fontes>");
+  });
+
+  it("searches the library with the document type and the requested clauses", () => {
+    expect(buildRetrievalQuery({ ...REQUEST, clauses: "Multa de 2%." })).toBe(
+      "Contrato de Prestação de Serviços\nMulta de 2%.",
+    );
   });
 });
 

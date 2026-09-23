@@ -1,5 +1,6 @@
 import type { z } from "zod";
 import type { Persona } from "@/lib/personas/types";
+import type { FolderSyncReport } from "@/lib/rag/syncFolder";
 import type { StyleCaptureResult } from "@/lib/style/captureStyle";
 
 export const MINUTA_ENDPOINT = "/api/minuta";
@@ -7,8 +8,17 @@ export const EXPORT_ENDPOINT = "/api/export";
 export const PERSONAS_ENDPOINT = "/api/personas";
 export const PLAYGROUND_ENDPOINT = "/api/playground";
 export const STYLE_CAPTURE_ENDPOINT = "/api/style-capture";
-/** The multipart field that carries the uploaded document. */
+export const LIBRARY_SOURCES_ENDPOINT = "/api/library/sources";
+export const LIBRARY_SYNC_ENDPOINT = "/api/library/sync";
+
+export function librarySourceEndpoint(id: number): string {
+  return `${LIBRARY_SOURCES_ENDPOINT}/${id}`;
+}
+
+/** The multipart field that carries uploaded documents (repeated for several files). */
 export const UPLOAD_FILE_FIELD = "file";
+/** The multipart field with the library kind of the uploaded documents. */
+export const UPLOAD_KIND_FIELD = "kind";
 
 export function personaEndpoint(id: string): string {
   return `${PERSONAS_ENDPOINT}/${encodeURIComponent(id)}`;
@@ -30,17 +40,47 @@ export interface ApiErrorBody {
   error: string;
 }
 
-export interface MinutaResponseBody {
+export interface RewriteResponseBody {
   markdown: string;
   /** Forbidden terms of the persona that still appear in the output. */
   forbiddenTermsFound: string[];
 }
 
-/** The playground's rewrite comes back in the same shape as a minuta. */
-export type PlaygroundResponseBody = MinutaResponseBody;
+export interface ConsultedSource {
+  ref: string;
+  title: string;
+  label: string;
+}
+
+export interface MinutaResponseBody extends RewriteResponseBody {
+  /** Library excerpts the minuta was grounded in; empty when the library was not used. */
+  consultedSources: ConsultedSource[];
+  /** "full" when the whole library fit in the prompt, "search" when hybrid search picked excerpts. */
+  retrievalStrategy: "full" | "search" | null;
+}
+
+export type PlaygroundResponseBody = RewriteResponseBody;
 
 export interface StyleCaptureResponseBody {
   result: StyleCaptureResult;
+}
+
+export type LibraryUploadStatus = "added" | "duplicate" | "failed";
+
+export interface LibraryUploadOutcome {
+  fileName: string;
+  status: LibraryUploadStatus;
+  /** Why the file was skipped or failed, in pt-BR. */
+  message?: string;
+}
+
+export interface LibraryUploadResponseBody {
+  outcomes: LibraryUploadOutcome[];
+}
+
+export interface LibrarySyncResponseBody {
+  folder: string;
+  report: FolderSyncReport;
 }
 
 export interface PersonaResponseBody {

@@ -2,13 +2,14 @@
 
 import { useMemo } from "react";
 import { DownloadButtons } from "@/components/DownloadButtons";
+import { ConsultedSources } from "@/components/ConsultedSources";
 import { ForbiddenTermsWarning } from "@/components/ForbiddenTermsWarning";
 import { MinutaPreview } from "@/components/MinutaPreview";
+import type { MinutaResponseBody } from "@/lib/http/api";
 import { parseMarkdown } from "@/lib/markdown/parseMarkdown";
 
 interface ResultPanelProps {
-  markdown: string | null;
-  forbiddenTermsFound: string[];
+  result: MinutaResponseBody | null;
   isGenerating: boolean;
   error: string | null;
 }
@@ -21,8 +22,8 @@ function Notice({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function ResultPanel({ markdown, forbiddenTermsFound, isGenerating, error }: ResultPanelProps) {
-  const blocks = useMemo(() => (markdown ? parseMarkdown(markdown) : []), [markdown]);
+export function ResultPanel({ result, isGenerating, error }: ResultPanelProps) {
+  const blocks = useMemo(() => (result ? parseMarkdown(result.markdown) : []), [result]);
 
   return (
     <section className="flex flex-col gap-4" aria-live="polite" aria-busy={isGenerating}>
@@ -37,10 +38,11 @@ export function ResultPanel({ markdown, forbiddenTermsFound, isGenerating, error
             Redigindo a minuta com a personalidade escolhida… isso pode levar até alguns minutos.
           </span>
         </Notice>
-      ) : markdown ? (
+      ) : result ? (
         <>
-          <DownloadButtons markdown={markdown} blocks={blocks} />
-          <ForbiddenTermsWarning terms={forbiddenTermsFound} />
+          <DownloadButtons markdown={result.markdown} blocks={blocks} />
+          <ForbiddenTermsWarning terms={result.forbiddenTermsFound} />
+          <ConsultedSources sources={result.consultedSources} strategy={result.retrievalStrategy} />
           <MinutaPreview blocks={blocks} />
         </>
       ) : (

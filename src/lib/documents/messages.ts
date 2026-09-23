@@ -6,7 +6,7 @@ import {
 } from "@/lib/http/api";
 import type { ErrorResponseInfo } from "@/lib/llm/errors";
 import type { DocumentExtractionFailure } from "./errors";
-import { MAX_DOCUMENT_TEXT_CHARS, MAX_UPLOAD_MEBIBYTES } from "./formats";
+import { MAX_UPLOAD_MEBIBYTES } from "./formats";
 
 export const DOCUMENT_EXTRACTION_ERRORS: Record<DocumentExtractionFailure, ErrorResponseInfo> = {
   unsupported_type: {
@@ -19,7 +19,7 @@ export const DOCUMENT_EXTRACTION_ERRORS: Record<DocumentExtractionFailure, Error
   },
   too_long: {
     status: HTTP_PAYLOAD_TOO_LARGE,
-    message: `O texto do documento passa de ${MAX_DOCUMENT_TEXT_CHARS.toLocaleString("pt-BR")} caracteres. Envie um trecho menor.`,
+    message: "O texto do documento é longo demais para ser processado. Envie um trecho menor.",
   },
   no_text: {
     status: HTTP_UNPROCESSABLE_CONTENT,

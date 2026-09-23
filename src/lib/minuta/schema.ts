@@ -47,6 +47,8 @@ export const minutaRequestSchema = z
       .trim()
       .min(1, { error: "Selecione uma personalidade." })
       .max(MAX_PERSONA_ID_CHARS, { error: "Selecione uma personalidade válida." }),
+    /** Ground the minuta in the local legal library (RAG). */
+    useLibrary: z.boolean(),
   })
   .refine(
     (request) =>

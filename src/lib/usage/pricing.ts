@@ -13,6 +13,7 @@ const TOKENS_PER_MILLION = 1_000_000;
  */
 export const MODEL_PRICING: Readonly<Record<string, ModelPricing>> = {
   "gemini-2.5-flash": { inputUsdPerMTok: 0.3, outputUsdPerMTok: 2.5 },
+  "gemini-embedding-2": { inputUsdPerMTok: 0.2, outputUsdPerMTok: 0 },
   "claude-opus-5": { inputUsdPerMTok: 5, outputUsdPerMTok: 25 },
   "claude-opus-4-8": { inputUsdPerMTok: 5, outputUsdPerMTok: 25 },
 };

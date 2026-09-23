@@ -19,6 +19,7 @@ const REQUEST: MinutaRequest = {
   ],
   clauses: "",
   persona: "custom",
+  useLibrary: false,
 };
 
 const PERSONA: Persona = {

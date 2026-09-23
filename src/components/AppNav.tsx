@@ -3,11 +3,13 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { PERSONAS_PATH } from "@/lib/personas/paths";
+import { LIBRARY_PATH } from "@/lib/rag/paths";
 import { cn } from "@/lib/utils";
 
 const NAV_LINKS = [
   { href: "/", label: "Gerar minuta" },
   { href: PERSONAS_PATH, label: "Personas" },
+  { href: LIBRARY_PATH, label: "Biblioteca" },
   { href: "/uso", label: "Uso" },
 ] as const;
 

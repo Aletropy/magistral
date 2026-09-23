@@ -15,6 +15,7 @@ const VALID_REQUEST: MinutaFormValues = {
   ],
   clauses: "Multa de 10% por quebra de sigilo.",
   persona: "moderno",
+  useLibrary: false,
 };
 
 function fieldErrorsFor(input: unknown): Record<string, string> {

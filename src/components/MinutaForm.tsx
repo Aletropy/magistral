@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import { LibraryToggle } from "@/components/LibraryToggle";
 import { PartiesField } from "@/components/PartiesField";
 import { PersonaSelector } from "@/components/PersonaSelector";
 import { Button } from "@/components/ui/button";
@@ -39,16 +40,18 @@ function initialValues(personas: PersonaSummary[]): MinutaFormValues {
     ],
     clauses: "",
     persona: hasDefault ? DEFAULT_PERSONA_ID : (personas[0]?.id ?? ""),
+    useLibrary: false,
   };
 }
 
 interface MinutaFormProps {
   personas: PersonaSummary[];
+  librarySourceCount: number;
   isSubmitting: boolean;
   onSubmit: (request: MinutaRequest) => void;
 }
 
-export function MinutaForm({ personas, isSubmitting, onSubmit }: MinutaFormProps) {
+export function MinutaForm({ personas, librarySourceCount, isSubmitting, onSubmit }: MinutaFormProps) {
   const [values, setValues] = useState<MinutaFormValues>(() => initialValues(personas));
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -130,6 +133,13 @@ export function MinutaForm({ personas, isSubmitting, onSubmit }: MinutaFormProps
         error={errors.persona}
         disabled={isSubmitting}
         onChange={(persona) => update("persona", persona)}
+      />
+
+      <LibraryToggle
+        checked={values.useLibrary}
+        sourceCount={librarySourceCount}
+        disabled={isSubmitting}
+        onChange={(useLibrary) => update("useLibrary", useLibrary)}
       />
 
       <Button type="submit" size="lg" disabled={isSubmitting}>

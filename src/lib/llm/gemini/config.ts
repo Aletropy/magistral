@@ -19,3 +19,12 @@ export const STYLE_EXTRACTION_MAX_OUTPUT_TOKENS = GEMINI_MAX_OUTPUT_TOKENS;
 
 /** Low temperature keeps the analysis faithful to the document. */
 export const STYLE_EXTRACTION_TEMPERATURE = 0.2;
+
+/** Newest Gemini embedding model; it returns unit-length vectors at any dimensionality. */
+export const GEMINI_EMBEDDING_MODEL = "gemini-embedding-2";
+
+/** Reduced from the native 3072 to keep the local index small; retrieval quality barely changes. */
+export const EMBEDDING_DIMENSIONS = 768;
+
+/** Texts per embedContent request. */
+export const EMBED_BATCH_SIZE = 100;

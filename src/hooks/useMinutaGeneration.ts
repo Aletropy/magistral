@@ -13,8 +13,7 @@ import type { MinutaRequest } from "@/lib/minuta/schema";
 const GENERATION_FAILED = "Não foi possível gerar a minuta. Tente novamente.";
 
 export function useMinutaGeneration() {
-  const [markdown, setMarkdown] = useState<string | null>(null);
-  const [forbiddenTermsFound, setForbiddenTermsFound] = useState<string[]>([]);
+  const [result, setResult] = useState<MinutaResponseBody | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -27,9 +26,7 @@ export function useMinutaGeneration() {
         setError(await readErrorMessage(response, GENERATION_FAILED));
         return;
       }
-      const body = (await response.json()) as MinutaResponseBody;
-      setMarkdown(body.markdown);
-      setForbiddenTermsFound(body.forbiddenTermsFound);
+      setResult((await response.json()) as MinutaResponseBody);
     } catch {
       setError(NETWORK_ERROR_MESSAGE);
     } finally {
@@ -37,5 +34,5 @@ export function useMinutaGeneration() {
     }
   }, []);
 
-  return { markdown, forbiddenTermsFound, isGenerating, error, generate };
+  return { result, isGenerating, error, generate };
 }

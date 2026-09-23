@@ -1,5 +1,6 @@
 import type { MinutaRequest } from "@/lib/minuta/schema";
 import type { Persona } from "@/lib/personas/types";
+import type { ContextSource } from "@/lib/rag/selectContext";
 import { buildSystemPrompt } from "@/lib/prompt/buildSystemPrompt";
 import { buildUserPrompt } from "@/lib/prompt/buildUserPrompt";
 import { MinutaGenerationError } from "./errors";
@@ -10,10 +11,11 @@ export async function generateMinuta(
   generate: MinutaGenerator,
   request: MinutaRequest,
   persona: Persona,
+  librarySources: ContextSource[] = [],
 ): Promise<string> {
   const { text } = await generate({
-    system: buildSystemPrompt(persona),
-    user: buildUserPrompt(request),
+    system: buildSystemPrompt(persona, { withLibrary: librarySources.length > 0 }),
+    user: buildUserPrompt(request, librarySources),
     temperature: persona.temperature,
   });
   const markdown = text.trim();

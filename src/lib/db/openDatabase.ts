@@ -1,6 +1,7 @@
 import { mkdirSync } from "node:fs";
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
+import * as sqliteVec from "sqlite-vec";
 import { runMigrations } from "./migrations";
 
 export const IN_MEMORY_DATABASE = ":memory:";
@@ -12,7 +13,14 @@ const BUSY_TIMEOUT_MS = 5000;
 export function openDatabase(location: string): DatabaseSync {
   if (location !== IN_MEMORY_DATABASE) mkdirSync(path.dirname(location), { recursive: true });
 
-  const db = new DatabaseSync(location, { enableForeignKeyConstraints: true, timeout: BUSY_TIMEOUT_MS });
+  const db = new DatabaseSync(location, {
+    enableForeignKeyConstraints: true,
+    timeout: BUSY_TIMEOUT_MS,
+    allowExtension: true,
+  });
+  // sqlite-vec provides the vec0 tables that hold the library's embeddings.
+  sqliteVec.load(db);
+  db.enableLoadExtension(false);
   db.exec("PRAGMA journal_mode = WAL");
   runMigrations(db);
   return db;
