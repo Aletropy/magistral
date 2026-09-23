@@ -137,6 +137,32 @@ function createClausesTable(db: DatabaseSync): void {
   `);
 }
 
+function createBatchTables(db: DatabaseSync): void {
+  db.exec(`
+    CREATE TABLE batch_jobs (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      request_template TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+    );
+
+    CREATE TABLE batch_items (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      job_id TEXT NOT NULL REFERENCES batch_jobs(id) ON DELETE CASCADE,
+      position INTEGER NOT NULL,
+      label TEXT NOT NULL,
+      row_data TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'pending',
+      markdown TEXT,
+      error TEXT,
+      attempts INTEGER NOT NULL DEFAULT 0,
+      next_attempt_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+    );
+    CREATE INDEX batch_items_job ON batch_items (job_id, position);
+    CREATE INDEX batch_items_queue ON batch_items (status, next_attempt_at);
+  `);
+}
+
 /** Ordered schema changes. Append new migrations; never edit or reorder existing ones. */
 export const MIGRATIONS: readonly Migration[] = [
   createPersonaTables,
@@ -145,6 +171,7 @@ export const MIGRATIONS: readonly Migration[] = [
   addPersonaStyleProfile,
   createLibraryTables,
   createClausesTable,
+  createBatchTables,
 ];
 
 function readSchemaVersion(db: DatabaseSync): number {

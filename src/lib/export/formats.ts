@@ -26,7 +26,7 @@ const COMBINING_DIACRITICS = /[̀-ͯ]/g;
 const NON_ALPHANUMERIC_RUN = /[^a-z0-9]+/g;
 const EDGE_DASHES = /^-+|-+$/g;
 
-function slugify(text: string): string {
+export function slugify(text: string): string {
   return text
     .normalize("NFD")
     .replace(COMBINING_DIACRITICS, "")

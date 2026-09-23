@@ -23,7 +23,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { CLAUSES_PATH } from "@/lib/clauses/paths";
 import { MAX_APPROVED_CLAUSES } from "@/lib/clauses/schema";
-import { clauseAppliesTo, type Clause } from "@/lib/clauses/types";
+import { clauseAppliesTo, type ClauseOption } from "@/lib/clauses/types";
 import type { DocumentTypeId } from "@/lib/minuta/documentTypes";
 
 /** A fixed id keeps dnd-kit's accessibility ids identical on the server and the client. */
@@ -33,8 +33,6 @@ const SCREEN_READER_INSTRUCTIONS: ScreenReaderInstructions = {
   draggable:
     "Para reordenar, pressione espaço para pegar a cláusula, use as setas para cima e para baixo para movê-la e espaço de novo para soltar. Esc cancela.",
 };
-
-export type ClauseOption = Pick<Clause, "id" | "title" | "category" | "documentTypes" | "body">;
 
 interface ApprovedClausesFieldProps {
   clauses: ClauseOption[];

@@ -1,10 +1,11 @@
 import type { LlmProvider } from "@/lib/llm/providers";
 
-export const LLM_OPERATIONS = ["minuta", "playground", "style_capture", "embedding"] as const;
+export const LLM_OPERATIONS = ["minuta", "batch", "playground", "style_capture", "embedding"] as const;
 export type LlmOperation = (typeof LLM_OPERATIONS)[number];
 
 export const LLM_OPERATION_LABELS: Record<LlmOperation, string> = {
   minuta: "Geração de minuta",
+  batch: "Geração em lote",
   playground: "Playground de persona",
   style_capture: "Captura de estilo",
   embedding: "Embeddings da biblioteca",

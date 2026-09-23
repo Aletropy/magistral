@@ -1,24 +1,7 @@
-import {
-  HTTP_BAD_REQUEST,
-  errorResponse,
-  parseJsonBody,
-  type MinutaResponseBody,
-} from "@/lib/http/api";
-import { getClauseRepository } from "@/lib/clauses/getClauseRepository";
-import { isApprovedClauseOrderKept } from "@/lib/clauses/locateClauseSections";
-import { APPROVED_CLAUSE_MISSING_MESSAGE } from "@/lib/clauses/messages";
-import { generateMinuta } from "@/lib/llm/generateMinuta";
-import { getEmbedder } from "@/lib/llm/getEmbedder";
-import { getMinutaGenerator } from "@/lib/llm/getMinutaGenerator";
-import { toErrorResponseInfo } from "@/lib/llm/toErrorResponseInfo";
+import { errorResponse, parseJsonBody, type MinutaResponseBody } from "@/lib/http/api";
+import { draftMinuta } from "@/lib/minuta/draftMinuta";
+import { describeDraftingFailure, MinutaRequestError } from "@/lib/minuta/errors";
 import { minutaRequestSchema } from "@/lib/minuta/schema";
-import { findNegativeConstraintViolations } from "@/lib/personas/findNegativeConstraintViolations";
-import { getPersonaRepository } from "@/lib/personas/getPersonaRepository";
-import { PERSONA_NOT_FOUND_MESSAGE } from "@/lib/personas/messages";
-import { buildRetrievalQuery } from "@/lib/prompt/buildUserPrompt";
-import { getLibraryRepository } from "@/lib/rag/getLibraryRepository";
-import { EMPTY_LIBRARY_MESSAGE } from "@/lib/rag/messages";
-import { selectLibraryContext, type LibraryContext } from "@/lib/rag/selectContext";
 
 /** Long contracts with thinking enabled can take minutes to draft. */
 export const maxDuration = 300;
@@ -28,39 +11,11 @@ export async function POST(request: Request): Promise<Response> {
   if ("response" in parsed) return parsed.response;
 
   try {
-    const persona = getPersonaRepository().get(parsed.data.persona);
-    if (!persona) return errorResponse(HTTP_BAD_REQUEST, PERSONA_NOT_FOUND_MESSAGE);
-
-    const approvedClauses = getClauseRepository().getMany(parsed.data.approvedClauseIds);
-    if (approvedClauses.length !== parsed.data.approvedClauseIds.length) {
-      return errorResponse(HTTP_BAD_REQUEST, APPROVED_CLAUSE_MISSING_MESSAGE);
-    }
-
-    let library: LibraryContext | null = null;
-    if (parsed.data.useLibrary) {
-      library = await selectLibraryContext(getLibraryRepository(), getEmbedder(), buildRetrievalQuery(parsed.data));
-      if (library.sources.length === 0) return errorResponse(HTTP_BAD_REQUEST, EMPTY_LIBRARY_MESSAGE);
-    }
-
-    const sources = library?.sources ?? [];
-    const markdown = await generateMinuta(getMinutaGenerator("minuta"), parsed.data, persona, {
-      sources,
-      approvedClauses,
-    });
-    return Response.json({
-      markdown,
-      forbiddenTermsFound: findNegativeConstraintViolations(markdown, persona.negativeConstraints),
-      consultedSources: sources.map(({ ref, title, label }) => ({ ref, title, label })),
-      retrievalStrategy: library?.strategy ?? null,
-      approvedClauseOrderKept: isApprovedClauseOrderKept(
-        markdown,
-        approvedClauses.map((clause) => clause.title),
-      ),
-      approvedClauses: approvedClauses.map(({ title, body }) => ({ title, body })),
-    } satisfies MinutaResponseBody);
+    const body = await draftMinuta(parsed.data, "minuta");
+    return Response.json(body satisfies MinutaResponseBody);
   } catch (error) {
-    console.error("[api/minuta] generation failed", error);
-    const { status, message } = toErrorResponseInfo(error);
+    if (!(error instanceof MinutaRequestError)) console.error("[api/minuta] generation failed", error);
+    const { status, message } = describeDraftingFailure(error);
     return errorResponse(status, message);
   }
 }

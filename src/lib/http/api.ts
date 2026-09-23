@@ -1,5 +1,7 @@
 import type { z } from "zod";
+import type { BatchJobDetail } from "@/lib/batch/types";
 import type { Clause } from "@/lib/clauses/types";
+import type { ExportFormat } from "@/lib/export/formats";
 import type { Persona } from "@/lib/personas/types";
 import type { FolderSyncReport } from "@/lib/rag/syncFolder";
 import type { StyleCaptureResult } from "@/lib/style/captureStyle";
@@ -13,6 +15,20 @@ export const CLAUSES_ENDPOINT = "/api/clauses";
 
 export function clauseEndpoint(id: string): string {
   return `${CLAUSES_ENDPOINT}/${encodeURIComponent(id)}`;
+}
+
+export const BATCHES_ENDPOINT = "/api/batch";
+
+export function batchEndpoint(id: string): string {
+  return `${BATCHES_ENDPOINT}/${encodeURIComponent(id)}`;
+}
+
+export function batchRetryEndpoint(id: string): string {
+  return `${batchEndpoint(id)}/retry`;
+}
+
+export function batchDownloadEndpoint(id: string, format: ExportFormat): string {
+  return `${batchEndpoint(id)}/download?format=${format}`;
 }
 
 export const EXTRACT_TEXT_ENDPOINT = "/api/documents/extract";
@@ -74,6 +90,18 @@ export interface MinutaResponseBody extends RewriteResponseBody {
 export interface ApprovedClauseText {
   title: string;
   body: string;
+}
+
+export interface BatchCreatedResponseBody {
+  id: string;
+}
+
+export interface BatchRetryResponseBody {
+  requeued: number;
+}
+
+export interface BatchResponseBody {
+  job: BatchJobDetail;
 }
 
 export interface ExtractTextResponseBody {

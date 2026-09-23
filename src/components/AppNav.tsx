@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { BATCHES_PATH } from "@/lib/batch/paths";
 import { CLAUSES_PATH } from "@/lib/clauses/paths";
 import { PERSONAS_PATH } from "@/lib/personas/paths";
 import { LIBRARY_PATH } from "@/lib/rag/paths";
@@ -12,6 +13,7 @@ const NAV_LINKS = [
   { href: PERSONAS_PATH, label: "Personas" },
   { href: LIBRARY_PATH, label: "Biblioteca" },
   { href: CLAUSES_PATH, label: "Cláusulas" },
+  { href: BATCHES_PATH, label: "Lotes" },
   { href: "/uso", label: "Uso" },
 ] as const;
 

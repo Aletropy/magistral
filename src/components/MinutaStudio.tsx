@@ -1,6 +1,6 @@
 "use client";
 
-import type { ClauseOption } from "@/components/ApprovedClausesField";
+import type { ClauseOption } from "@/lib/clauses/types";
 import { MinutaForm } from "@/components/MinutaForm";
 import { ResultPanel } from "@/components/ResultPanel";
 import { useMinutaGeneration } from "@/hooks/useMinutaGeneration";

@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { ApprovedClausesField, type ClauseOption } from "@/components/ApprovedClausesField";
+import { ApprovedClausesField } from "@/components/ApprovedClausesField";
+import type { ClauseOption } from "@/lib/clauses/types";
 import { LibraryToggle } from "@/components/LibraryToggle";
 import { PartiesField } from "@/components/PartiesField";
 import { PersonaSelector } from "@/components/PersonaSelector";
@@ -50,11 +51,22 @@ interface MinutaFormProps {
   personas: PersonaSummary[];
   clauses: ClauseOption[];
   librarySourceCount: number;
+  /** Button text; the batch creator reuses the form to build its template. */
+  submitLabel?: string;
+  submittingLabel?: string;
   isSubmitting: boolean;
   onSubmit: (request: MinutaRequest) => void;
 }
 
-export function MinutaForm({ personas, clauses, librarySourceCount, isSubmitting, onSubmit }: MinutaFormProps) {
+export function MinutaForm({
+  personas,
+  clauses,
+  librarySourceCount,
+  submitLabel = "Gerar minuta",
+  submittingLabel = "Gerando minuta…",
+  isSubmitting,
+  onSubmit,
+}: MinutaFormProps) {
   const [values, setValues] = useState<MinutaFormValues>(() => initialValues(personas));
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -155,7 +167,7 @@ export function MinutaForm({ personas, clauses, librarySourceCount, isSubmitting
       />
 
       <Button type="submit" size="lg" disabled={isSubmitting}>
-        {isSubmitting ? "Gerando minuta…" : "Gerar minuta"}
+        {isSubmitting ? submittingLabel : submitLabel}
       </Button>
     </form>
   );
