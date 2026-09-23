@@ -42,6 +42,12 @@ export function ResultPanel({ result, isGenerating, error }: ResultPanelProps) {
         <>
           <DownloadButtons markdown={result.markdown} blocks={blocks} />
           <ForbiddenTermsWarning terms={result.forbiddenTermsFound} />
+          {!result.approvedClauseOrderKept && (
+            <p role="status" className="rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+              ⚠ A IA não manteve a ordem escolhida para as cláusulas aprovadas. Revise a sequência antes de
+              exportar.
+            </p>
+          )}
           <ConsultedSources sources={result.consultedSources} strategy={result.retrievalStrategy} />
           <MinutaPreview blocks={blocks} />
         </>

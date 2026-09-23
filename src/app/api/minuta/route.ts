@@ -4,6 +4,9 @@ import {
   parseJsonBody,
   type MinutaResponseBody,
 } from "@/lib/http/api";
+import { getClauseRepository } from "@/lib/clauses/getClauseRepository";
+import { isApprovedClauseOrderKept } from "@/lib/clauses/checkApprovedClauseOrder";
+import { APPROVED_CLAUSE_MISSING_MESSAGE } from "@/lib/clauses/messages";
 import { generateMinuta } from "@/lib/llm/generateMinuta";
 import { getEmbedder } from "@/lib/llm/getEmbedder";
 import { getMinutaGenerator } from "@/lib/llm/getMinutaGenerator";
@@ -28,6 +31,11 @@ export async function POST(request: Request): Promise<Response> {
     const persona = getPersonaRepository().get(parsed.data.persona);
     if (!persona) return errorResponse(HTTP_BAD_REQUEST, PERSONA_NOT_FOUND_MESSAGE);
 
+    const approvedClauses = getClauseRepository().getMany(parsed.data.approvedClauseIds);
+    if (approvedClauses.length !== parsed.data.approvedClauseIds.length) {
+      return errorResponse(HTTP_BAD_REQUEST, APPROVED_CLAUSE_MISSING_MESSAGE);
+    }
+
     let library: LibraryContext | null = null;
     if (parsed.data.useLibrary) {
       library = await selectLibraryContext(getLibraryRepository(), getEmbedder(), buildRetrievalQuery(parsed.data));
@@ -35,12 +43,19 @@ export async function POST(request: Request): Promise<Response> {
     }
 
     const sources = library?.sources ?? [];
-    const markdown = await generateMinuta(getMinutaGenerator("minuta"), parsed.data, persona, sources);
+    const markdown = await generateMinuta(getMinutaGenerator("minuta"), parsed.data, persona, {
+      sources,
+      approvedClauses,
+    });
     return Response.json({
       markdown,
       forbiddenTermsFound: findNegativeConstraintViolations(markdown, persona.negativeConstraints),
       consultedSources: sources.map(({ ref, title, label }) => ({ ref, title, label })),
       retrievalStrategy: library?.strategy ?? null,
+      approvedClauseOrderKept: isApprovedClauseOrderKept(
+        markdown,
+        approvedClauses.map((clause) => clause.title),
+      ),
     } satisfies MinutaResponseBody);
   } catch (error) {
     console.error("[api/minuta] generation failed", error);

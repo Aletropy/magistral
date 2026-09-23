@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { approvedClauseIdsSchema } from "@/lib/clauses/schema";
 import { MAX_PERSONA_ID_CHARS } from "@/lib/personas/schema";
 import { DOCUMENT_TYPE_IDS, OTHER_DOCUMENT_TYPE_ID } from "./documentTypes";
 
@@ -49,6 +50,8 @@ export const minutaRequestSchema = z
       .max(MAX_PERSONA_ID_CHARS, { error: "Selecione uma personalidade válida." }),
     /** Ground the minuta in the local legal library (RAG). */
     useLibrary: z.boolean(),
+    /** Pre-approved clauses from the clause library, in the order they should appear. */
+    approvedClauseIds: approvedClauseIdsSchema,
   })
   .refine(
     (request) =>

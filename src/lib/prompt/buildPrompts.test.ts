@@ -16,6 +16,7 @@ const REQUEST: MinutaRequest = {
   clauses: "",
   persona: "agressivo",
   useLibrary: false,
+  approvedClauseIds: [],
 };
 
 const MINIMAL_STYLE: PersonaStyle = {
@@ -104,12 +105,14 @@ describe("library grounding", () => {
   ];
 
   it("adds the grounding rules only when the prompt carries library sources", () => {
-    expect(buildSystemPrompt(MINIMAL_STYLE, { withLibrary: true })).toContain("## Fundamentação");
+    expect(buildSystemPrompt(MINIMAL_STYLE, { withLibrary: true, withApprovedClauses: false })).toContain(
+      "## Fundamentação",
+    );
     expect(buildSystemPrompt(MINIMAL_STYLE)).not.toContain("## Fundamentação");
   });
 
   it("puts the sources in a tagged block before the request, with safe attributes", () => {
-    const prompt = buildUserPrompt(REQUEST, SOURCES);
+    const prompt = buildUserPrompt(REQUEST, { sources: SOURCES, approvedClauses: [] });
     expect(prompt.startsWith(
       `<fontes>\n<fonte id="F1" titulo="Lei 'Complementar' 7" trecho="Art. 5º" contexto="TÍTULO I">\nO imposto incide.\n</fonte>\n</fontes>`,
     )).toBe(true);
@@ -120,6 +123,30 @@ describe("library grounding", () => {
     expect(buildRetrievalQuery({ ...REQUEST, clauses: "Multa de 2%." })).toBe(
       "Contrato de Prestação de Serviços\nMulta de 2%.",
     );
+  });
+});
+
+describe("approved clauses", () => {
+  const CLAUSE = {
+    id: "c1",
+    title: "Foro",
+    category: "",
+    documentTypes: [],
+    body: "Fica eleito o foro de Porto Alegre.",
+    createdAt: "",
+    updatedAt: "",
+  };
+
+  it("lists approved clauses in order before the specific clauses, with preservation rules", () => {
+    const user = buildUserPrompt(REQUEST, { sources: [], approvedClauses: [CLAUSE, { ...CLAUSE, id: "c2", title: "Multa" }] });
+    expect(user).toContain(
+      '<clausulas_aprovadas>\n<clausula ordem="1" titulo="Foro">\nFica eleito o foro de Porto Alegre.\n</clausula>\n<clausula ordem="2" titulo="Multa">',
+    );
+    expect(user.indexOf("<clausulas_aprovadas>")).toBeLessThan(user.indexOf("<clausulas_especificas>"));
+    expect(buildSystemPrompt(MINIMAL_STYLE, { withLibrary: false, withApprovedClauses: true })).toContain(
+      "## Cláusulas aprovadas",
+    );
+    expect(buildUserPrompt(REQUEST)).not.toContain("<clausulas_aprovadas>");
   });
 });
 

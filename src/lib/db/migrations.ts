@@ -123,6 +123,20 @@ function createLibraryTables(db: DatabaseSync): void {
   `);
 }
 
+function createClausesTable(db: DatabaseSync): void {
+  db.exec(`
+    CREATE TABLE clauses (
+      id TEXT PRIMARY KEY,
+      title TEXT NOT NULL,
+      category TEXT NOT NULL,
+      document_types TEXT NOT NULL,
+      body TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+      updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+    );
+  `);
+}
+
 /** Ordered schema changes. Append new migrations; never edit or reorder existing ones. */
 export const MIGRATIONS: readonly Migration[] = [
   createPersonaTables,
@@ -130,6 +144,7 @@ export const MIGRATIONS: readonly Migration[] = [
   addPersonaStyleControls,
   addPersonaStyleProfile,
   createLibraryTables,
+  createClausesTable,
 ];
 
 function readSchemaVersion(db: DatabaseSync): number {

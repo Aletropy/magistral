@@ -1,5 +1,6 @@
 import { connection } from "next/server";
 import { MinutaStudio } from "@/components/MinutaStudio";
+import { getClauseRepository } from "@/lib/clauses/getClauseRepository";
 import { getPersonaRepository } from "@/lib/personas/getPersonaRepository";
 import { toPersonaSummary } from "@/lib/personas/toPersonaSummary";
 import { getLibraryRepository } from "@/lib/rag/getLibraryRepository";
@@ -8,6 +9,9 @@ export default async function Home() {
   await connection();
   const personas = getPersonaRepository().list().map(toPersonaSummary);
   const librarySourceCount = getLibraryRepository().listSources().length;
+  const clauses = getClauseRepository()
+    .list()
+    .map(({ id, title, category, documentTypes, body }) => ({ id, title, category, documentTypes, body }));
 
   return (
     <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-8 px-4 py-10 sm:px-8">
@@ -18,7 +22,7 @@ export default async function Home() {
           receba uma minuta pronta para revisar e baixar em Word ou PDF.
         </p>
       </header>
-      <MinutaStudio personas={personas} librarySourceCount={librarySourceCount} />
+      <MinutaStudio personas={personas} clauses={clauses} librarySourceCount={librarySourceCount} />
     </main>
   );
 }

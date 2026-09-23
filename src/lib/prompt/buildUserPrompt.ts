@@ -1,4 +1,5 @@
 import { DOCUMENT_TYPE_LABELS, OTHER_DOCUMENT_TYPE_ID } from "@/lib/minuta/documentTypes";
+import type { Clause } from "@/lib/clauses/types";
 import type { MinutaRequest, Party } from "@/lib/minuta/schema";
 import type { ContextSource } from "@/lib/rag/selectContext";
 
@@ -26,16 +27,32 @@ function formatSource(source: ContextSource): string {
   return `<fonte id="${source.ref}" titulo="${attribute(source.title)}" trecho="${attribute(source.label)}"${context}>\n${source.text}\n</fonte>`;
 }
 
-/** The request as tagged sections, plus the library excerpts when the minuta is grounded in them. */
-export function buildUserPrompt(request: MinutaRequest, sources: ContextSource[] = []): string {
+function formatApprovedClause(clause: Clause, index: number): string {
+  return `<clausula ordem="${index + 1}" titulo="${attribute(clause.title)}">\n${clause.body}\n</clausula>`;
+}
+
+export interface UserPromptContext {
+  /** Library excerpts the minuta is grounded in. */
+  sources: ContextSource[];
+  /** Pre-approved clauses to include, in order. */
+  approvedClauses: Clause[];
+}
+
+export const EMPTY_PROMPT_CONTEXT: UserPromptContext = { sources: [], approvedClauses: [] };
+
+/** The request as tagged sections, plus library excerpts and approved clauses when there are any. */
+export function buildUserPrompt(request: MinutaRequest, context: UserPromptContext = EMPTY_PROMPT_CONTEXT): string {
   const parties = request.parties.map(formatParty).join("\n");
   const clauses = request.clauses || NO_SPECIFIC_CLAUSES;
+  const { sources, approvedClauses } = context;
 
   return [
     sources.length > 0 && `<fontes>\n${sources.map(formatSource).join("\n")}\n</fontes>`,
     "Redija a minuta descrita abaixo.",
     `<tipo_de_documento>\n${resolveDocumentTypeLabel(request)}\n</tipo_de_documento>`,
     `<partes>\n${parties}\n</partes>`,
+    approvedClauses.length > 0 &&
+      `<clausulas_aprovadas>\n${approvedClauses.map(formatApprovedClause).join("\n")}\n</clausulas_aprovadas>`,
     `<clausulas_especificas>\n${clauses}\n</clausulas_especificas>`,
   ]
     .filter(Boolean)

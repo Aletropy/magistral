@@ -1,4 +1,5 @@
 import type { z } from "zod";
+import type { Clause } from "@/lib/clauses/types";
 import type { Persona } from "@/lib/personas/types";
 import type { FolderSyncReport } from "@/lib/rag/syncFolder";
 import type { StyleCaptureResult } from "@/lib/style/captureStyle";
@@ -8,6 +9,12 @@ export const EXPORT_ENDPOINT = "/api/export";
 export const PERSONAS_ENDPOINT = "/api/personas";
 export const PLAYGROUND_ENDPOINT = "/api/playground";
 export const STYLE_CAPTURE_ENDPOINT = "/api/style-capture";
+export const CLAUSES_ENDPOINT = "/api/clauses";
+
+export function clauseEndpoint(id: string): string {
+  return `${CLAUSES_ENDPOINT}/${encodeURIComponent(id)}`;
+}
+
 export const LIBRARY_SOURCES_ENDPOINT = "/api/library/sources";
 export const LIBRARY_SYNC_ENDPOINT = "/api/library/sync";
 
@@ -57,6 +64,8 @@ export interface MinutaResponseBody extends RewriteResponseBody {
   consultedSources: ConsultedSource[];
   /** "full" when the whole library fit in the prompt, "search" when hybrid search picked excerpts. */
   retrievalStrategy: "full" | "search" | null;
+  /** False when the model moved the approved clauses out of the order the user chose. */
+  approvedClauseOrderKept: boolean;
 }
 
 export type PlaygroundResponseBody = RewriteResponseBody;
@@ -81,6 +90,10 @@ export interface LibraryUploadResponseBody {
 export interface LibrarySyncResponseBody {
   folder: string;
   report: FolderSyncReport;
+}
+
+export interface ClauseResponseBody {
+  clause: Clause;
 }
 
 export interface PersonaResponseBody {
