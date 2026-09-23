@@ -4,7 +4,14 @@ import { LLM_PROVIDERS } from "@/lib/llm/providers";
 export const USAGE_PROVIDERS = [...LLM_PROVIDERS, "local"] as const;
 export type UsageProvider = (typeof USAGE_PROVIDERS)[number];
 
-export const LLM_OPERATIONS = ["minuta", "batch", "playground", "style_capture", "embedding"] as const;
+export const LLM_OPERATIONS = [
+  "minuta",
+  "batch",
+  "playground",
+  "style_capture",
+  "embedding",
+  "minuta_extract",
+] as const;
 export type LlmOperation = (typeof LLM_OPERATIONS)[number];
 
 export const LLM_OPERATION_LABELS: Record<LlmOperation, string> = {
@@ -13,6 +20,7 @@ export const LLM_OPERATION_LABELS: Record<LlmOperation, string> = {
   playground: "Teste de persona",
   style_capture: "Captura de estilo",
   embedding: "Indexação da biblioteca",
+  minuta_extract: "Preenchimento automático",
 };
 
 /** "ok", a generation failure reason, or why the call never produced a response. */

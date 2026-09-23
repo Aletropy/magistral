@@ -8,6 +8,7 @@ import type { StyleCaptureResult } from "@/lib/style/styleCaptureResult";
 import type { TaskDetail, TaskSummary } from "@/lib/tasks/types";
 
 export const MINUTA_ENDPOINT = "/api/minuta";
+export const DRAFT_SUGGESTIONS_ENDPOINT = "/api/minuta/sugestoes";
 export const EXPORT_ENDPOINT = "/api/export";
 export const PERSONAS_ENDPOINT = "/api/personas";
 export const PLAYGROUND_ENDPOINT = "/api/playground";

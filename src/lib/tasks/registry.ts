@@ -1,5 +1,6 @@
 import "server-only";
 import { draftMinutaTask } from "@/lib/minuta/draftMinutaTask";
+import { suggestDraftTask } from "@/lib/minuta/suggestDraftTask";
 import { libraryDemoTask, libraryReindexTask, librarySyncTask, libraryUploadTask } from "@/lib/rag/libraryTasks";
 import { captureStyleTask } from "@/lib/style/captureStyleTask";
 import type { AnyTaskHandler } from "./handler";
@@ -13,4 +14,5 @@ export const TASK_HANDLERS: Record<TaskKind, AnyTaskHandler> = {
   "library.reindex": libraryReindexTask,
   "library.demo": libraryDemoTask,
   "style.capture": captureStyleTask,
+  "minuta.extract": suggestDraftTask,
 };
