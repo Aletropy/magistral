@@ -8,7 +8,8 @@ import {
   subscribeOsNotifications,
 } from "@/lib/browser/osNotifications";
 
-const BLOCKED_MESSAGE = "O navegador bloqueou as notificações. Libere-as nas configurações do site.";
+const BLOCKED_MESSAGE =
+  "Este navegador não permite avisos do sistema aqui: libere as notificações do site ou use um navegador de computador. Os avisos dentro do Magistral continuam funcionando.";
 
 function serverSnapshot(): boolean {
   return false;

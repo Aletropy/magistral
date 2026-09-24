@@ -54,6 +54,9 @@ export function ActivityProvider({ children }: { children: ReactNode }) {
   const cursor = useRef<number | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pollRef = useRef<() => Promise<void>>(async () => {});
+  /** One poll at a time: a refresh asked for mid-poll runs right after it, with the updated cursor. */
+  const inFlight = useRef(false);
+  const refreshQueued = useRef(false);
 
   const announce = useCallback(
     (notification: AppNotification) => {
@@ -62,6 +65,8 @@ export function ActivityProvider({ children }: { children: ReactNode }) {
       if (href && isCurrentPage(href) && !document.hidden) return;
       const open = href ? () => router.push(href) : () => {};
       TOASTS[notification.level](notification.title, {
+        // Keyed by notification, so a notification can never show up twice.
+        id: notification.id,
         description: notification.body || undefined,
         duration: TOAST_DURATION_MS,
         action: href ? { label: TOAST_ACTION_LABEL, onClick: open } : undefined,
@@ -72,6 +77,11 @@ export function ActivityProvider({ children }: { children: ReactNode }) {
   );
 
   const poll = useCallback(async () => {
+    if (inFlight.current) {
+      refreshQueued.current = true;
+      return;
+    }
+    inFlight.current = true;
     if (timer.current) clearTimeout(timer.current);
     let busy = false;
     try {
@@ -91,7 +101,15 @@ export function ActivityProvider({ children }: { children: ReactNode }) {
       }
     } catch {
       // Offline or the server restarted: try again on the next tick.
+    } finally {
+      inFlight.current = false;
     }
+    if (refreshQueued.current) {
+      refreshQueued.current = false;
+      void pollRef.current();
+      return;
+    }
+    if (timer.current) clearTimeout(timer.current);
     timer.current = setTimeout(() => void pollRef.current(), busy ? ACTIVE_POLL_MS : IDLE_POLL_MS);
   }, [announce, router]);
 

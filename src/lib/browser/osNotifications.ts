@@ -2,6 +2,18 @@
 export const OS_NOTIFICATIONS_STORAGE_KEY = "magistral-os-notifications";
 const CHANGE_EVENT = "magistral-os-notifications-change";
 const ENABLED = "on";
+const CONFIRMATION_TITLE = "Avisos do Magistral ativados";
+const CONFIRMATION_BODY = "Você será avisado quando uma tarefa terminar com a aba em segundo plano.";
+
+/** Shows a notification right away; false when the browser can't (Android only allows it from a service worker). */
+function canShowNotifications(): boolean {
+  try {
+    new Notification(CONFIRMATION_TITLE, { body: CONFIRMATION_BODY });
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 export function areOsNotificationsSupported(): boolean {
   return typeof window !== "undefined" && "Notification" in window;
@@ -33,6 +45,7 @@ export async function setOsNotificationsEnabled(enabled: boolean): Promise<boole
   if (enabled && Notification.permission !== "granted") {
     if ((await Notification.requestPermission()) !== "granted") return false;
   }
+  if (enabled && !canShowNotifications()) return false;
   try {
     if (enabled) localStorage.setItem(OS_NOTIFICATIONS_STORAGE_KEY, ENABLED);
     else localStorage.removeItem(OS_NOTIFICATIONS_STORAGE_KEY);
@@ -55,7 +68,13 @@ export interface OsNotification {
  */
 export function showOsNotification(notification: OsNotification, onClick: () => void): void {
   if (!document.hidden || !areOsNotificationsEnabled()) return;
-  const shown = new Notification(notification.title, { body: notification.body, tag: String(notification.id) });
+  let shown: Notification;
+  try {
+    shown = new Notification(notification.title, { body: notification.body, tag: String(notification.id) });
+  } catch {
+    // Android browsers only show notifications through a service worker; the toast still announces it.
+    return;
+  }
   shown.onclick = () => {
     window.focus();
     onClick();

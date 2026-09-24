@@ -18,10 +18,13 @@ function parseSince(value: string | null): number | null {
  * Without a cursor (first poll) no notifications are sent, so old ones don't pop up as toasts.
  */
 export async function GET(request: Request): Promise<Response> {
-  const since = parseSince(new URL(request.url).searchParams.get(ACTIVITY_SINCE_PARAM));
+  const requested = parseSince(new URL(request.url).searchParams.get(ACTIVITY_SINCE_PARAM));
   const notifications = getNotificationRepository();
+  const newest = notifications.latestId();
+  // A cursor past the newest id means the database was reset under an open tab; start over from here.
+  const since = requested === null ? null : Math.min(requested, newest);
   const fresh = since === null ? [] : notifications.listSince(since, MAX_NEW_NOTIFICATIONS);
-  const latestId = fresh.at(-1)?.id ?? (since === null ? notifications.latestId() : since);
+  const latestId = fresh.at(-1)?.id ?? since ?? newest;
 
   return Response.json({
     activeTasks: getTaskRepository().list({ activeOnly: true, limit: MAX_ACTIVE_TASKS }),
