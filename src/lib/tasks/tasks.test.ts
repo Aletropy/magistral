@@ -362,3 +362,20 @@ describe("task ownership", () => {
     expect(tasks.getPayload(id)?.payload).toEqual({});
   });
 });
+
+describe("task success notifications", () => {
+  it("keeps a task succeeded and still notifies when describing the success throws", async () => {
+    const { tasks, notifications, worker } = setup([
+      handler("minuta.draft", "llm", async () => ({ greeting: "ok" }), {
+        describeSuccess: () => {
+          throw new Error("href quebrado");
+        },
+      }),
+    ]);
+    const id = enqueue(tasks, "Ana");
+
+    await worker.tick();
+    expect(tasks.get(id, owner)!.status).toBe("succeeded");
+    expect(notifications.listRecent(owner, 1)).toMatchObject([{ level: "success", title: "Concluída: Tarefa Ana", taskId: id }]);
+  });
+});

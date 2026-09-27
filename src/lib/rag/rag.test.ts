@@ -80,11 +80,13 @@ describe("library ingestion and retrieval", () => {
     await ingestDocument(library, embed, { fileName: "iptu.docx", bytes: await docxFromMarkdown(IPTU_LAW), kind: "lei", folderPath: null });
     await ingestDocument(library, embed, { fileName: "iss.docx", bytes: await docxFromMarkdown(ISS_LAW), kind: "lei", folderPath: null });
 
-    const context = await selectLibraryContext(library, embed, "ISS sobre hospedagem", 1);
+    const { signal } = new AbortController();
+    const context = await selectLibraryContext(library, embed, "ISS sobre hospedagem", { fullContextMaxChars: 1, signal });
 
     expect(context.strategy).toBe("search");
     expect(context.sources.slice(0, 2).every((source) => source.title === "iss" && source.label.startsWith("Art."))).toBe(true);
-    expect(embed.embed).toHaveBeenLastCalledWith(["ISS sobre hospedagem"], "query");
+    // The query embedding gets the task's signal, so cancelling a draft stops the library step too.
+    expect(embed.embed).toHaveBeenLastCalledWith(["ISS sobre hospedagem"], "query", { signal });
   });
 
   it("returns no sources for an empty library", async () => {
@@ -161,7 +163,7 @@ describe("embedding model changes", () => {
       ingestDocument(library, other, { fileName: "iptu.docx", bytes, kind: "lei", folderPath: null }),
     ).rejects.toBeInstanceOf(LibraryIndexMismatchError);
     expect(other.embed).not.toHaveBeenCalled();
-    await expect(selectLibraryContext(library, other, "hospedagem", 1)).rejects.toBeInstanceOf(LibraryIndexMismatchError);
+    await expect(selectLibraryContext(library, other, "hospedagem", { fullContextMaxChars: 1 })).rejects.toBeInstanceOf(LibraryIndexMismatchError);
   });
 
   it("reindexes every chunk with the new model, resizing the vector table, and then searches with it", async () => {
@@ -170,7 +172,7 @@ describe("embedding model changes", () => {
     expect(await reindexLibrary(library, other)).toBe(library.allChunks().length);
     expect(library.indexInfo()).toMatchObject({ model: "modelo-novo", dimensions: 384 });
 
-    const context = await selectLibraryContext(library, other, "hospedagem", 1);
+    const context = await selectLibraryContext(library, other, "hospedagem", { fullContextMaxChars: 1 });
     expect(context.sources[0].text).toContain("hospedagem");
   });
 

@@ -8,12 +8,15 @@ import { TaskProgressBar } from "./TaskProgressBar";
 
 const BACKGROUND_HINT = "Pode continuar usando o Magistral: avisaremos quando terminar.";
 const WAITING_RETRY_HINT = "Tentando de novo em instantes";
+const MISSING_TASK_MESSAGE = "Esta tarefa não existe mais: tarefas concluídas são apagadas depois de alguns dias.";
 
 interface TaskStatusCardProps {
   task: TaskDetail | null;
   /** What is being done, e.g. "Redigindo a minuta"; shown while the task runs. */
   runningTitle: string;
   isStale?: boolean;
+  /** The server no longer has the task. */
+  isMissing?: boolean;
   actionError?: string | null;
   onCancel: () => void;
   onRetry: () => void;
@@ -29,12 +32,20 @@ export function TaskStatusCard({
   task,
   runningTitle,
   isStale = false,
+  isMissing = false,
   actionError = null,
   onCancel,
   onRetry,
   children,
 }: TaskStatusCardProps) {
   if (task?.status === "succeeded") return null;
+  if (isMissing) {
+    return (
+      <p className="rounded-lg border bg-card p-4 text-sm text-muted-foreground" role="status">
+        {MISSING_TASK_MESSAGE}
+      </p>
+    );
+  }
   const active = !task || task.status === "pending" || task.status === "running";
   const waitingRetry = task?.status === "pending" && task.error !== null;
 

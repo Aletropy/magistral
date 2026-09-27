@@ -42,14 +42,14 @@ export async function hybridSearch(
   library: LibraryRepository,
   embedding: EmbeddingModel,
   query: string,
-  topN: number = RETRIEVAL_TOP_N,
+  { topN = RETRIEVAL_TOP_N, signal }: { topN?: number; signal?: AbortSignal } = {},
 ): Promise<LibraryChunk[]> {
   if (!library.isCompatible(embedding)) throw new LibraryIndexMismatchError();
   const ftsQuery = toFtsQuery(query);
   const keywordIds = ftsQuery ? library.keywordSearch(ftsQuery, RETRIEVAL_CANDIDATES) : [];
   const {
     embeddings: [queryEmbedding],
-  } = await embedding.embed([query], "query");
+  } = await embedding.embed([query], "query", { signal });
   const vectorIds = library.vectorSearch(queryEmbedding, RETRIEVAL_CANDIDATES);
 
   return library.getChunks(reciprocalRankFusion([keywordIds, vectorIds]).slice(0, topN));

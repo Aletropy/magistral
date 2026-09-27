@@ -61,7 +61,7 @@ export const chatReplyTask: TaskHandler<ChatReplyPayload, ChatReplyResult> = {
         library,
         getEmbedder(),
         buildChatRetrievalQuery(history),
-        CHAT_FULL_CONTEXT_MAX_CHARS,
+        { fullContextMaxChars: CHAT_FULL_CONTEXT_MAX_CHARS, signal },
       );
       sources = context.sources;
     }

@@ -1,5 +1,5 @@
 import type { EmbeddingTask } from "@/lib/rag/types";
-import type { TokenUsage } from "./types";
+import type { GenerationOptions, TokenUsage } from "./types";
 
 export interface EmbeddingResult {
   embeddings: number[][];
@@ -7,8 +7,11 @@ export interface EmbeddingResult {
   usage: TokenUsage;
 }
 
-/** Embeds one batch of texts for retrieval ("document") or searching ("query"), or throws. */
-export type EmbedFunction = (texts: string[], task: EmbeddingTask) => Promise<EmbeddingResult>;
+/**
+ * Embeds one batch of texts for retrieval ("document") or searching ("query"), or throws. An aborted
+ * signal rejects with an abort error (a local model finishes the batch it is computing first).
+ */
+export type EmbedFunction = (texts: string[], task: EmbeddingTask, options?: GenerationOptions) => Promise<EmbeddingResult>;
 
 /** An embedding model plus what the vector index needs to know about it. */
 export interface EmbeddingModel {

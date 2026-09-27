@@ -21,7 +21,7 @@ export async function embedAll(
   const embeddings: number[][] = [];
   for (let start = 0; start < texts.length; start += batchSize) {
     signal?.throwIfAborted();
-    const { embeddings: batch } = await embedding.embed(texts.slice(start, start + batchSize), task);
+    const { embeddings: batch } = await embedding.embed(texts.slice(start, start + batchSize), task, { signal });
     embeddings.push(...batch);
     onProgress?.(embeddings.length, texts.length);
   }

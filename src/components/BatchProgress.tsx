@@ -44,7 +44,7 @@ const RETRY_FAILED = "Não foi possível recolocar as minutas na fila.";
 
 export function BatchProgress({ initialJob }: { initialJob: BatchJobDetail }) {
   const router = useRouter();
-  const { job, active, isStale, refresh } = useBatchProgress(initialJob);
+  const { job, active, isStale, isDeleted, refresh } = useBatchProgress(initialJob);
   const { isPending, error, remove } = useResourceMutations<never>(ENDPOINTS, MESSAGES);
   const [retryError, setRetryError] = useState<string | null>(null);
 
@@ -74,6 +74,7 @@ export function BatchProgress({ initialJob }: { initialJob: BatchJobDetail }) {
         </div>
         {active && <span className="animate-pulse text-sm text-muted-foreground">Gerando em segundo plano…</span>}
         {isStale && <span className="text-sm text-destructive">Sem conexão com o servidor; tentando de novo.</span>}
+        {isDeleted && <span className="text-sm text-muted-foreground">Este lote foi excluído.</span>}
         {retryError && <span className="text-sm text-destructive">{retryError}</span>}
         <div className="flex flex-wrap gap-2">
           {job.counts.failed > 0 && (

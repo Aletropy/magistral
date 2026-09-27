@@ -5,6 +5,18 @@ export const LLM_PROVIDERS = ["openrouter", "gemini", "anthropic"] as const;
 export type LlmProvider = (typeof LLM_PROVIDERS)[number];
 
 export const LLM_PROVIDER_ENV_VAR = "LLM_PROVIDER";
+/**
+ * How much library text (in characters, about 4 per token) a minuta prompt may carry whole before
+ * hybrid search picks excerpts instead. Sized to each provider's context window and speed: free
+ * OpenRouter models are slow on long prompts, Gemini Flash has a 1M-token window, and Claude bills
+ * every token of it.
+ */
+export const LIBRARY_CONTEXT_BUDGET_CHARS: Record<LlmProvider, number> = {
+  openrouter: 120_000,
+  gemini: 400_000,
+  anthropic: 200_000,
+};
+
 /** Free OpenRouter models: the Gemini free tier ran out of daily quota too often. */
 export const DEFAULT_LLM_PROVIDER: LlmProvider = "openrouter";
 

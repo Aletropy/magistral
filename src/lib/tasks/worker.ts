@@ -1,5 +1,5 @@
 import { runAsUser } from "@/lib/auth/actor";
-import type { NewNotification } from "@/lib/notifications/types";
+import type { NewNotification, NotificationDraft } from "@/lib/notifications/types";
 import { retryDelayMs } from "@/lib/queue/retryPolicy";
 import { TaskCanceledError, TaskInputError } from "./errors";
 import type { AnyTaskHandler, TaskContext } from "./handler";
@@ -81,6 +81,18 @@ export function createTaskWorker(options: TaskWorkerOptions): TaskWorker {
     }
   }
 
+  /** The task already counts as succeeded here, so a failure to describe it must not reach the failure path. */
+  function notifySuccess(handler: AnyTaskHandler, result: unknown, task: ClaimedTask): void {
+    let draft: NotificationDraft;
+    try {
+      draft = handler.describeSuccess(result, task);
+    } catch (error) {
+      console.error(`[tasks] ${task.kind} succeeded but its notification failed`, error);
+      draft = { level: "success", title: `Concluída: ${task.title}`, body: "", href: null };
+    }
+    safeNotify({ ...draft, ownerId: task.ownerId, taskId: task.id });
+  }
+
   function failPermanently(task: ClaimedTask, message: string, handler?: AnyTaskHandler, payload?: unknown): void {
     if (!tasks.fail(task.id, message, now())) return;
     if (handler && payload !== undefined) {
@@ -124,7 +136,7 @@ export function createTaskWorker(options: TaskWorkerOptions): TaskWorker {
       // LLM calls made by the handler are attributed to the task's owner.
       const result: unknown = await runAsUser(task.ownerId, () => handler.run(context));
       if (!committed) tasks.complete(task.id, now(), () => result);
-      safeNotify({ ...handler.describeSuccess(result, task), ownerId: task.ownerId, taskId: task.id });
+      notifySuccess(handler, result, task);
     } catch (error) {
       if (signal.aborted || error instanceof TaskCanceledError) {
         const cancellation = handler.onCanceled;

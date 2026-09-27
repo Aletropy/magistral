@@ -7,7 +7,7 @@ import { GEMINI_MODEL } from "./gemini/config";
 import { createGeminiChatGenerator } from "./gemini/generate";
 import { getOpenRouterClient, getOpenRouterModels, getOpenRouterRouting } from "./openrouter/client";
 import { createOpenRouterChatGenerator } from "./openrouter/generate";
-import { LLM_PROVIDER_ENV_VAR, resolveLlmProvider, type LlmProvider } from "./providers";
+import { LIBRARY_CONTEXT_BUDGET_CHARS, LLM_PROVIDER_ENV_VAR, resolveLlmProvider, type LlmProvider } from "./providers";
 import type { ChatGenerator } from "./types";
 
 /** Clients are created on the first call, so a missing API key is thrown (and audited) then. */
@@ -27,4 +27,9 @@ export const CONFIGURED_MODELS: Record<LlmProvider, () => string> = {
 /** The drafting provider chosen by the LLM_PROVIDER env var. */
 export function activeLlmProvider(): LlmProvider {
   return resolveLlmProvider(process.env[LLM_PROVIDER_ENV_VAR]);
+}
+
+/** How much library text the active provider's minuta prompts may carry whole. */
+export function activeLibraryContextBudget(): number {
+  return LIBRARY_CONTEXT_BUDGET_CHARS[activeLlmProvider()];
 }

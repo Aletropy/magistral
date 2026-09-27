@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useActivity } from "@/components/activity/ActivityProvider";
 import {
+  HTTP_NOT_FOUND,
   NETWORK_ERROR_MESSAGE,
   readErrorMessage,
   taskCancelEndpoint,
@@ -20,6 +21,8 @@ const ACTION_FAILED = "Não foi possível atualizar a tarefa. Tente novamente.";
 interface TaskState {
   id: string | null;
   task: TaskDetail | null;
+  /** The server no longer has the task (purged after the retention period, or not this user's). */
+  missing: boolean;
 }
 
 /**
@@ -28,19 +31,26 @@ interface TaskState {
  */
 export function useTask(taskId: string | null, initial: TaskDetail | null = null) {
   const { refresh: refreshActivity } = useActivity();
-  const [state, setState] = useState<TaskState>({ id: taskId, task: initial });
+  const [state, setState] = useState<TaskState>({ id: taskId, task: initial, missing: false });
   const [isStale, setIsStale] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const task = state.id === taskId ? state.task : null;
-  const active = taskId !== null && (task === null || isTaskActive(task.status));
+  const isMissing = state.id === taskId && state.missing;
+  const active = taskId !== null && !isMissing && (task === null || isTaskActive(task.status));
 
   const refresh = useCallback(async () => {
     if (!taskId) return;
     try {
       const response = await fetch(taskEndpoint(taskId), { cache: "no-store" });
+      if (response.status === HTTP_NOT_FOUND) {
+        // Nothing left to follow: stop polling instead of asking again every interval.
+        setState({ id: taskId, task: null, missing: true });
+        setIsStale(false);
+        return;
+      }
       if (!response.ok) throw new Error(String(response.status));
       const { task: latest } = (await response.json()) as TaskResponseBody;
-      setState({ id: taskId, task: latest });
+      setState({ id: taskId, task: latest, missing: false });
       setIsStale(false);
       // Its notification exists now: fetch it at once instead of on the next idle poll.
       if (!isTaskActive(latest.status)) refreshActivity();
@@ -70,7 +80,7 @@ export function useTask(taskId: string | null, initial: TaskDetail | null = null
           setActionError(await readErrorMessage(response, ACTION_FAILED));
           return;
         }
-        setState({ id: taskId, task: ((await response.json()) as TaskResponseBody).task });
+        setState({ id: taskId, task: ((await response.json()) as TaskResponseBody).task, missing: false });
         refreshActivity();
       } catch {
         setActionError(NETWORK_ERROR_MESSAGE);
@@ -82,5 +92,5 @@ export function useTask(taskId: string | null, initial: TaskDetail | null = null
   const cancel = useCallback(() => act(taskCancelEndpoint), [act]);
   const retry = useCallback(() => act(taskRetryEndpoint), [act]);
 
-  return { task, isActive: active, isStale, actionError, cancel, retry, refresh };
+  return { task, isActive: active, isMissing, isStale, actionError, cancel, retry, refresh };
 }

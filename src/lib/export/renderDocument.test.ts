@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { parseMarkdown } from "@/lib/markdown/parseMarkdown";
+import { extractText } from "@/lib/documents/extractText";
+import { splitByFont } from "./pdfFonts";
 import { renderDocument } from "./renderDocument";
 
 const SAMPLE_MARKDOWN = `# CONTRATO DE PRESTAÇÃO DE SERVIÇOS
@@ -38,5 +40,23 @@ describe("renderDocument", () => {
     const file = await renderDocument(blocks, "pdf");
     expect(file.byteLength).toBeGreaterThan(0);
     expect(signatureOf(file, PDF_SIGNATURE.length)).toBe(PDF_SIGNATURE);
+  });
+});
+
+describe("PDF characters outside Windows-1252", () => {
+  it("draws them with the fallback font so they survive, and keeps Times for the rest", async () => {
+    const sample = "# TÍTULO\n\nMulta ≥ 2% → prazo ✓ Ω ≤ ≠, “aspas” § 2º — € e texto suficiente para passar do mínimo de caracteres.";
+    const file = await renderDocument(parseMarkdown(sample), "pdf");
+    const text = await extractText({ name: "minuta.pdf", bytes: file });
+
+    for (const character of ["≥", "→", "✓", "Ω", "≤", "≠", "“", "§", "º", "—", "€"]) expect(text).toContain(character);
+  });
+
+  it("splits text into runs by the font that can draw them", () => {
+    expect(splitByFont("a ≥ b “c”")).toEqual([
+      { text: "a ", fallback: false },
+      { text: "≥", fallback: true },
+      { text: " b “c”", fallback: false },
+    ]);
   });
 });

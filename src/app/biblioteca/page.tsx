@@ -9,11 +9,11 @@ import { WarningCallout } from "@/components/ui/WarningCallout";
 import { requireUser } from "@/lib/auth/dal";
 import { isAdmin } from "@/lib/auth/types";
 import { getActiveEmbeddingIdentity } from "@/lib/llm/getEmbedder";
+import { activeLibraryContextBudget } from "@/lib/llm/providerRegistry";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { resolveLibraryDir } from "@/lib/rag/config";
 import { getLibraryRepository } from "@/lib/rag/getLibraryRepository";
-import { FULL_CONTEXT_MAX_CHARS } from "@/lib/rag/selectContext";
 import { LIBRARY_INDEX_MISMATCH_MESSAGE } from "@/lib/rag/errors";
 import { LIBRARY_SOURCE_KIND_LABELS } from "@/lib/rag/types";
 import { getTaskRepository } from "@/lib/tasks/getTaskRepository";
@@ -41,7 +41,7 @@ export default async function LibraryPage({ searchParams }: PageProps<"/bibliote
   const indexInfo = library.indexInfo();
   const needsReindex = indexInfo.chunkCount > 0 && indexInfo.model !== getActiveEmbeddingIdentity().id;
   const strategy =
-    totalChars <= FULL_CONTEXT_MAX_CHARS
+    totalChars <= activeLibraryContextBudget()
       ? "é enviada inteira à IA a cada minuta."
       : "é grande: a IA recebe só os trechos mais relevantes para cada minuta.";
 

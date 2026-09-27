@@ -33,6 +33,17 @@ describe("createLocalEmbed", () => {
     });
   });
 
+  it("rejects with an abort error when cancelled, without running the model", async () => {
+    const { extractor, call } = fakeExtractor([axisVector(0)]);
+    const controller = new AbortController();
+    controller.abort();
+
+    await expect(createLocalEmbed(async () => extractor)(["a"], "query", { signal: controller.signal })).rejects.toMatchObject({
+      name: "AbortError",
+    });
+    expect(call).not.toHaveBeenCalled();
+  });
+
   it("rejects output with the wrong count or size", async () => {
     const { extractor } = fakeExtractor([[1, 0]]);
     await expect(createLocalEmbed(async () => extractor)(["a"], "query")).rejects.toMatchObject({

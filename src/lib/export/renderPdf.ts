@@ -13,24 +13,27 @@ import {
   cmToPoints,
   listTextIndentCm,
 } from "./layout";
+import { BODY_FONT, FALLBACK_FONT, PDF_FONTS, STANDARD_FONT_FILES, loadFallbackFontFiles, splitByFont } from "./pdfFonts";
 
-const PDF_FONT = "Times";
 const PDF_PAGE_SIZE = "A4";
-/** PDF standard fonts are built into PDFKit, so no font files are read from disk. */
-const STANDARD_FONTS = {
-  [PDF_FONT]: {
-    normal: "Times-Roman",
-    bold: "Times-Bold",
-    italics: "Times-Italic",
-    bolditalics: "Times-BoldItalic",
-  },
-};
-const STANDARD_FONT_NAMES = new Set(Object.values(STANDARD_FONTS[PDF_FONT]));
+const STANDARD_FONT_NAMES = new Set<string>(Object.values(STANDARD_FONT_FILES));
 
-pdfMake.setFonts(STANDARD_FONTS);
-// Documents never embed external resources; only the standard font names pass the local check.
+pdfMake.setFonts(PDF_FONTS);
+// Documents never embed external resources; only the standard font names pass the local check (the
+// fallback font is served from pdfmake's in-memory file system, which is checked first).
 pdfMake.setUrlAccessPolicy(() => false);
 pdfMake.setLocalAccessPolicy((path) => STANDARD_FONT_NAMES.has(path));
+
+/** pdfmake's in-memory file system; its typings don't declare it. */
+const virtualFiles = (pdfMake as unknown as { virtualfs: { writeFileSync(name: string, content: Buffer): void } })
+  .virtualfs;
+let fallbackFontLoaded = false;
+
+function ensureFallbackFont(): void {
+  if (fallbackFontLoaded) return;
+  for (const [name, content] of Object.entries(loadFallbackFontFiles())) virtualFiles.writeFileSync(name, content);
+  fallbackFontLoaded = true;
+}
 
 type Margin = [number, number, number, number];
 
@@ -38,13 +41,19 @@ function margin(beforePt: number, leftPt = 0): Margin {
   return [leftPt, beforePt, 0, PARAGRAPH_SPACING_AFTER_PT];
 }
 
-/** Runs carry explicit styles, so a bold heading must force bold onto each run. */
+/**
+ * Runs carry explicit styles, so a bold heading must force bold onto each run. Characters Times can't
+ * encode get the fallback font.
+ */
 function toPdfRuns(runs: TextRun[], forceBold = false) {
-  return runs.map((textRun) => ({
-    text: textRun.text,
-    bold: forceBold || textRun.bold,
-    italics: textRun.italic,
-  }));
+  return runs.flatMap((textRun) =>
+    splitByFont(textRun.text).map(({ text, fallback }) => ({
+      text,
+      bold: forceBold || textRun.bold,
+      italics: textRun.italic,
+      ...(fallback && { font: FALLBACK_FONT }),
+    })),
+  );
 }
 
 function headingContent(level: HeadingLevel, runs: TextRun[]): Content {
@@ -80,11 +89,12 @@ function toContent(block: DocumentBlock): Content[] {
 }
 
 export async function renderPdf(blocks: DocumentBlock[]): Promise<Uint8Array> {
+  ensureFallbackFont();
   const pageMargin = cmToPoints(PAGE_MARGIN_CM);
   const definition: TDocumentDefinitions = {
     pageSize: PDF_PAGE_SIZE,
     pageMargins: [pageMargin, pageMargin, pageMargin, pageMargin],
-    defaultStyle: { font: PDF_FONT, fontSize: BODY_FONT_SIZE_PT, lineHeight: LINE_HEIGHT },
+    defaultStyle: { font: BODY_FONT, fontSize: BODY_FONT_SIZE_PT, lineHeight: LINE_HEIGHT },
     content: blocks.flatMap(toContent),
   };
   return pdfMake.createPdf(definition).getBuffer();

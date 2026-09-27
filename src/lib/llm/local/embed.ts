@@ -1,3 +1,4 @@
+import { abortErrorOf } from "../abort";
 import { MinutaGenerationError } from "../errors";
 import type { EmbedFunction } from "../embeddings";
 import type { TokenUsage } from "../types";
@@ -11,7 +12,9 @@ export interface FeatureExtractor {
 
 /** Embeds on the CPU with the local model; usage counts tokens so the audit shows real volumes at $0. */
 export function createLocalEmbed(loadExtractor: () => Promise<FeatureExtractor>): EmbedFunction {
-  return async (texts, task) => {
+  return async (texts, task, { signal } = {}) => {
+    // Inference on the CPU can't be interrupted, so cancellation is checked around it.
+    if (signal?.aborted) throw abortErrorOf(signal);
     const extractor = await loadExtractor();
     const inputs = texts.map((text) => formatLocalEmbeddingInput(text, task));
     const usage: TokenUsage = {
@@ -20,6 +23,7 @@ export function createLocalEmbed(loadExtractor: () => Promise<FeatureExtractor>)
       thinkingTokens: 0,
     };
     const output = (await extractor(inputs, { pooling: "mean", normalize: true })).tolist() as number[][];
+    if (signal?.aborted) throw abortErrorOf(signal);
     if (output.length !== texts.length || output.some((vector) => vector.length !== LOCAL_EMBEDDING_DIMENSIONS)) {
       throw new MinutaGenerationError("invalid_output", usage);
     }

@@ -4,10 +4,11 @@ import type { LibraryRepository } from "./repository";
 import type { LibraryChunk } from "./types";
 
 /**
- * Libraries up to this size go into the prompt whole ("in-context RAG"): ~100k tokens, which fits every
- * supported model with room for the answer and gives perfect recall. Larger libraries use hybrid search.
+ * Libraries up to this size go into the prompt whole ("in-context RAG"), which gives perfect recall;
+ * larger ones use hybrid search. Callers pass the active provider's budget (LIBRARY_CONTEXT_BUDGET_CHARS);
+ * this default is the smallest of them.
  */
-export const FULL_CONTEXT_MAX_CHARS = 400_000;
+export const FULL_CONTEXT_MAX_CHARS = 120_000;
 const FULL_TEXT_LABEL = "Texto integral";
 
 export interface ContextSource {
@@ -42,12 +43,19 @@ function groupBySource(chunks: LibraryChunk[]): LibraryChunk[][] {
   return [...groups.values()];
 }
 
+export interface ContextSelectionOptions {
+  /** Libraries up to this many characters go into the prompt whole. */
+  fullContextMaxChars?: number;
+  /** Cancels the query embedding. */
+  signal?: AbortSignal;
+}
+
 /** Picks the library text for a request: everything when it is small, the best-matching chunks otherwise. */
 export async function selectLibraryContext(
   library: LibraryRepository,
   embedding: EmbeddingModel,
   query: string,
-  fullContextMaxChars: number = FULL_CONTEXT_MAX_CHARS,
+  { fullContextMaxChars = FULL_CONTEXT_MAX_CHARS, signal }: ContextSelectionOptions = {},
 ): Promise<LibraryContext> {
   const totalChars = library.totalChars();
   if (totalChars === 0) return { strategy: "search", sources: [] };
@@ -63,7 +71,7 @@ export async function selectLibraryContext(
     return { strategy: "full", sources };
   }
 
-  const chunks = await hybridSearch(library, embedding, query);
+  const chunks = await hybridSearch(library, embedding, query, { signal });
   return {
     strategy: "search",
     sources: chunks.map((chunk, index) => ({

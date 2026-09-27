@@ -12,6 +12,7 @@ export function FollowedTaskStatus({ background, runningTitle }: { background: B
       task={task}
       runningTitle={runningTitle}
       isStale={taskState.isStale}
+      isMissing={taskState.isMissing}
       actionError={taskState.actionError}
       onCancel={() => void taskState.cancel()}
       onRetry={() => void taskState.retry()}

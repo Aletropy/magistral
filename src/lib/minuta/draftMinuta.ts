@@ -7,6 +7,7 @@ import type { DraftResult } from "@/lib/http/api";
 import { generateMinuta } from "@/lib/llm/generateMinuta";
 import { getEmbedder } from "@/lib/llm/getEmbedder";
 import { getMinutaGenerator } from "@/lib/llm/getMinutaGenerator";
+import { activeLibraryContextBudget } from "@/lib/llm/providerRegistry";
 import { findNegativeConstraintViolations } from "@/lib/personas/findNegativeConstraintViolations";
 import { getPersonaRepository } from "@/lib/personas/getPersonaRepository";
 import { PERSONA_NOT_FOUND_MESSAGE } from "@/lib/personas/messages";
@@ -72,7 +73,10 @@ export async function draftMinuta(
   let library: LibraryContext | null = null;
   if (request.useLibrary) {
     onStage?.("library");
-    library = await selectLibraryContext(getLibraryRepository(), getEmbedder(), buildRetrievalQuery(request));
+    library = await selectLibraryContext(getLibraryRepository(), getEmbedder(), buildRetrievalQuery(request), {
+      fullContextMaxChars: activeLibraryContextBudget(),
+      signal,
+    });
     if (library.sources.length === 0) throw new MinutaRequestError(EMPTY_LIBRARY_MESSAGE);
   }
 

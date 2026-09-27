@@ -15,16 +15,16 @@ const TASK_TYPES: Record<EmbeddingTask, string> = {
  * counted with a parallel countTokens call to keep the cost audit exact.
  */
 export function createGeminiEmbedder(client: GoogleGenAI): EmbedFunction {
-  return async (texts, task) => {
+  return async (texts, task, { signal } = {}) => {
     // One Content per text: a plain string[] would be merged into a single multi-part content (one vector).
     const contents = texts.map((text) => ({ role: "user", parts: [{ text }] }));
     const [response, count] = await Promise.all([
       client.models.embedContent({
         model: GEMINI_EMBEDDING_MODEL,
         contents,
-        config: { taskType: TASK_TYPES[task], outputDimensionality: EMBEDDING_DIMENSIONS },
+        config: { taskType: TASK_TYPES[task], outputDimensionality: EMBEDDING_DIMENSIONS, abortSignal: signal },
       }),
-      client.models.countTokens({ model: GEMINI_EMBEDDING_MODEL, contents }),
+      client.models.countTokens({ model: GEMINI_EMBEDDING_MODEL, contents, config: { abortSignal: signal } }),
     ]);
 
     const usage: TokenUsage = { inputTokens: count.totalTokens ?? 0, outputTokens: 0, thinkingTokens: 0 };
