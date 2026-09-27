@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { Geist } from "next/font/google";
 import { ActivityProvider } from "@/components/activity/ActivityProvider";
-import { AppNav } from "@/components/AppNav";
+import { AppShell } from "@/components/shell/AppShell";
 import { Toaster } from "@/components/ui/sonner";
 import { getCurrentUser } from "@/lib/auth/dal";
 import { toCurrentUser } from "@/lib/auth/types";
@@ -34,8 +34,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       <body className="flex min-h-full flex-col">
         {user ? (
           <ActivityProvider>
-            <AppNav user={toCurrentUser(user)} />
-            {children}
+            <AppShell user={toCurrentUser(user)}>{children}</AppShell>
           </ActivityProvider>
         ) : (
           // The sign-in and setup pages: no navigation, and nothing to poll.

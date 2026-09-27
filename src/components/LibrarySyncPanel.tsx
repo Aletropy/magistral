@@ -1,5 +1,6 @@
 "use client";
 
+import { CircleX } from "lucide-react";
 import { FollowedTaskStatus } from "@/components/tasks/FollowedTaskStatus";
 import { Button } from "@/components/ui/button";
 import { useBackgroundTask } from "@/hooks/useBackgroundTask";
@@ -50,8 +51,11 @@ export function LibrarySyncPanel({ folder, initialTask }: { folder: string; init
         <div className="flex flex-col gap-1 text-sm">
           <p>{summarize(report)}</p>
           {report.failed.map((failure) => (
-            <p key={failure.path} className="text-destructive">
-              ✗ {failure.path} — {failure.message}
+            <p key={failure.path} className="flex items-start gap-1.5 text-destructive">
+              <CircleX className="mt-0.5 size-4 shrink-0" aria-hidden />
+              <span>
+                {failure.path} — {failure.message}
+              </span>
             </p>
           ))}
         </div>

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Page } from "@/components/layout/Page";
 import { PersonaEditor } from "@/components/PersonaEditor";
 import { EMPTY_PERSONA } from "@/lib/personas/schema";
 import { requireUser } from "@/lib/auth/dal";
@@ -8,9 +9,11 @@ export const metadata: Metadata = { title: "Nova persona" };
 export default async function NewPersonaPage() {
   await requireUser();
   return (
-    <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 px-4 py-10 sm:px-8">
-      <h1 className="text-3xl font-bold tracking-tight">Nova persona</h1>
+    <Page
+      title="Nova persona"
+      width="default"
+    >
       <PersonaEditor initialValues={EMPTY_PERSONA} />
-    </main>
+    </Page>
   );
 }

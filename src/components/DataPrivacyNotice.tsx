@@ -14,10 +14,7 @@ export function DataPrivacyNotice() {
   );
   if (level === "warning") {
     return (
-      <WarningCallout className="flex gap-3">
-        <ShieldAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
-        {body}
-      </WarningCallout>
+      <WarningCallout icon={ShieldAlert}>{body}</WarningCallout>
     );
   }
   return (

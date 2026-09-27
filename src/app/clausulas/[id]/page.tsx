@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { ClauseEditor } from "@/components/ClauseEditor";
+import { Page } from "@/components/layout/Page";
 import { getClauseRepository } from "@/lib/clauses/getClauseRepository";
 import { requireUser } from "@/lib/auth/dal";
 
@@ -22,9 +23,11 @@ export default async function EditClausePage({ params }: PageProps<"/clausulas/[
   const { title, category, documentTypes, body } = clause;
 
   return (
-    <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 px-4 py-10 sm:px-8">
-      <h1 className="text-3xl font-bold tracking-tight">Editar “{title}”</h1>
+    <Page
+      title={<>Editar “{title}”</>}
+      width="default"
+    >
       <ClauseEditor clauseId={id} initialValues={{ title, category, documentTypes, body }} />
-    </main>
+    </Page>
   );
 }

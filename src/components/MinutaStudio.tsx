@@ -1,19 +1,19 @@
 "use client";
 
-import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { ListChecks, Rows3 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 import { DraftSuggestionPanel } from "@/components/minuta/DraftSuggestionPanel";
+import { MinutaSummary } from "@/components/minuta/MinutaSummary";
 import { ReviewNotes } from "@/components/minuta/ReviewNotes";
 import { MinutaForm } from "@/components/MinutaForm";
-import { ResultPanel } from "@/components/ResultPanel";
 import { FollowedTaskStatus } from "@/components/tasks/FollowedTaskStatus";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MinutaWizard } from "@/components/wizard/MinutaWizard";
 import { useBackgroundTask } from "@/hooks/useBackgroundTask";
 import { useLocalValue } from "@/hooks/useLocalValue";
-import { useMinutaGeneration, type MinutaGenerationInitialState } from "@/hooks/useMinutaGeneration";
-import { useReviewPersistence } from "@/hooks/useReviewPersistence";
+import { useMinutaGeneration } from "@/hooks/useMinutaGeneration";
 import type { ClauseOption } from "@/lib/clauses/types";
 import { postJson } from "@/lib/http/client";
 import { DRAFT_SUGGESTIONS_ENDPOINT } from "@/lib/http/endpoints";
@@ -33,9 +33,10 @@ import type { PersonaSummary } from "@/lib/personas/types";
 import type { TaskDetail } from "@/lib/tasks/types";
 import { formatDateTime } from "@/lib/usage/format";
 
-const MODES = { wizard: "passo-a-passo", form: "completo" } as const;
-type Mode = (typeof MODES)[keyof typeof MODES];
-const MODE_STORAGE_KEY = "magistral-minuta-modo";
+const LAYOUTS = { steps: "passo-a-passo", all: "completo" } as const;
+type Layout = (typeof LAYOUTS)[keyof typeof LAYOUTS];
+/** Remembers the layout the user prefers in this browser. */
+const LAYOUT_STORAGE_KEY = "magistral-minuta-modo";
 const SUGGESTION_FAILED = "Não foi possível enviar o documento para leitura. Tente novamente.";
 
 interface MinutaStudioProps {
@@ -44,7 +45,8 @@ interface MinutaStudioProps {
   personas: PersonaSummary[];
   clauses: ClauseOption[];
   librarySourceCount: number;
-  initialGeneration?: MinutaGenerationInitialState;
+  /** A draft task the page was opened with (`?tarefa=`) that hasn't finished. */
+  initialTask?: TaskDetail | null;
   /** A document reading the page was opened with (`?rascunho=`); once finished it is applied right away. */
   initialSuggestion?: TaskDetail | null;
 }
@@ -66,15 +68,19 @@ function initialForm(personas: PersonaSummary[], catalog: SuggestionCatalog, sug
   };
 }
 
-/** The minuta page: a guided wizard or the full form over the same values, and the background draft's result. */
+/**
+ * The minuta workspace: the same values filled step by step or all at once, the draft's progress while it
+ * is written in the background, and the saved minuta's review page once it is ready.
+ */
 export function MinutaStudio({
   userId,
   personas,
   clauses,
   librarySourceCount,
-  initialGeneration,
+  initialTask = null,
   initialSuggestion = null,
 }: MinutaStudioProps) {
+  const router = useRouter();
   const catalog = useMemo(
     () => ({
       clauseIds: new Set(clauses.map((clause) => clause.id)),
@@ -91,24 +97,21 @@ export function MinutaStudio({
     step: start.appliedSuggestionId ? "revisao" : "inicio",
   });
   const [hasEdited, setHasEdited] = useState(start.appliedSuggestionId !== null);
-  const [storedMode, setStoredMode] = useLocalValue(MODE_STORAGE_KEY);
+  const [storedLayout, setStoredLayout] = useLocalValue(LAYOUT_STORAGE_KEY);
   const [storedDraftJson, setStoredDraftJson] = useLocalValue(minutaDraftStorageKey(userId));
   const storedDraft = hasEdited ? null : parseStoredDraft(storedDraftJson);
-  const mode: Mode = initialSuggestion || storedMode !== MODES.form ? MODES.wizard : MODES.form;
+  const layout: Layout = initialSuggestion || storedLayout !== LAYOUTS.all ? LAYOUTS.steps : LAYOUTS.all;
 
   const suggestion = useBackgroundTask(draftSuggestionResultSchema, initialSuggestion, {
     queryParam: DRAFT_SUGGESTION_QUERY_PARAM,
   });
-  const { background, result, isWorking, showTaskStatus, isLoadingResult, error, generate, replaceMarkdown } =
-    useMinutaGeneration(initialGeneration);
-  const { persist, saveError } = useReviewPersistence();
-  const resultRef = useRef<HTMLDivElement>(null);
-  const resultId = result?.id;
+  const { background, generate, minutaId } = useMinutaGeneration(initialTask);
+  const isGenerating = background.isBusy;
 
-  // On phones the result sits below the long form; bring it into view once it arrives.
+  // The minuta is saved in the history: review it there, where it can be downloaded and discussed.
   useEffect(() => {
-    if (resultId) resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-  }, [resultId]);
+    if (minutaId) router.push(minutaPath(minutaId));
+  }, [minutaId, router]);
 
   function changeValues(next: MinutaFormValues) {
     // A suggestion read from another document no longer matches the form.
@@ -155,11 +158,6 @@ export function MinutaStudio({
     if (await generate(request)) setStoredDraftJson(null);
   }
 
-  function handleReviewApplied(markdown: string) {
-    replaceMarkdown(markdown);
-    if (resultId) void persist(resultId, markdown);
-  }
-
   const suggestionPanel = (
     <DraftSuggestionPanel
       suggestion={suggestion}
@@ -170,41 +168,19 @@ export function MinutaStudio({
     />
   );
 
-  const hasOutput = showTaskStatus || result !== null || isLoadingResult || error !== null;
-  const output = (
-    <div ref={resultRef} className="flex scroll-mt-4 flex-col gap-3">
-      {result && !isWorking && (
-        <p className="text-sm text-muted-foreground">
-          Salva no{" "}
-          <Link href={minutaPath(result.id)} className="text-primary hover:underline">
-            histórico
-          </Link>
-          . Revisões aplicadas também ficam salvas.
-        </p>
-      )}
-      {saveError && <p className="text-sm text-destructive">{saveError}</p>}
-      {showTaskStatus ? (
-        <>
-          {error && (
-            <p role="alert" className="text-sm text-destructive">
-              {error}
-            </p>
-          )}
-          <FollowedTaskStatus background={background} runningTitle="Redigindo a minuta" />
-        </>
-      ) : (
-        <ResultPanel result={result} isLoading={isLoadingResult} error={error} onReviewApplied={handleReviewApplied} />
-      )}
-    </div>
-  );
-
   return (
-    <Tabs value={mode} onValueChange={(next) => setStoredMode(next)} className="flex flex-col gap-6">
+    <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <TabsList>
-          <TabsTrigger value={MODES.wizard}>Passo a passo</TabsTrigger>
-          <TabsTrigger value={MODES.form}>Formulário completo</TabsTrigger>
-        </TabsList>
+        <Tabs value={layout} onValueChange={(next) => setStoredLayout(next)}>
+          <TabsList aria-label="Como preencher">
+            <TabsTrigger value={LAYOUTS.steps}>
+              <ListChecks aria-hidden /> Passo a passo
+            </TabsTrigger>
+            <TabsTrigger value={LAYOUTS.all}>
+              <Rows3 aria-hidden /> Todos os campos
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
         {hasEdited && (
           <Button type="button" variant="ghost" size="sm" onClick={startOver}>
             Recomeçar do zero
@@ -226,7 +202,14 @@ export function MinutaStudio({
         </div>
       )}
 
-      <TabsContent value={MODES.wizard} className="flex flex-col gap-8">
+      {background.startError && (
+        <p role="alert" className="text-sm text-destructive">
+          {background.startError}
+        </p>
+      )}
+      <FollowedTaskStatus background={background} runningTitle="Redigindo a minuta" />
+
+      {layout === LAYOUTS.steps ? (
         <MinutaWizard
           key={wizard.key}
           initialStep={wizard.step}
@@ -236,16 +219,13 @@ export function MinutaStudio({
           values={values}
           onValuesChange={changeValues}
           isSubmitting={background.isStarting}
-          isBusy={isWorking}
+          isBusy={isGenerating}
           baseDocumentExtras={suggestionPanel}
           reviewNotes={reviewNotes}
           onSubmit={(request) => void handleSubmit(request)}
         />
-        {hasOutput && output}
-      </TabsContent>
-
-      <TabsContent value={MODES.form}>
-        <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,26rem)_minmax(0,1fr)]">
+      ) : (
+        <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
           <div className="flex flex-col gap-4">
             <ReviewNotes notes={reviewNotes} />
             <MinutaForm
@@ -255,15 +235,17 @@ export function MinutaStudio({
               values={values}
               onValuesChange={changeValues}
               isSubmitting={background.isStarting}
-              isBusy={isWorking}
+              isBusy={isGenerating}
               busyLabel="Gerando em segundo plano…"
               baseDocumentExtras={suggestionPanel}
               onSubmit={(request) => void handleSubmit(request)}
             />
           </div>
-          {output}
+          <div className="lg:sticky lg:top-20">
+            <MinutaSummary values={values} personas={personas} clauses={clauses} librarySourceCount={librarySourceCount} />
+          </div>
         </div>
-      </TabsContent>
-    </Tabs>
+      )}
+    </div>
   );
 }

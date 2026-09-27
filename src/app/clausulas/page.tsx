@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { connection } from "next/server";
 import { DeleteClauseButton } from "@/components/DeleteClauseButton";
+import { Page } from "@/components/layout/Page";
 import { LoadExamplesButton } from "@/components/LoadExamplesButton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -21,20 +22,23 @@ export default async function ClausesPage() {
   const clauses = getClauseRepository().list();
 
   return (
-    <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 px-4 py-10 sm:px-8">
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div className="flex flex-col gap-2">
-          <h1 className="text-3xl font-bold tracking-tight">Cláusulas aprovadas</h1>
-          <p className="max-w-2xl text-muted-foreground">
-            Cláusulas pré-aprovadas para montar minutas. Escolha e ordene as cláusulas no formulário; a
-            IA só ajusta o tom e completa o restante do documento.
-          </p>
-        </div>
-        <Button asChild size="lg">
-          <Link href={NEW_CLAUSE_PATH}>Nova cláusula</Link>
-        </Button>
-      </header>
-
+    <Page
+      title="Cláusulas aprovadas"
+      width="wide"
+      description={
+        <>
+          Cláusulas pré-aprovadas para montar minutas. Escolha e ordene as cláusulas no formulário; a IA só ajusta o tom
+          e completa o restante do documento.
+        </>
+      }
+      actions={
+        <>
+          <Button asChild size="lg">
+            <Link href={NEW_CLAUSE_PATH}>Nova cláusula</Link>
+          </Button>
+        </>
+      }
+    >
       <div className="rounded-lg border bg-card">
         <Table>
           <TableHeader>
@@ -99,6 +103,6 @@ export default async function ClausesPage() {
           </TableBody>
         </Table>
       </div>
-    </main>
+    </Page>
   );
 }

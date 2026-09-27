@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { BatchPreflightSummary } from "@/components/batch/BatchPreflightSummary";
 import { MinutaForm } from "@/components/MinutaForm";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -9,6 +10,7 @@ import { FileInput } from "@/components/ui/FileInput";
 import { FormField } from "@/components/ui/FormField";
 import { Input } from "@/components/ui/input";
 import { WarningCallout } from "@/components/ui/WarningCallout";
+import type { BatchPreflight } from "@/lib/batch/loadBatchPreflight";
 import { batchPath } from "@/lib/batch/paths";
 import { MAX_BATCH_NAME_CHARS } from "@/lib/batch/schema";
 import {
@@ -71,7 +73,12 @@ function PreviewRow({ request }: { request: MinutaRequest }) {
 }
 
 /** Upload a spreadsheet, write the minuta template with {{coluna}} placeholders, check the first row, start. */
-export function BatchCreator(options: MinutaFormOptions) {
+interface BatchCreatorProps extends MinutaFormOptions {
+  /** How long the batch will likely take and the quota left today, shown before it starts. */
+  preflight: BatchPreflight;
+}
+
+export function BatchCreator({ preflight, ...options }: BatchCreatorProps) {
   const router = useRouter();
   const [sheet, setSheet] = useState<Spreadsheet | null>(null);
   const [name, setName] = useState("");
@@ -189,12 +196,13 @@ export function BatchCreator(options: MinutaFormOptions) {
             <h2 className="text-sm font-medium">3. Conferir e iniciar</h2>
             {missing.length > 0 && (
               <WarningCallout>
-                ⚠ Sem coluna correspondente: {missing.map(placeholder).join(", ")}. Esses campos sairão como
+                Sem coluna correspondente: {missing.map(placeholder).join(", ")}. Esses campos sairão como
                 [PREENCHER: …].
               </WarningCallout>
             )}
             <p className="text-sm text-muted-foreground">Primeira linha preenchida:</p>
             <PreviewRow request={fillRequestTemplate(template, sheet.rows[0])} />
+            <BatchPreflightSummary rows={sheet.rows.length} preflight={preflight} />
             <Button size="lg" className="self-start" disabled={isCreating || !name.trim()} onClick={handleCreate}>
               {isCreating ? "Criando lote…" : `Iniciar lote (${plural(sheet.rows.length, "minuta", "minutas")})`}
             </Button>

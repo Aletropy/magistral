@@ -81,6 +81,17 @@ describe("createUsageRepository", () => {
     ]);
   });
 
+  it("counts a provider's calls since a moment and averages successful latency", () => {
+    usage.record({ ...CALL, provider: "openrouter", latencyMs: 1000 }, null);
+    usage.record({ ...CALL, provider: "openrouter", operation: "batch", latencyMs: 3000 }, null);
+    usage.record({ ...CALL, provider: "openrouter", status: "upstream", latencyMs: 90000 }, null);
+
+    expect(usage.countCallsSince("openrouter", new Date(Date.now() - 60_000))).toBe(3);
+    expect(usage.countCallsSince("gemini", new Date(0))).toBe(0);
+    expect(usage.averageLatencyMs(["minuta", "batch"], DAYS)).toBe(2000);
+    expect(usage.averageLatencyMs(["chat"], DAYS)).toBeNull();
+  });
+
   it("groups by local day", () => {
     usage.record(CALL, null);
     const [day] = usage.groupedTotals("day", DAYS);

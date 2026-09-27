@@ -7,6 +7,7 @@ import { FormField } from "@/components/ui/FormField";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useClauseMutations } from "@/hooks/useClauseMutations";
+import { useUnsavedChangesWarning } from "@/hooks/useUnsavedChangesWarning";
 import { CLAUSES_PATH } from "@/lib/clauses/paths";
 import {
   MAX_CLAUSE_BODY_CHARS,
@@ -32,6 +33,8 @@ export function ClauseEditor({ clauseId, initialValues }: ClauseEditorProps) {
   const { isPending, error, save } = useClauseMutations();
   const [values, setValues] = useState<ClauseFormValues>(initialValues);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isSaved, setIsSaved] = useState(false);
+  useUnsavedChangesWarning(!isSaved && JSON.stringify(values) !== JSON.stringify(initialValues));
 
   function update<K extends keyof ClauseFormValues>(field: K, value: ClauseFormValues[K]) {
     setValues((previous) => ({ ...previous, [field]: value }));
@@ -50,6 +53,7 @@ export function ClauseEditor({ clauseId, initialValues }: ClauseEditorProps) {
     }
     setErrors({});
     if (await save(result.data, clauseId)) {
+      setIsSaved(true);
       router.push(CLAUSES_PATH);
       router.refresh();
     }

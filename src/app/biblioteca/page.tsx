@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { connection } from "next/server";
 import { DeleteLibrarySourceButton } from "@/components/DeleteLibrarySourceButton";
+import { Page } from "@/components/layout/Page";
 import { LibrarySyncPanel } from "@/components/LibrarySyncPanel";
 import { LibraryUploadForm } from "@/components/LibraryUploadForm";
 import { LoadLibraryExamplesButton } from "@/components/LoadLibraryExamplesButton";
@@ -46,21 +47,24 @@ export default async function LibraryPage({ searchParams }: PageProps<"/bibliote
       : "é grande: a IA recebe só os trechos mais relevantes para cada minuta.";
 
   return (
-    <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 px-4 py-10 sm:px-8">
-      <header className="flex flex-col gap-2">
-        <h1 className="text-3xl font-bold tracking-tight">Biblioteca jurídica</h1>
-        <p className="max-w-3xl text-muted-foreground">
-          Leis, decretos e pareceres do Município para fundamentar as minutas sem inventar normas. Os
-          documentos são divididos por artigo (com seus parágrafos e incisos) e indexados localmente.
-        </p>
-        {sources.length > 0 && (
-          <p className="text-sm text-muted-foreground">
-            {plural(sources.length, "documento", "documentos")}, {plural(totalChars, "caractere", "caracteres")}. A
-            biblioteca {strategy}
+    <Page
+      title="Biblioteca jurídica"
+      width="wide"
+      description={
+        <>
+          <p className="max-w-3xl text-muted-foreground">
+            Leis, decretos e pareceres do Município para fundamentar as minutas sem inventar normas. Os
+            documentos são divididos por artigo (com seus parágrafos e incisos) e indexados localmente.
           </p>
-        )}
-      </header>
-
+          {sources.length > 0 && (
+            <p className="text-sm text-muted-foreground">
+              {plural(sources.length, "documento", "documentos")}, {plural(totalChars, "caractere", "caracteres")}. A
+              biblioteca {strategy}
+            </p>
+          )}
+        </>
+      }
+    >
       {needsReindex && canManage && (
         <WarningCallout className="flex flex-col gap-3">
           <p>{LIBRARY_INDEX_MISMATCH_MESSAGE}</p>
@@ -133,6 +137,6 @@ export default async function LibraryPage({ searchParams }: PageProps<"/bibliote
           </TableBody>
         </Table>
       </div>
-    </main>
+    </Page>
   );
 }

@@ -29,6 +29,14 @@ export function resolveProviderRouting(allowDataCollection: string | undefined):
   return allowDataCollection?.trim().toLowerCase() === "true" ? OPEN_ROUTING : PRIVATE_ROUTING;
 }
 
+/** Requests a day OpenRouter allows on ":free" models to accounts without credits; the count resets at 00:00 UTC. */
+export const FREE_MODELS_DAILY_REQUEST_LIMIT = 50;
+const FREE_MODEL_SUFFIX = ":free";
+
+export function isFreeModelList(models: readonly string[]): boolean {
+  return models.length > 0 && models.every((model) => model.endsWith(FREE_MODEL_SUFFIX));
+}
+
 /** Room for a long contract plus the reasoning some free models do before answering. */
 export const OPENROUTER_MAX_TOKENS = 32768;
 

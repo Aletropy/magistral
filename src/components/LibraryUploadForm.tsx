@@ -1,5 +1,6 @@
 "use client";
 
+import { CircleCheck, CircleEqual, CircleX, type LucideIcon } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { FollowedTaskStatus } from "@/components/tasks/FollowedTaskStatus";
 import { Button } from "@/components/ui/button";
@@ -14,10 +15,21 @@ import { LIBRARY_SOURCE_KINDS, LIBRARY_SOURCE_KIND_LABELS, type LibrarySourceKin
 import type { TaskDetail } from "@/lib/tasks/types";
 
 const OUTCOME_LABELS: Record<LibraryUploadOutcome["status"], string> = {
-  added: "✓ Adicionado",
-  duplicate: "= Já existia",
-  failed: "✗ Falhou",
+  added: "Adicionado",
+  duplicate: "Já existia",
+  failed: "Falhou",
 };
+
+const OUTCOME_ICONS: Record<LibraryUploadOutcome["status"], { icon: LucideIcon; className: string }> = {
+  added: { icon: CircleCheck, className: "text-primary" },
+  duplicate: { icon: CircleEqual, className: "text-muted-foreground" },
+  failed: { icon: CircleX, className: "text-destructive" },
+};
+
+function OutcomeIcon({ status }: { status: LibraryUploadOutcome["status"] }) {
+  const { icon: Icon, className } = OUTCOME_ICONS[status];
+  return <Icon className={`mr-1 inline size-4 align-text-bottom ${className}`} aria-hidden />;
+}
 
 const UPLOAD_FAILED = "Não foi possível enviar os documentos. Tente novamente.";
 
@@ -73,6 +85,7 @@ export function LibraryUploadForm({ initialTask }: { initialTask: TaskDetail | n
         <ul className="flex flex-col gap-1 text-sm">
           {outcomes.map((outcome) => (
             <li key={outcome.fileName}>
+              <OutcomeIcon status={outcome.status} />
               <span className="font-medium">{OUTCOME_LABELS[outcome.status]}</span> {outcome.fileName}
               {outcome.message && <span className="text-muted-foreground"> — {outcome.message}</span>}
             </li>

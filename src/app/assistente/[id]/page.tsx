@@ -20,7 +20,7 @@ export default async function ConversationPage({ params }: PageProps<"/assistent
   if (!conversation) notFound();
 
   return (
-    <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 px-4 pt-10 sm:px-8">
+    <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 px-4 pt-6 sm:px-6 sm:pt-8 lg:px-8">
       <AssistantShell conversations={chats.list(user.id)} activeId={id}>
         {/* Keyed so opening another conversation starts from its own state. */}
         <ChatThread key={conversation.id} initial={conversation} />

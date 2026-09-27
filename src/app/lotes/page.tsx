@@ -1,7 +1,10 @@
+import { Layers } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { connection } from "next/server";
 import { BatchProgressBar } from "@/components/BatchProgressBar";
+import { EmptyState } from "@/components/layout/EmptyState";
+import { Page } from "@/components/layout/Page";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { requireUser } from "@/lib/auth/dal";
@@ -18,39 +21,47 @@ export default async function BatchesPage() {
   const jobs = getBatchRepository().listJobs(user.id);
 
   return (
-    <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 px-4 py-10 sm:px-8">
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div className="flex flex-col gap-2">
-          <h1 className="text-3xl font-bold tracking-tight">Geração em lote</h1>
-          <p className="max-w-2xl text-muted-foreground">
-            Uma minuta por linha de planilha (notificações, cobranças, termos), com a mesma persona e o mesmo
-            modelo. A geração continua em segundo plano, mesmo depois de reiniciar o servidor.
-          </p>
-        </div>
-        <Button asChild size="lg">
-          <Link href={NEW_BATCH_PATH}>Novo lote</Link>
-        </Button>
-      </header>
-
-      <div className="rounded-lg border bg-card">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Lote</TableHead>
-              <TableHead className="hidden md:table-cell">Criado em</TableHead>
-              <TableHead className="hidden w-80 md:table-cell">Progresso</TableHead>
-              <TableHead className="hidden md:table-cell">Situação</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {jobs.length === 0 ? (
+    <Page
+      title="Geração em lote"
+      width="wide"
+      description={
+        <>
+          Uma minuta por linha de planilha (notificações, cobranças, termos), com a mesma persona e o mesmo modelo. A
+          geração continua em segundo plano, mesmo depois de reiniciar o servidor.
+        </>
+      }
+      actions={
+        <>
+          <Button asChild size="lg">
+            <Link href={NEW_BATCH_PATH}>Novo lote</Link>
+          </Button>
+        </>
+      }
+    >
+      {jobs.length === 0 ? (
+        <EmptyState
+          icon={Layers}
+          title="Nenhum lote criado"
+          description="Gere uma minuta por linha de uma planilha: notificações, cobranças ou termos em série."
+          action={
+            <Button asChild>
+              <Link href={NEW_BATCH_PATH}>Criar o primeiro lote</Link>
+            </Button>
+          }
+        />
+      ) : (
+        <div className="rounded-lg border bg-card">
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell colSpan={4} className="text-center text-muted-foreground">
-                  Nenhum lote criado.
-                </TableCell>
+                <TableHead>Lote</TableHead>
+                <TableHead className="hidden md:table-cell">Criado em</TableHead>
+                <TableHead className="hidden w-80 md:table-cell">Progresso</TableHead>
+                <TableHead className="hidden md:table-cell">Situação</TableHead>
               </TableRow>
-            ) : (
-              jobs.map((job) => (
+            </TableHeader>
+            <TableBody>
+              {jobs.map((job) => (
                 <TableRow key={job.id}>
                   <TableCell className="whitespace-normal font-medium">
                     <Link href={batchPath(job.id)} className="text-primary hover:underline">
@@ -66,11 +77,11 @@ export default async function BatchesPage() {
                   </TableCell>
                   <TableCell className="hidden md:table-cell">{isJobActive(job) ? "Em andamento" : "Concluído"}</TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
-    </main>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
+    </Page>
   );
 }

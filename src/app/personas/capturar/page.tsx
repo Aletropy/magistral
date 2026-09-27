@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { connection } from "next/server";
+import { Page } from "@/components/layout/Page";
 import { StyleCapture } from "@/components/StyleCapture";
 import { requireUser } from "@/lib/auth/dal";
 import { getPersonaRepository } from "@/lib/personas/getPersonaRepository";
@@ -19,16 +20,17 @@ export default async function StyleCapturePage({ searchParams }: PageProps<"/per
     .map((persona) => ({ id: persona.id, input: toPersonaInput(persona) }));
 
   return (
-    <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 px-4 py-10 sm:px-8">
-      <header className="flex flex-col gap-2">
-        <h1 className="text-3xl font-bold tracking-tight">Capturar estilo de um documento</h1>
-        <p className="max-w-3xl text-muted-foreground">
-          Envie uma minuta ou parecer cujo estilo você quer reproduzir. A IA extrai estrutura,
-          vocabulário, tamanho das frases, títulos, citações e tom, e separa trechos literais para
-          servir de exemplo.
-        </p>
-      </header>
+    <Page
+      title="Capturar estilo de um documento"
+      width="wide"
+      description={
+        <>
+          Envie uma minuta ou parecer cujo estilo você quer reproduzir. A IA extrai estrutura, vocabulário, tamanho das
+          frases, títulos, citações e tom, e separa trechos literais para servir de exemplo.
+        </>
+      }
+    >
       <StyleCapture personas={personas} initialTask={task?.kind === "style.capture" ? task : null} />
-    </main>
+    </Page>
   );
 }

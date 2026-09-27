@@ -1,5 +1,6 @@
 "use client";
 
+import { Check, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { applyHunkDecisions, diffWords, type HunkDecision } from "@/lib/diff/wordDiff";
@@ -94,7 +95,7 @@ export function RedlineViewer({ original, revised, onApply }: RedlineViewerProps
                       className="rounded border px-1 text-[10px] leading-4 text-muted-foreground aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-primary-foreground"
                       onClick={() => decide(part.id, option)}
                     >
-                      {option === "accept" ? "✓" : "✗"}
+                      {option === "accept" ? <Check className="size-3" aria-hidden /> : <X className="size-3" aria-hidden />}
                     </button>
                   ))}
                 </span>

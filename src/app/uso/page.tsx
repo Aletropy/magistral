@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { connection } from "next/server";
 import { DataPrivacyNotice } from "@/components/DataPrivacyNotice";
+import { Page } from "@/components/layout/Page";
 import { RecentCallsTable } from "@/components/RecentCallsTable";
 import { StatTile } from "@/components/StatTile";
 import { UsageGroupTable } from "@/components/UsageGroupTable";
@@ -29,15 +30,16 @@ export default async function UsagePage() {
   const totals = usage.totals(USAGE_WINDOW_DAYS);
 
   return (
-    <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-8 px-4 py-10 sm:px-8">
-      <header className="flex flex-col gap-2">
-        <h1 className="text-3xl font-bold tracking-tight">Uso e custos</h1>
-        <p className="max-w-2xl text-muted-foreground">
-          Cada chamada à IA nos últimos {USAGE_WINDOW_DAYS} dias: tokens, latência e custo estimado
-          pelo preço de tabela de cada modelo. Tokens de raciocínio contam como saída.
-        </p>
-      </header>
-
+    <Page
+      title="Uso e custos"
+      width="wide"
+      description={
+        <>
+          Cada chamada à IA nos últimos {USAGE_WINDOW_DAYS} dias: tokens, latência e custo estimado pelo preço de
+          tabela de cada modelo. Tokens de raciocínio contam como saída.
+        </>
+      }
+    >
       <DataPrivacyNotice />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
@@ -79,6 +81,6 @@ export default async function UsagePage() {
         />
       </div>
       <RecentCallsTable calls={usage.recent(RECENT_CALLS_LIMIT)} />
-    </main>
+    </Page>
   );
 }

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { connection } from "next/server";
+import { Page } from "@/components/layout/Page";
 import { TaskList } from "@/components/tasks/TaskList";
 import { requireUser } from "@/lib/auth/dal";
 import { getTaskRepository } from "@/lib/tasks/getTaskRepository";
@@ -16,15 +17,17 @@ export default async function TasksPage() {
   const tasks = getTaskRepository().list({ ownerId: user.id, limit: TASK_PAGE_LIMIT });
 
   return (
-    <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 px-4 py-10 sm:px-8">
-      <header className="flex flex-col gap-2">
-        <h1 className="text-3xl font-bold tracking-tight">Tarefas</h1>
-        <p className="max-w-2xl text-muted-foreground">
-          Tudo o que demora roda em segundo plano: você pode continuar usando o Magistral e é avisado quando
-          cada tarefa termina. Tarefas concluídas ficam aqui por {TASK_RETENTION_DAYS} dias.
-        </p>
-      </header>
+    <Page
+      title="Tarefas"
+      width="wide"
+      description={
+        <>
+          Tudo o que demora roda em segundo plano: você pode continuar usando o Magistral e é avisado quando cada
+          tarefa termina. Tarefas concluídas ficam aqui por {TASK_RETENTION_DAYS} dias.
+        </>
+      }
+    >
       <TaskList initialTasks={tasks} />
-    </main>
+    </Page>
   );
 }

@@ -1,11 +1,14 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { DiscussMinutaButton } from "@/components/chat/DiscussMinutaButton";
 import { DeleteMinutaButton } from "@/components/DeleteMinutaButton";
+import { Page } from "@/components/layout/Page";
 import { SavedMinutaView } from "@/components/SavedMinutaView";
 import { requireUser } from "@/lib/auth/dal";
 import { getMinutaRepository } from "@/lib/minutas/getMinutaRepository";
+import { HISTORY_PATH } from "@/lib/minutas/paths";
 import { formatDateTime } from "@/lib/usage/format";
 
 export async function generateMetadata({ params }: PageProps<"/historico/[id]">): Promise<Metadata> {
@@ -23,21 +26,28 @@ export default async function SavedMinutaPage({ params }: PageProps<"/historico/
   const edited = minuta.updatedAt !== minuta.createdAt;
 
   return (
-    <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-10 sm:px-8">
-      <header className="flex flex-wrap items-start justify-between gap-4">
-        <div className="flex min-w-0 flex-col gap-1">
-          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{minuta.title}</h1>
-          <p className="text-sm text-muted-foreground">
-            {minuta.documentTypeLabel} · persona {minuta.personaName} · gerada em {formatDateTime(minuta.createdAt)}
-            {edited && ` · revisada em ${formatDateTime(minuta.updatedAt)}`}
-          </p>
-        </div>
-        <div className="flex flex-wrap items-start gap-2">
+    <Page
+      width="wide"
+      eyebrow={
+        <Link href={HISTORY_PATH} className="hover:text-primary hover:underline">
+          ← Histórico
+        </Link>
+      }
+      title={minuta.title}
+      description={
+        <>
+          {minuta.documentTypeLabel} · persona {minuta.personaName} · gerada em {formatDateTime(minuta.createdAt)}
+          {edited && ` · revisada em ${formatDateTime(minuta.updatedAt)}`}
+        </>
+      }
+      actions={
+        <>
           <DiscussMinutaButton minutaId={minuta.id} />
           <DeleteMinutaButton id={minuta.id} title={minuta.title} leavePage />
-        </div>
-      </header>
+        </>
+      }
+    >
       <SavedMinutaView initial={{ ...minuta.result, id: minuta.id }} />
-    </main>
+    </Page>
   );
 }

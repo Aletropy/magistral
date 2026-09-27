@@ -12,6 +12,7 @@ import { TagInput } from "@/components/TagInput";
 import { TemperatureField } from "@/components/TemperatureField";
 import { Textarea } from "@/components/ui/textarea";
 import { usePersonaMutations } from "@/hooks/usePersonaMutations";
+import { useUnsavedChangesWarning } from "@/hooks/useUnsavedChangesWarning";
 import { PERSONAS_PATH } from "@/lib/personas/paths";
 import {
   MAX_EXAMPLES,
@@ -43,6 +44,8 @@ export function PersonaEditor({ personaId, initialValues }: PersonaEditorProps) 
   const { isPending, error, save } = usePersonaMutations();
   const [values, setValues] = useState<PersonaFormValues>(initialValues);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isSaved, setIsSaved] = useState(false);
+  useUnsavedChangesWarning(!isSaved && JSON.stringify(values) !== JSON.stringify(initialValues));
 
   function update<K extends keyof PersonaFormValues>(field: K, value: PersonaFormValues[K]) {
     setValues((previous) => ({ ...previous, [field]: value }));
@@ -57,6 +60,7 @@ export function PersonaEditor({ personaId, initialValues }: PersonaEditorProps) 
     }
     setErrors({});
     if (await save(result.data, personaId)) {
+      setIsSaved(true);
       router.push(PERSONAS_PATH);
       router.refresh();
     }

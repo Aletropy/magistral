@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { connection } from "next/server";
+import { Page } from "@/components/layout/Page";
 import { NewUserForm } from "@/components/team/NewUserForm";
 import { UserRowActions } from "@/components/team/UserRowActions";
 import { Badge } from "@/components/ui/badge";
@@ -16,15 +17,16 @@ export default async function TeamPage() {
   const users = getUserRepository().list();
 
   return (
-    <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 px-4 py-10 sm:px-8">
-      <header className="flex flex-col gap-2">
-        <h1 className="text-3xl font-bold tracking-tight">Equipe</h1>
-        <p className="max-w-3xl text-muted-foreground">
-          Quem pode entrar no Magistral. Minutas, conversas, lotes e tarefas são de cada pessoa; personas,
-          cláusulas e a biblioteca são compartilhadas pelo escritório.
-        </p>
-      </header>
-
+    <Page
+      title="Equipe"
+      width="wide"
+      description={
+        <>
+          Quem pode entrar no Magistral. Minutas, conversas, lotes e tarefas são de cada pessoa; personas, cláusulas e a
+          biblioteca são compartilhadas pelo escritório.
+        </>
+      }
+    >
       <div className="rounded-lg border bg-card">
         <Table>
           <TableHeader>
@@ -62,6 +64,6 @@ export default async function TeamPage() {
       </div>
 
       <NewUserForm />
-    </main>
+    </Page>
   );
 }

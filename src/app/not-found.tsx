@@ -14,7 +14,7 @@ export default function NotFound() {
         O endereço pode estar errado, ou o item (persona, cláusula, lote ou minuta) foi excluído.
       </p>
       <Button asChild size="lg">
-        <Link href={HOME_PATH}>Voltar para Gerar minuta</Link>
+        <Link href={HOME_PATH}>Voltar ao início</Link>
       </Button>
     </main>
   );

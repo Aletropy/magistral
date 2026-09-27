@@ -4,7 +4,7 @@ Gera minutas jurídicas (contratos, NDAs, notificações, pareceres) no tom de v
 
 ## O que dá para fazer
 
-- **Gerar minuta**: tipo de documento, partes, cláusulas específicas e uma *persona* (o tom de voz). A minuta sai em Markdown, é salva no **Histórico** e pode ser baixada em `.docx` ou `.pdf`.
+- **Nova minuta**: passo a passo ou todos os campos numa página; tipo de documento, partes, cláusulas específicas e uma *persona* (o tom de voz). A minuta sai em Markdown, é salva no **Histórico** e pode ser baixada em `.docx` ou `.pdf`.
 - **Personas**: crie e ajuste o tom (instrução, regras, termos proibidos, formalidade, agressividade, extensão, criatividade). Em **Testar persona**, compare um texto de amostra com a versão reescrita antes de salvar.
 - **Capturar estilo**: envie um PDF ou DOCX de que você gosta e a IA extrai o estilo dele para uma nova persona.
 - **Biblioteca jurídica**: leis, decretos e pareceres do Município, divididos por artigo. Com "Fundamentar com a biblioteca", a minuta cita só normas da biblioteca e marca `[PREENCHER: fundamento legal]` quando falta uma.
@@ -76,9 +76,9 @@ Outros comandos: `pnpm test` (testes), `pnpm lint`, `pnpm typecheck`.
 ## Roteiro de demonstração (5 minutos)
 
 1. **Cláusulas** → "Carregar exemplos". **Biblioteca** → "Carregar exemplos": uma lei e um decreto fictícios do "Município de Exemplo".
-2. **Gerar minuta**: tipo "Outro" → "Termo de Cessão de Uso de Imóvel Municipal". Partes "Município de Exemplo" (Cedente) e "Café Exemplo Ltda." (Cessionária). Adicione as cláusulas "Foro" e "Multa por atraso no pagamento", marque "Fundamentar com a biblioteca" e gere.
-3. Veja as **Fontes consultadas**: a minuta cita os artigos da lei e do decreto de exemplo. Em **Revisar alterações**, rejeite uma mudança numa cláusula aprovada e aplique. Baixe em Word e PDF.
-4. **Histórico**: a minuta está lá, já com a revisão.
+2. **Nova minuta**: tipo "Outro" → "Termo de Cessão de Uso de Imóvel Municipal". Partes "Município de Exemplo" (Cedente) e "Café Exemplo Ltda." (Cessionária). Adicione as cláusulas "Foro" e "Multa por atraso no pagamento", marque "Fundamentar com a biblioteca" e gere.
+3. Quando a minuta fica pronta, ela abre na página de revisão. No painel ao lado, veja as **Fontes consultadas**: a minuta cita os artigos da lei e do decreto de exemplo. Em **Revisar alterações**, rejeite uma mudança numa cláusula aprovada e aplique. Baixe em Word e PDF.
+4. **Histórico**: a minuta está lá, já com a revisão; busque pelo título ou filtre pela persona.
 5. **Personas** → "Testar" numa persona: mova o controle de formalidade e compare o texto reescrito.
 6. **Personas** → "Capturar estilo de documento": envie um parecer em PDF ou DOCX e crie uma persona com o estilo dele.
 7. **Lotes** → "Novo lote": baixe a planilha de exemplo, envie-a, use `{{nome}}`, `{{cpf}}` e `{{valor}}` no modelo e inicie. As minutas ficam prontas em segundo plano; baixe o ZIP.

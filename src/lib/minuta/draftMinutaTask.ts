@@ -1,6 +1,7 @@
 import "server-only";
 import { getMinutaRepository } from "@/lib/minutas/getMinutaRepository";
-import { HOME_PATH, minutaPath } from "@/lib/minutas/paths";
+import { minutaPath } from "@/lib/minutas/paths";
+import { draftTaskPath } from "./paths";
 import { titleFromMarkdown } from "@/lib/minutas/titleFromMarkdown";
 import { resolveDocumentTypeLabel } from "@/lib/prompt/buildUserPrompt";
 import { taskOwner, type TaskHandler } from "@/lib/tasks/handler";
@@ -56,6 +57,7 @@ export const draftMinutaTask: TaskHandler<MinutaRequest, DraftTaskResult> = {
     level: "error",
     title: "Não foi possível gerar a minuta",
     body: `${task.title}: ${message}`,
-    href: HOME_PATH,
+    // Back to the form with the failed task, where it can be retried.
+    href: draftTaskPath(task.id),
   }),
 };

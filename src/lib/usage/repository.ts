@@ -1,6 +1,16 @@
 import type { DatabaseSync } from "node:sqlite";
 import { z } from "zod";
-import { LLM_CALL_STATUSES, LLM_OPERATIONS, USAGE_PROVIDERS, type LlmCall, type NewLlmCall, type UsageGroup, type UsageTotals } from "./types";
+import {
+  LLM_CALL_STATUSES,
+  LLM_OPERATIONS,
+  USAGE_PROVIDERS,
+  type LlmCall,
+  type LlmOperation,
+  type NewLlmCall,
+  type UsageGroup,
+  type UsageProvider,
+  type UsageTotals,
+} from "./types";
 
 const llmCallRowSchema = z.object({
   id: z.number(),
@@ -54,6 +64,10 @@ export interface UsageRepository {
   /** Days sort newest first; operations and models sort by cost. */
   groupedTotals(grouping: UsageGrouping, sinceDays: number): UsageGroup[];
   recent(limit: number): LlmCall[];
+  /** Calls to a provider since a moment, e.g. to see how much of a daily quota is left. */
+  countCallsSince(provider: UsageProvider, since: Date): number;
+  /** Mean latency of successful calls of these operations in the last days, or null without data. */
+  averageLatencyMs(operations: readonly LlmOperation[], sinceDays: number): number | null;
 }
 
 function daysAgoModifier(days: number): string {
@@ -80,6 +94,7 @@ export function createUsageRepository(db: DatabaseSync): UsageRepository {
   );
   const selectTotals = db.prepare(`SELECT ${TOTALS_COLUMNS} FROM llm_calls WHERE ${SINCE_FILTER}`);
   const selectRecent = db.prepare("SELECT * FROM llm_calls ORDER BY id DESC LIMIT ?");
+  const countSince = db.prepare("SELECT COUNT(*) AS count FROM llm_calls WHERE provider = ? AND created_at >= ?");
 
   return {
     record(call, userId) {
@@ -110,6 +125,18 @@ export function createUsageRepository(db: DatabaseSync): UsageRepository {
       return rows.map((row) => ({ key: totalsRowSchema.parse(row).key ?? "", ...toTotals(row) }));
     },
 
+    countCallsSince: (provider, since) =>
+      z.object({ count: z.number() }).parse(countSince.get(provider, since.toISOString())).count,
+    averageLatencyMs(operations, sinceDays) {
+      const placeholders = operations.map(() => "?").join(", ");
+      const row = db
+        .prepare(
+          `SELECT AVG(latency_ms) AS average FROM llm_calls
+           WHERE status = 'ok' AND operation IN (${placeholders}) AND ${SINCE_FILTER}`,
+        )
+        .get(...operations, daysAgoModifier(sinceDays));
+      return z.object({ average: z.number().nullable() }).parse(row).average;
+    },
     recent: (limit) =>
       selectRecent.all(limit).map((row) => {
         const parsed = llmCallRowSchema.parse(row);

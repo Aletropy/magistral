@@ -68,6 +68,24 @@ describe("createMinutaRepository", () => {
     expect(minutas.get(id, owner)).toBeNull();
   });
 
+  it("searches the owner's minutas by text and persona, a page at a time", () => {
+    const first = save("Contrato de Locação");
+    save("Acordo de Confidencialidade");
+    minutas.create({ ownerId: owner, title: "Multa de 50% ao mês", personaName: "Agressivo", documentTypeLabel: "Outro", request: REQUEST, result: RESULT });
+
+    expect(minutas.search(owner, { query: "LOCAÇÃO", personaName: "", limit: 10, offset: 0 })).toMatchObject({
+      total: 1,
+      items: [{ id: first }],
+    });
+    expect(minutas.search(owner, { query: "50%", personaName: "", limit: 10, offset: 0 }).total).toBe(1);
+    expect(minutas.search(owner, { query: "", personaName: "Agressivo", limit: 10, offset: 0 }).total).toBe(1);
+    const page = minutas.search(owner, { query: "", personaName: "", limit: 2, offset: 2 });
+    expect(page).toMatchObject({ total: 3 });
+    expect(page.items).toHaveLength(1);
+    expect(minutas.search(other, { query: "", personaName: "", limit: 10, offset: 0 }).total).toBe(0);
+    expect(minutas.personaNames(owner)).toEqual(["Agressivo", "Moderno"]);
+  });
+
   it("keeps each user's minutas private", () => {
     const id = save();
     expect(minutas.list(other)).toEqual([]);

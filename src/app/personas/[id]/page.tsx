@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
+import { Page } from "@/components/layout/Page";
 import { PersonaEditor } from "@/components/PersonaEditor";
 import { Button } from "@/components/ui/button";
 import { getPersonaRepository } from "@/lib/personas/getPersonaRepository";
@@ -24,14 +25,18 @@ export default async function EditPersonaPage({ params }: PageProps<"/personas/[
   if (!persona) notFound();
 
   return (
-    <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 px-4 py-10 sm:px-8">
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <h1 className="text-3xl font-bold tracking-tight">Editar “{persona.name}”</h1>
-        <Button asChild variant="outline" size="lg">
-          <Link href={personaPlaygroundPath(id)}>Testar persona</Link>
-        </Button>
-      </header>
+    <Page
+      title={<>Editar “{persona.name}”</>}
+      width="default"
+      actions={
+        <>
+          <Button asChild variant="outline" size="lg">
+            <Link href={personaPlaygroundPath(id)}>Testar persona</Link>
+          </Button>
+        </>
+      }
+    >
       <PersonaEditor personaId={id} initialValues={toPersonaInput(persona)} />
-    </main>
+    </Page>
   );
 }

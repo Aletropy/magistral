@@ -1,15 +1,10 @@
 "use client";
 
 import { FilePlus2, FileText } from "lucide-react";
-import { useState, type FormEvent, type ReactNode } from "react";
-import { ApprovedClausesField } from "@/components/ApprovedClausesField";
-import { LibraryToggle } from "@/components/LibraryToggle";
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { BaseDocumentField } from "@/components/minuta/BaseDocumentField";
-import { ClausesTextField } from "@/components/minuta/ClausesTextField";
-import { DocumentTypeField } from "@/components/minuta/DocumentTypeField";
+import { MinutaStepFields } from "@/components/minuta/MinutaStepFields";
 import { ReviewNotes } from "@/components/minuta/ReviewNotes";
-import { PartiesField } from "@/components/PartiesField";
-import { PersonaSelector } from "@/components/PersonaSelector";
 import { Button } from "@/components/ui/button";
 import type { ClauseOption } from "@/lib/clauses/types";
 import { minutaRequestSchema, type MinutaFormValues, type MinutaRequest } from "@/lib/minuta/schema";
@@ -97,12 +92,20 @@ export function MinutaWizard({
   const [startsFromDocument, setStartsFromDocument] = useState(Boolean(values.baseDocument));
   const step = WIZARD_STEPS[current];
   const disabled = isSubmitting;
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const hasMoved = useRef(false);
+
+  // Screen readers and keyboards land on the new step's title, not on the button that was pressed.
+  useEffect(() => {
+    if (hasMoved.current) headingRef.current?.focus();
+  }, [current]);
 
   function update(changes: Partial<MinutaFormValues>) {
     onValuesChange({ ...values, ...changes });
   }
 
   function goTo(index: number) {
+    hasMoved.current = true;
     setErrors({});
     setCurrent(index);
     setFurthest((previous) => Math.max(previous, index));
@@ -140,7 +143,9 @@ export function MinutaWizard({
         <WizardStepper steps={WIZARD_STEPS} current={current} furthest={furthest} onSelect={(id) => goTo(stepIndex(id))} />
 
         <header className="flex flex-col gap-1">
-          <h2 className="text-xl font-semibold tracking-tight">{step.title}</h2>
+          <h2 ref={headingRef} tabIndex={-1} className="text-xl font-semibold tracking-tight outline-none">
+            {step.title}
+          </h2>
           <p className="text-sm text-muted-foreground">{step.description}</p>
         </header>
 
@@ -177,55 +182,16 @@ export function MinutaWizard({
           </div>
         )}
 
-        {step.id === "tipo" && (
-          <DocumentTypeField
-            documentType={values.documentType}
-            customDocumentType={values.customDocumentType}
+        {step.id !== "inicio" && step.id !== "revisao" && (
+          <MinutaStepFields
+            step={step.id}
+            values={values}
+            onChange={update}
             errors={errors}
             disabled={disabled}
-            onChange={update}
-          />
-        )}
-
-        {step.id === "partes" && (
-          <PartiesField parties={values.parties} errors={errors} disabled={disabled} onChange={(parties) => update({ parties })} />
-        )}
-
-        {step.id === "clausulas" && (
-          <div className="flex flex-col gap-6">
-            <ApprovedClausesField
-              clauses={clauses}
-              documentType={values.documentType}
-              value={values.approvedClauseIds}
-              error={errors.approvedClauseIds}
-              disabled={disabled}
-              onChange={(approvedClauseIds) => update({ approvedClauseIds })}
-            />
-            <ClausesTextField
-              value={values.clauses}
-              error={errors.clauses}
-              disabled={disabled}
-              onChange={(clauses) => update({ clauses })}
-            />
-          </div>
-        )}
-
-        {step.id === "persona" && (
-          <PersonaSelector
             personas={personas}
-            value={values.persona}
-            error={errors.persona}
-            disabled={disabled}
-            onChange={(persona) => update({ persona })}
-          />
-        )}
-
-        {step.id === "fundamentacao" && (
-          <LibraryToggle
-            checked={values.useLibrary}
-            sourceCount={librarySourceCount}
-            disabled={disabled}
-            onChange={(useLibrary) => update({ useLibrary })}
+            clauses={clauses}
+            librarySourceCount={librarySourceCount}
           />
         )}
 

@@ -23,9 +23,32 @@ const fullRowSchema = summaryRowSchema.extend({
 const SUMMARY_COLUMNS = "id, title, persona_name, document_type_label, created_at, updated_at";
 
 /** Every read and write is limited to the minutas of one owner; another user's id reads as missing. */
+export interface MinutaSearch {
+  /** Matched against the title, the document type and the persona, ignoring case. */
+  query: string;
+  /** Only minutas written with this persona; empty for all. */
+  personaName: string;
+  limit: number;
+  offset: number;
+}
+
+export interface MinutaSearchPage {
+  items: MinutaSummary[];
+  total: number;
+}
+
+/** SQLite LIKE treats these as wildcards; a search for "50%" must match them literally. */
+function escapeLike(text: string): string {
+  return text.replace(/[\\%_]/g, (character) => `\\${character}`);
+}
+
 export interface MinutaRepository {
   create(minuta: NewMinuta): string;
   list(ownerId: string): MinutaSummary[];
+  /** A page of the owner's minutas matching the filters, newest first, with the total that match. */
+  search(ownerId: string, filters: MinutaSearch): MinutaSearchPage;
+  /** The persona names the owner's minutas were written with, for the history filter. */
+  personaNames(ownerId: string): string[];
   get(id: string, ownerId: string): SavedMinuta | null;
   /** Returns false when the owner has no minuta with this id. */
   updateMarkdown(id: string, ownerId: string, markdown: string): boolean;
@@ -55,6 +78,16 @@ export function createMinutaRepository(db: DatabaseSync): MinutaRepository {
     "UPDATE minutas SET markdown = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ? AND owner_id = ?",
   );
   const remove = db.prepare("DELETE FROM minutas WHERE id = ? AND owner_id = ?");
+  const SEARCH_FILTER = `owner_id = ?
+    AND (? = '' OR lower(title || ' ' || document_type_label || ' ' || persona_name) LIKE ? ESCAPE '\\')
+    AND (? = '' OR persona_name = ?)`;
+  const searchPage = db.prepare(
+    `SELECT ${SUMMARY_COLUMNS} FROM minutas WHERE ${SEARCH_FILTER} ORDER BY created_at DESC LIMIT ? OFFSET ?`,
+  );
+  const searchCount = db.prepare(`SELECT COUNT(*) AS count FROM minutas WHERE ${SEARCH_FILTER}`);
+  const selectPersonaNames = db.prepare(
+    "SELECT DISTINCT persona_name FROM minutas WHERE owner_id = ? ORDER BY persona_name COLLATE NOCASE",
+  );
 
   return {
     create({ ownerId, title, personaName, documentTypeLabel, request, result }) {
@@ -66,6 +99,16 @@ export function createMinutaRepository(db: DatabaseSync): MinutaRepository {
     },
 
     list: (ownerId) => selectAll.all(ownerId).map(toSummary),
+    search(ownerId, { query, personaName, limit, offset }) {
+      const trimmed = query.trim().toLowerCase();
+      const filter = [ownerId, trimmed, `%${escapeLike(trimmed)}%`, personaName, personaName];
+      return {
+        items: searchPage.all(...filter, limit, offset).map(toSummary),
+        total: z.object({ count: z.number() }).parse(searchCount.get(...filter)).count,
+      };
+    },
+    personaNames: (ownerId) =>
+      selectPersonaNames.all(ownerId).map((row) => z.object({ persona_name: z.string() }).parse(row).persona_name),
 
     get(id, ownerId) {
       const row = selectOne.get(id, ownerId);

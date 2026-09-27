@@ -1,7 +1,7 @@
 import { ACCOUNT_PATH, TEAM_PATH } from "@/lib/auth/paths";
 import { BATCHES_PATH, NEW_BATCH_PATH } from "@/lib/batch/paths";
 import { CLAUSES_PATH } from "@/lib/clauses/paths";
-import { HISTORY_PATH, HOME_PATH } from "@/lib/minutas/paths";
+import { HISTORY_PATH, HOME_PATH, NEW_MINUTA_PATH } from "@/lib/minutas/paths";
 import { PERSONAS_PATH, STYLE_CAPTURE_PATH } from "@/lib/personas/paths";
 import { LIBRARY_PATH } from "@/lib/rag/paths";
 import { TASKS_PATH } from "@/lib/tasks/paths";
@@ -17,19 +17,26 @@ interface GuideEntry {
 /** What the assistant knows about Magistral, one entry per feature, so it can walk users through the app. */
 export const APP_GUIDE: readonly GuideEntry[] = [
   {
-    feature: "Gerar minuta — passo a passo",
+    feature: "Início",
     path: HOME_PATH,
     howTo:
-      "Aba “Passo a passo”: ponto de partida (do zero ou a partir de um documento base), tipo de documento, partes, cláusulas, persona, fundamentação e revisão. Cada etapa tem um guia ao lado. O rascunho fica salvo no navegador.",
+      "O painel com as minutas e conversas recentes, o que está rodando agora e o acervo do escritório. O menu lateral agrupa Criar (Nova minuta, Advogado IA, Lotes), Acervo (Histórico, Personas, Cláusulas, Biblioteca) e Sistema (Tarefas; Uso e Equipe para administradores).",
   },
   {
-    feature: "Gerar minuta — formulário completo",
-    path: HOME_PATH,
-    howTo: "Aba “Formulário completo”: todos os campos numa página só, para quem já sabe o que quer.",
+    feature: "Nova minuta — passo a passo",
+    path: NEW_MINUTA_PATH,
+    howTo:
+      "Opção “Passo a passo”: ponto de partida (do zero ou a partir de um documento base), tipo de documento, partes, cláusulas, persona, fundamentação e revisão. Cada etapa tem um guia ao lado. O rascunho fica salvo no navegador.",
+  },
+  {
+    feature: "Nova minuta — todos os campos",
+    path: NEW_MINUTA_PATH,
+    howTo:
+      "Opção “Todos os campos”: as mesmas seções numa página só, com um resumo ao lado, para quem já sabe o que quer. Quando a minuta fica pronta, ela abre direto na página de revisão.",
   },
   {
     feature: "Documento base",
-    path: HOME_PATH,
+    path: NEW_MINUTA_PATH,
     howTo:
       "Envie um PDF ou DOCX que a nova minuta deve seguir. “Preencher o formulário com IA” lê o documento e sugere tipo, partes e cláusulas; o usuário revisa e aplica. A minuta segue a estrutura do modelo, no tom da persona, com os dados das partes informadas.",
   },
@@ -43,7 +50,7 @@ export const APP_GUIDE: readonly GuideEntry[] = [
     feature: "Histórico e revisão",
     path: HISTORY_PATH,
     howTo:
-      "Toda minuta gerada fica salva. Ao abrir uma, é possível baixar em Word ou PDF e, em “Revisar alterações”, aceitar ou rejeitar cada mudança da IA em relação às cláusulas aprovadas ou a um texto original. Também dá para conversar com o Advogado IA sobre a minuta.",
+      "Toda minuta gerada fica salva, com busca por título e filtro por persona. Ao abrir uma, o painel ao lado baixa em Word ou PDF, mostra os pontos de atenção e as fontes consultadas; em “Revisar alterações”, aceita-se ou rejeita-se cada mudança da IA em relação às cláusulas aprovadas ou a um texto original. Também dá para conversar com o Advogado IA sobre a minuta.",
   },
   {
     feature: "Personas",

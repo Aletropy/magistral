@@ -7,7 +7,7 @@ export function ForbiddenTermsWarning({ terms }: { terms: string[] }) {
 
   return (
     <WarningCallout className="flex flex-wrap items-center gap-2">
-      <span className="font-medium">⚠ Termos proibidos encontrados no texto:</span>
+      <span className="font-medium">Termos proibidos encontrados no texto:</span>
       {terms.map((term) => (
         <Badge key={term} variant="outline" className="border-warning-border bg-background text-foreground">
           {term}

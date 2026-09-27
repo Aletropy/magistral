@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { connection } from "next/server";
 import { DeletePersonaButton } from "@/components/DeletePersonaButton";
+import { Page } from "@/components/layout/Page";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -25,25 +26,26 @@ export default async function PersonasPage() {
   const personas = getPersonaRepository().list();
 
   return (
-    <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 px-4 py-10 sm:px-8">
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div className="flex flex-col gap-2">
-          <h1 className="text-3xl font-bold tracking-tight">Personas</h1>
-          <p className="max-w-2xl text-muted-foreground">
-            Controle como a IA escreve: instrução, regras de tom, termos proibidos, criatividade e
-            exemplos de estilo de cada persona.
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
+    <Page
+      title="Personas"
+      width="wide"
+      description={
+        <>
+          Controle como a IA escreve: instrução, regras de tom, termos proibidos, criatividade e exemplos de estilo de
+          cada persona.
+        </>
+      }
+      actions={
+        <>
           <Button asChild size="lg" variant="outline">
             <Link href={STYLE_CAPTURE_PATH}>Capturar estilo de documento</Link>
           </Button>
           <Button asChild size="lg">
             <Link href={NEW_PERSONA_PATH}>Nova persona</Link>
           </Button>
-        </div>
-      </header>
-
+        </>
+      }
+    >
       <div className="rounded-lg border bg-card">
         <Table>
           <TableHeader>
@@ -92,6 +94,6 @@ export default async function PersonasPage() {
           </TableBody>
         </Table>
       </div>
-    </main>
+    </Page>
   );
 }
