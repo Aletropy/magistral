@@ -1,5 +1,6 @@
 import type { ChatPrompt, ChatTurn } from "@/lib/llm/types";
-import { attribute, formatSource, sanitizeTagContent } from "@/lib/prompt/buildUserPrompt";
+import { formatSource } from "@/lib/prompt/buildUserPrompt";
+import { blockGroup, taggedBlock } from "@/lib/prompt/taggedBlock";
 import { toBulletList } from "@/lib/prompt/personaSections";
 import type { ContextSource } from "@/lib/rag/selectContext";
 import { formatAppGuide } from "./appGuide";
@@ -77,12 +78,12 @@ export function buildChatSystemPrompt(context: ChatPromptContext): string {
     `## Como responder\n${toBulletList(ANSWER_RULES)}`,
     `## Ajudar a gerar minutas\n${toBulletList(DRAFTING_RULES)}`,
     `## Sobre o Magistral\n${formatAppGuide()}`,
-    `<dados_do_app>\n${sanitizeTagContent(formatAppData(appData))}\n</dados_do_app>`,
+    taggedBlock("dados_do_app", formatAppData(appData)),
     sources.length > 0
-      ? `## Biblioteca jurídica\n${toBulletList(LIBRARY_RULES)}\n\n<fontes>\n${sources.map(formatSource).join("\n")}\n</fontes>`
+      ? `## Biblioteca jurídica\n${toBulletList(LIBRARY_RULES)}\n\n${blockGroup("fontes", sources.map(formatSource))}`
       : `## Biblioteca jurídica\n${NO_LIBRARY_NOTE[libraryRequested ? "empty" : "off"]}`,
     minuta &&
-      `## Minuta em discussão\nA conversa é sobre esta minuta salva no histórico. Ao revisá-la, aponte riscos, lacunas e cláusulas a melhorar, citando a cláusula.\n\n<minuta titulo="${attribute(minuta.title)}">\n${sanitizeTagContent(minuta.markdown)}\n</minuta>`,
+      `## Minuta em discussão\nA conversa é sobre esta minuta salva no histórico. Ao revisá-la, aponte riscos, lacunas e cláusulas a melhorar, citando a cláusula.\n\n${taggedBlock("minuta", minuta.markdown, { titulo: minuta.title })}`,
   ]
     .filter(Boolean)
     .join("\n\n");

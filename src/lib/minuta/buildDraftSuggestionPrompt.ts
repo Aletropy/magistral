@@ -1,7 +1,7 @@
 import type { ClauseOption } from "@/lib/clauses/types";
 import type { PersonaSummary } from "@/lib/personas/types";
 import type { MinutaPrompt } from "@/lib/llm/types";
-import { attribute, sanitizeTagContent } from "@/lib/prompt/buildUserPrompt";
+import { taggedBlock } from "@/lib/prompt/taggedBlock";
 import { toBulletList } from "@/lib/prompt/personaSections";
 import { DOCUMENT_TYPE_IDS, DOCUMENT_TYPE_LABELS, OTHER_DOCUMENT_TYPE_ID } from "./documentTypes";
 
@@ -52,8 +52,8 @@ export interface SuggestionCatalogText {
 
 function formatSource(source: DraftSuggestionSource): string {
   return source.kind === "document"
-    ? `<documento nome="${attribute(source.name)}">\n${sanitizeTagContent(source.text)}\n</documento>`
-    : `<conversa titulo="${attribute(source.title)}">\n${sanitizeTagContent(source.transcript)}\n</conversa>`;
+    ? taggedBlock("documento", source.text, { nome: source.name })
+    : taggedBlock("conversa", source.transcript, { titulo: source.title });
 }
 
 /** Asks the model to fill the minuta form from a base document or a conversation, as JSON. */
@@ -64,8 +64,8 @@ export function buildDraftSuggestionPrompt(
   return {
     system: `Você é um assistente jurídico que prepara o preenchimento do formulário de uma minuta. ${SOURCE_INTRO[source.kind]}\n\n## Regras\n${toBulletList(RULES)}`,
     user: [
-      `<clausulas_aprovadas>\n${formatCatalog(clauses)}\n</clausulas_aprovadas>`,
-      `<personas>\n${formatPersonas(personas)}\n</personas>`,
+      taggedBlock("clausulas_aprovadas", formatCatalog(clauses)),
+      taggedBlock("personas", formatPersonas(personas)),
       formatSource(source),
     ].join("\n\n"),
     temperature: DRAFT_SUGGESTION_TEMPERATURE,

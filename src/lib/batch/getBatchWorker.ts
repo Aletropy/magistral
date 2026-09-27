@@ -1,4 +1,5 @@
 import "server-only";
+import { runAsUser } from "@/lib/auth/actor";
 import { describeDraftingFailure } from "@/lib/minuta/errors";
 import { getNotificationRepository } from "@/lib/notifications/getNotificationRepository";
 import { isRetryableFailure } from "@/lib/queue/retryPolicy";
@@ -13,10 +14,12 @@ const globalForWorker = globalThis as typeof globalThis & { magistralBatchWorker
 export function getBatchWorker(): BatchWorker {
   globalForWorker.magistralBatchWorker ??= createBatchWorker({
     batches: getBatchRepository(),
-    processItem: processBatchItem,
+    // LLM calls of an item are attributed to the job's owner.
+    processItem: (item) => runAsUser(item.ownerId, () => processBatchItem(item)),
     isRetryable: (error) => isRetryableFailure(describeDraftingFailure(error)),
     describeError: (error) => describeDraftingFailure(error).message,
-    onJobFinished: (job) => getNotificationRepository().create({ ...describeFinishedJob(job), taskId: null }),
+    onJobFinished: (job) =>
+      getNotificationRepository().create({ ...describeFinishedJob(job), ownerId: job.ownerId, taskId: null }),
   });
   return globalForWorker.magistralBatchWorker;
 }

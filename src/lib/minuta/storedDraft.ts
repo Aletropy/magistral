@@ -2,8 +2,15 @@ import { z } from "zod";
 import { DOCUMENT_TYPE_IDS } from "./documentTypes";
 import type { MinutaFormValues } from "./schema";
 
-/** Where an unsent minuta form is kept in this browser, so leaving the page never loses what was typed. */
-export const MINUTA_DRAFT_STORAGE_KEY = "magistral-minuta-rascunho";
+/**
+ * Where an unsent minuta form is kept in this browser, so leaving the page never loses what was typed.
+ * Each user has their own key (office computers are shared), and signing out removes every draft.
+ */
+export const MINUTA_DRAFT_STORAGE_PREFIX = "magistral-minuta-rascunho";
+
+export function minutaDraftStorageKey(userId: string): string {
+  return `${MINUTA_DRAFT_STORAGE_PREFIX}:${userId}`;
+}
 
 /** The form's shape without its rules: a half-filled draft must still load. */
 const storedValuesSchema = z.object({

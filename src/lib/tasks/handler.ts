@@ -1,10 +1,13 @@
 import type { z } from "zod";
+import { TaskInputError } from "./errors";
 import type { NotificationDraft } from "@/lib/notifications/types";
 import type { TaskFile, TaskKind, TaskLane } from "./types";
 
 /** What a handler gets while it runs. */
 export interface TaskContext<P> {
   taskId: string;
+  /** Who queued the task; its records and notifications belong to them. Null for pre-account tasks. */
+  ownerId: string | null;
   title: string;
   payload: P;
   /** Aborted when the user cancels the task; pass it to LLM and embedding calls. */
@@ -40,3 +43,12 @@ export interface TaskHandler<P, R> {
 /** Handlers of any payload and result, as kept in the registry. */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type AnyTaskHandler = TaskHandler<any, any>;
+
+/** Tasks queued before accounts existed have no owner; their private inputs can't be looked up. */
+const TASK_WITHOUT_OWNER_MESSAGE = "Esta tarefa foi criada antes das contas de usuário e não pode mais ser executada.";
+
+/** The owner of a running task, for reading the private records it works on. */
+export function taskOwner(context: Pick<TaskContext<unknown>, "ownerId">): string {
+  if (!context.ownerId) throw new TaskInputError(TASK_WITHOUT_OWNER_MESSAGE);
+  return context.ownerId;
+}

@@ -1,11 +1,12 @@
 import "server-only";
+import { currentActorId } from "@/lib/auth/actor";
 import { getUsageRepository } from "@/lib/usage/getUsageRepository";
 import type { LlmOperation } from "@/lib/usage/types";
 import { withUsageAudit } from "@/lib/usage/withUsageAudit";
 import { getGeminiClient } from "./gemini/client";
 import { STRUCTURED_OUTPUT_MODEL } from "./gemini/config";
 import { createGeminiJsonGenerator } from "./gemini/generateJson";
-import { getOpenRouterClient, getOpenRouterModels } from "./openrouter/client";
+import { getOpenRouterClient, getOpenRouterModels, getOpenRouterRouting } from "./openrouter/client";
 import { createOpenRouterJsonGenerator } from "./openrouter/generateJson";
 import { LLM_PROVIDER_ENV_VAR, resolveLlmProvider, type LlmProvider } from "./providers";
 import type { StructuredGenerator } from "./types";
@@ -21,7 +22,8 @@ function structuredProvider(): StructuredProvider {
 }
 
 const FACTORIES: Record<StructuredProvider, () => StructuredGenerator> = {
-  openrouter: () => createOpenRouterJsonGenerator(getOpenRouterClient(), getOpenRouterModels()),
+  openrouter: () =>
+    createOpenRouterJsonGenerator(getOpenRouterClient(), getOpenRouterModels(), getOpenRouterRouting()),
   gemini: () => createGeminiJsonGenerator(getGeminiClient()),
 };
 
@@ -38,6 +40,6 @@ export function getStructuredGenerator(operation: LlmOperation): StructuredGener
     operation,
     provider,
     configuredModel: CONFIGURED_MODELS[provider](),
-    record: (call) => usage.record(call),
+    record: (call) => usage.record(call, currentActorId()),
   });
 }

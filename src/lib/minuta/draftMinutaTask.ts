@@ -3,7 +3,7 @@ import { getMinutaRepository } from "@/lib/minutas/getMinutaRepository";
 import { HOME_PATH, minutaPath } from "@/lib/minutas/paths";
 import { titleFromMarkdown } from "@/lib/minutas/titleFromMarkdown";
 import { resolveDocumentTypeLabel } from "@/lib/prompt/buildUserPrompt";
-import type { TaskHandler } from "@/lib/tasks/handler";
+import { taskOwner, type TaskHandler } from "@/lib/tasks/handler";
 import { draftMinuta, type DraftStage } from "./draftMinuta";
 import { draftTaskResultSchema, type DraftTaskResult } from "./draftTaskResult";
 import { minutaRequestSchema, type MinutaRequest } from "./schema";
@@ -31,7 +31,9 @@ export const draftMinutaTask: TaskHandler<MinutaRequest, DraftTaskResult> = {
   payloadSchema: minutaRequestSchema,
   resultSchema: draftTaskResultSchema,
 
-  async run({ payload, signal, reportProgress, commit }) {
+  async run(context) {
+    const { payload, signal, reportProgress, commit } = context;
+    const ownerId = taskOwner(context);
     const { result, personaName } = await draftMinuta(payload, "minuta", {
       signal,
       onStage: (stage) => reportProgress(DRAFT_STAGE_STEP[stage], DRAFT_STAGE_COUNT, DRAFT_STAGE_LABELS[stage]),
@@ -39,7 +41,7 @@ export const draftMinutaTask: TaskHandler<MinutaRequest, DraftTaskResult> = {
     const documentTypeLabel = resolveDocumentTypeLabel(payload);
     const title = titleFromMarkdown(result.markdown, documentTypeLabel);
     return commit(() => ({
-      minutaId: getMinutaRepository().create({ title, personaName, documentTypeLabel, request: payload, result }),
+      minutaId: getMinutaRepository().create({ ownerId, title, personaName, documentTypeLabel, request: payload, result }),
       title,
     }));
   },

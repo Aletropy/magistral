@@ -1,7 +1,7 @@
 import "server-only";
 import path from "node:path";
 import { resolveDataDir } from "@/lib/db/config";
-import { LOCAL_EMBEDDING_DTYPE, LOCAL_EMBEDDING_REPO, LOCAL_MODELS_SUBDIR } from "./config";
+import { LOCAL_EMBEDDING_DTYPE, LOCAL_EMBEDDING_REPO, LOCAL_EMBEDDING_REVISION, LOCAL_MODELS_SUBDIR } from "./config";
 import type { FeatureExtractor } from "./embed";
 
 /** Loaded once per process (kept on globalThis across dev hot reloads); the first call downloads the model. */
@@ -13,6 +13,7 @@ export function loadLocalFeatureExtractor(): Promise<FeatureExtractor> {
     env.cacheDir = path.join(resolveDataDir(), LOCAL_MODELS_SUBDIR);
     return (await pipeline("feature-extraction", LOCAL_EMBEDDING_REPO, {
       dtype: LOCAL_EMBEDDING_DTYPE,
+      revision: LOCAL_EMBEDDING_REVISION,
     })) as unknown as FeatureExtractor;
   })().catch((error: unknown) => {
     // Let the next call try again (e.g. after a failed download).

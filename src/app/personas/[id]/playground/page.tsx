@@ -4,8 +4,10 @@ import { connection } from "next/server";
 import { PersonaPlayground } from "@/components/PersonaPlayground";
 import { getPersonaRepository } from "@/lib/personas/getPersonaRepository";
 import { toPersonaInput } from "@/lib/personas/toPersonaInput";
+import { requireUser } from "@/lib/auth/dal";
 
 export async function generateMetadata({ params }: PageProps<"/personas/[id]/playground">): Promise<Metadata> {
+  await requireUser();
   const { id } = await params;
   const item = getPersonaRepository().get(id);
   return { title: item ? `Testar ${item.name}` : "Persona" };
@@ -13,6 +15,7 @@ export async function generateMetadata({ params }: PageProps<"/personas/[id]/pla
 
 export default async function PersonaPlaygroundPage({ params }: PageProps<"/personas/[id]/playground">) {
   await connection();
+  await requireUser();
   const { id } = await params;
   const persona = getPersonaRepository().get(id);
   if (!persona) notFound();

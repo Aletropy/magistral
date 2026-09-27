@@ -16,6 +16,7 @@ export interface SavedMinuta extends MinutaSummary {
 }
 
 export interface NewMinuta {
+  ownerId: string;
   title: string;
   personaName: string;
   documentTypeLabel: string;

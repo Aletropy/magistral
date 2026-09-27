@@ -1,4 +1,5 @@
 import "server-only";
+import { currentActorId } from "@/lib/auth/actor";
 import { getUsageRepository } from "@/lib/usage/getUsageRepository";
 import { withUsageAudit } from "@/lib/usage/withUsageAudit";
 import {
@@ -53,7 +54,7 @@ export function getEmbedder(): EmbeddingModel {
     operation: "embedding",
     provider,
     configuredModel: id,
-    record: (call) => usage.record(call),
+    record: (call) => usage.record(call, currentActorId()),
   });
   return { id, dimensions, embed };
 }

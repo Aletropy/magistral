@@ -2,6 +2,7 @@ import { DOCUMENT_TYPE_LABELS, OTHER_DOCUMENT_TYPE_ID } from "@/lib/minuta/docum
 import type { Clause } from "@/lib/clauses/types";
 import type { MinutaRequest, Party } from "@/lib/minuta/schema";
 import type { ContextSource } from "@/lib/rag/selectContext";
+import { blockGroup, taggedBlock } from "./taggedBlock";
 
 const NO_QUALIFICATION = "não informada";
 const NO_SPECIFIC_CLAUSES =
@@ -20,28 +21,14 @@ function formatParty(party: Party, index: number): string {
 
 /** How much of a base document joins the library search query: its opening names the subject. */
 const BASE_DOCUMENT_QUERY_CHARS = 1500;
-/** Anything shaped like a closing tag, which could end a block early. */
-const CLOSING_TAG = /<\/\s*[\w-]+\s*>/g;
-
-export function attribute(value: string): string {
-  return value.replace(/"/g, "'");
-}
-
-/**
- * Makes user or document text safe to wrap in a tagged block: closing tags inside it are removed, so the
- * text can't end the block and pose as instructions.
- */
-export function sanitizeTagContent(text: string): string {
-  return text.replace(CLOSING_TAG, "");
-}
-
 export function formatSource(source: ContextSource): string {
-  const context = source.context ? ` contexto="${attribute(source.context)}"` : "";
-  return `<fonte id="${source.ref}" titulo="${attribute(source.title)}" trecho="${attribute(source.label)}"${context}>\n${sanitizeTagContent(source.text)}\n</fonte>`;
+  const attributes: Record<string, string> = { id: source.ref, titulo: source.title, trecho: source.label };
+  if (source.context) attributes.contexto = source.context;
+  return taggedBlock("fonte", source.text, attributes);
 }
 
 function formatApprovedClause(clause: Clause, index: number): string {
-  return `<clausula ordem="${index + 1}" titulo="${attribute(clause.title)}">\n${clause.body}\n</clausula>`;
+  return taggedBlock("clausula", clause.body, { ordem: String(index + 1), titulo: clause.title });
 }
 
 export interface UserPromptContext {
@@ -61,14 +48,13 @@ export function buildUserPrompt(request: MinutaRequest, context: UserPromptConte
   const base = request.baseDocument;
 
   return [
-    sources.length > 0 && `<fontes>\n${sources.map(formatSource).join("\n")}\n</fontes>`,
-    base && `<documento_base nome="${attribute(base.name)}">\n${sanitizeTagContent(base.text)}\n</documento_base>`,
+    sources.length > 0 && blockGroup("fontes", sources.map(formatSource)),
+    base && taggedBlock("documento_base", base.text, { nome: base.name }),
     base ? "Redija a minuta descrita abaixo, usando o documento base como modelo." : "Redija a minuta descrita abaixo.",
-    `<tipo_de_documento>\n${resolveDocumentTypeLabel(request)}\n</tipo_de_documento>`,
-    `<partes>\n${parties}\n</partes>`,
-    approvedClauses.length > 0 &&
-      `<clausulas_aprovadas>\n${approvedClauses.map(formatApprovedClause).join("\n")}\n</clausulas_aprovadas>`,
-    `<clausulas_especificas>\n${clauses}\n</clausulas_especificas>`,
+    taggedBlock("tipo_de_documento", resolveDocumentTypeLabel(request)),
+    taggedBlock("partes", parties),
+    approvedClauses.length > 0 && blockGroup("clausulas_aprovadas", approvedClauses.map(formatApprovedClause)),
+    taggedBlock("clausulas_especificas", clauses),
   ]
     .filter(Boolean)
     .join("\n\n");

@@ -4,7 +4,8 @@ import { useRouter } from "next/navigation";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import { showOsNotification } from "@/lib/browser/osNotifications";
-import { activityEndpoint, type ActivityResponseBody } from "@/lib/http/api";
+import { loginPath } from "@/lib/auth/paths";
+import { HTTP_UNAUTHORIZED, activityEndpoint, type ActivityResponseBody } from "@/lib/http/api";
 import type { AppNotification, NotificationLevel } from "@/lib/notifications/types";
 import type { TaskSummary } from "@/lib/tasks/types";
 
@@ -86,6 +87,11 @@ export function ActivityProvider({ children }: { children: ReactNode }) {
     let busy = false;
     try {
       const response = await fetch(activityEndpoint(cursor.current), { cache: "no-store" });
+      if (response.status === HTTP_UNAUTHORIZED) {
+        // The session expired or was ended (password reset, account disabled): sign in again.
+        window.location.assign(loginPath(`${window.location.pathname}${window.location.search}`));
+        return;
+      }
       if (response.ok) {
         const body = (await response.json()) as ActivityResponseBody;
         cursor.current = body.latestId;

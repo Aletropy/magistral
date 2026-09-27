@@ -50,6 +50,13 @@ export const SERVICE_UNAVAILABLE: ErrorResponseInfo = {
   status: 503,
   message: "O serviço de IA está indisponível agora. Tente novamente em alguns minutos.",
 };
+/** No configured model has an endpoint that keeps no data; retrying won't change that. */
+export const NO_PRIVATE_PROVIDER: ErrorResponseInfo = {
+  status: 422,
+  message:
+    "Nenhum modelo de IA configurado garante que os dados não fiquem retidos no provedor. Avise o administrador.",
+};
+
 export const UPSTREAM_FAILURE: ErrorResponseInfo = {
   status: 502,
   message: "Não foi possível gerar a minuta. Tente novamente.",

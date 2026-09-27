@@ -11,6 +11,8 @@ export interface NotificationDraft {
 }
 
 export interface NewNotification extends NotificationDraft {
+  /** Who sees it; null only for work queued before accounts existed. */
+  ownerId: string | null;
   taskId: string | null;
 }
 

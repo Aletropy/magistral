@@ -1,38 +1,19 @@
 import { getClauseRepository } from "@/lib/clauses/getClauseRepository";
 import { CLAUSE_NOT_FOUND_MESSAGE } from "@/lib/clauses/messages";
 import { clauseInputSchema } from "@/lib/clauses/schema";
-import {
-  HTTP_NOT_FOUND,
-  HTTP_NO_CONTENT,
-  errorResponse,
-  parseJsonBody,
-  type ClauseResponseBody,
-} from "@/lib/http/api";
-import { UNEXPECTED_ERROR } from "@/lib/llm/errors";
+import { HTTP_NOT_FOUND, HTTP_NO_CONTENT, errorResponse, type ClauseResponseBody } from "@/lib/http/api";
+import { defineRoute } from "@/lib/http/route";
 
-export async function PUT(request: Request, ctx: RouteContext<"/api/clauses/[id]">): Promise<Response> {
-  const parsed = await parseJsonBody(request, clauseInputSchema);
-  if ("response" in parsed) return parsed.response;
-  const { id } = await ctx.params;
+type Context = RouteContext<"/api/clauses/[id]">;
 
-  try {
-    const clause = getClauseRepository().update(id, parsed.data);
-    if (!clause) return errorResponse(HTTP_NOT_FOUND, CLAUSE_NOT_FOUND_MESSAGE);
-    return Response.json({ clause } satisfies ClauseResponseBody);
-  } catch (error) {
-    console.error("[api/clauses] update failed", error);
-    return errorResponse(UNEXPECTED_ERROR.status, UNEXPECTED_ERROR.message);
-  }
-}
+export const PUT = defineRoute({ body: clauseInputSchema }, async ({ body }, ctx: Context) => {
+  const clause = getClauseRepository().update((await ctx.params).id, body);
+  if (!clause) return errorResponse(HTTP_NOT_FOUND, CLAUSE_NOT_FOUND_MESSAGE);
+  return Response.json({ clause } satisfies ClauseResponseBody);
+});
 
-export async function DELETE(_request: Request, ctx: RouteContext<"/api/clauses/[id]">): Promise<Response> {
-  const { id } = await ctx.params;
-
-  try {
-    if (!getClauseRepository().delete(id)) return errorResponse(HTTP_NOT_FOUND, CLAUSE_NOT_FOUND_MESSAGE);
-    return new Response(null, { status: HTTP_NO_CONTENT });
-  } catch (error) {
-    console.error("[api/clauses] delete failed", error);
-    return errorResponse(UNEXPECTED_ERROR.status, UNEXPECTED_ERROR.message);
-  }
-}
+/** Removing a shared clause affects the whole office, so only admins can. */
+export const DELETE = defineRoute({ access: "admin" }, async (_input, ctx: Context) => {
+  if (!getClauseRepository().delete((await ctx.params).id)) return errorResponse(HTTP_NOT_FOUND, CLAUSE_NOT_FOUND_MESSAGE);
+  return new Response(null, { status: HTTP_NO_CONTENT });
+});

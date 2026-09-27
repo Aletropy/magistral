@@ -5,6 +5,12 @@ export const MEBIBYTE = 1024 * 1024;
 export const MAX_UPLOAD_MEBIBYTES = 10;
 export const MAX_UPLOAD_BYTES = MAX_UPLOAD_MEBIBYTES * MEBIBYTE;
 export const MAX_FILES_PER_UPLOAD = 20;
+/** Room for multipart boundaries, headers and small text fields around the uploaded files. */
+const MULTIPART_OVERHEAD_BYTES = 64 * 1024;
+/** The largest request a single-document upload (style capture, text extraction) may send. */
+export const MAX_SINGLE_UPLOAD_REQUEST_BYTES = MAX_UPLOAD_BYTES + MULTIPART_OVERHEAD_BYTES;
+/** The largest request a library upload may send: every file at the size limit. */
+export const MAX_LIBRARY_UPLOAD_REQUEST_BYTES = MAX_FILES_PER_UPLOAD * MAX_UPLOAD_BYTES + MULTIPART_OVERHEAD_BYTES;
 
 /** Past this length a Style Capture document is rejected rather than silently cut. */
 export const MAX_DOCUMENT_TEXT_CHARS = 400_000;

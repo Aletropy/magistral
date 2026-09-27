@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
+import { insertTestUser } from "@/lib/auth/testHelpers";
 import { IN_MEMORY_DATABASE, openDatabase } from "@/lib/db/openDatabase";
 import type { DraftResult } from "@/lib/http/api";
 import type { MinutaRequest } from "@/lib/minuta/schema";
@@ -30,36 +31,50 @@ const RESULT: DraftResult = {
 
 describe("createMinutaRepository", () => {
   let minutas: MinutaRepository;
+  let owner: string;
+  let other: string;
 
   beforeEach(() => {
-    minutas = createMinutaRepository(openDatabase(IN_MEMORY_DATABASE));
+    const db = openDatabase(IN_MEMORY_DATABASE);
+    owner = insertTestUser(db, "ana");
+    other = insertTestUser(db, "bruno");
+    minutas = createMinutaRepository(db);
   });
 
   function save(title = "ACORDO DE CONFIDENCIALIDADE") {
-    return minutas.create({ title, personaName: "Moderno", documentTypeLabel: "NDA", request: REQUEST, result: RESULT });
+    return minutas.create({ ownerId: owner, title, personaName: "Moderno", documentTypeLabel: "NDA", request: REQUEST, result: RESULT });
   }
 
   it("saves a generation and reads back the request and the full result", () => {
     const id = save();
-    expect(minutas.get(id)).toMatchObject({ id, title: "ACORDO DE CONFIDENCIALIDADE", personaName: "Moderno", request: REQUEST, result: RESULT });
+    expect(minutas.get(id, owner)).toMatchObject({ id, title: "ACORDO DE CONFIDENCIALIDADE", personaName: "Moderno", request: REQUEST, result: RESULT });
   });
 
   it("lists newest first without loading the text", () => {
     const first = save("Primeira");
     const second = save("Segunda");
-    const list = minutas.list();
+    const list = minutas.list(owner);
     expect(list.map((item) => item.id).sort()).toEqual([first, second].sort());
     expect(list[0]).not.toHaveProperty("result");
   });
 
   it("replaces the text after a review and deletes", () => {
     const id = save();
-    expect(minutas.updateMarkdown(id, "# REVISADA")).toBe(true);
-    expect(minutas.get(id)?.result.markdown).toBe("# REVISADA");
-    expect(minutas.get(id)?.result.consultedSources).toEqual(RESULT.consultedSources);
-    expect(minutas.updateMarkdown("missing", "x")).toBe(false);
-    expect(minutas.delete(id)).toBe(true);
-    expect(minutas.get(id)).toBeNull();
+    expect(minutas.updateMarkdown(id, owner, "# REVISADA")).toBe(true);
+    expect(minutas.get(id, owner)?.result.markdown).toBe("# REVISADA");
+    expect(minutas.get(id, owner)?.result.consultedSources).toEqual(RESULT.consultedSources);
+    expect(minutas.updateMarkdown("missing", owner, "x")).toBe(false);
+    expect(minutas.delete(id, owner)).toBe(true);
+    expect(minutas.get(id, owner)).toBeNull();
+  });
+
+  it("keeps each user's minutas private", () => {
+    const id = save();
+    expect(minutas.list(other)).toEqual([]);
+    expect(minutas.get(id, other)).toBeNull();
+    expect(minutas.updateMarkdown(id, other, "# ALTERADA")).toBe(false);
+    expect(minutas.delete(id, other)).toBe(false);
+    expect(minutas.get(id, owner)?.result.markdown).toBe(RESULT.markdown);
   });
 });
 

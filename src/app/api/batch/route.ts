@@ -1,19 +1,17 @@
 import { ensureBatchWorkerStarted } from "@/lib/batch/getBatchWorker";
 import { getBatchRepository } from "@/lib/batch/getBatchRepository";
-import { batchRequestSchema } from "@/lib/batch/schema";
+import { MAX_BATCH_BODY_BYTES, batchRequestSchema } from "@/lib/batch/schema";
 import { fillRequestTemplate, rowLabel } from "@/lib/batch/template";
-import { HTTP_CREATED, errorResponse, parseJsonBody, type BatchCreatedResponseBody } from "@/lib/http/api";
-import { UNEXPECTED_ERROR } from "@/lib/llm/errors";
+import { HTTP_CREATED, type BatchCreatedResponseBody } from "@/lib/http/api";
+import { defineRoute } from "@/lib/http/route";
 
 const MAX_LABEL_CHARS = 120;
 
-export async function POST(request: Request): Promise<Response> {
-  const parsed = await parseJsonBody(request, batchRequestSchema);
-  if ("response" in parsed) return parsed.response;
-  const { name, template, rows } = parsed.data;
-
-  try {
+export const POST = defineRoute(
+  { body: batchRequestSchema, maxBodyBytes: MAX_BATCH_BODY_BYTES },
+  ({ user, body: { name, template, rows } }) => {
     const id = getBatchRepository().createJob(
+      user.id,
       name,
       template,
       rows.map((row) => ({
@@ -23,8 +21,5 @@ export async function POST(request: Request): Promise<Response> {
     );
     ensureBatchWorkerStarted().wake();
     return Response.json({ id } satisfies BatchCreatedResponseBody, { status: HTTP_CREATED });
-  } catch (error) {
-    console.error("[api/batch] create failed", error);
-    return errorResponse(UNEXPECTED_ERROR.status, UNEXPECTED_ERROR.message);
-  }
-}
+  },
+);

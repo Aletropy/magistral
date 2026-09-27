@@ -9,7 +9,7 @@ import { parseStructured } from "@/lib/llm/parseStructured";
 import { TaskInputError } from "@/lib/tasks/errors";
 import { getPersonaRepository } from "@/lib/personas/getPersonaRepository";
 import { toPersonaSummary } from "@/lib/personas/toPersonaSummary";
-import type { TaskHandler } from "@/lib/tasks/handler";
+import { taskOwner, type TaskHandler } from "@/lib/tasks/handler";
 import { buildDraftSuggestionPrompt, type DraftSuggestionSource } from "./buildDraftSuggestionPrompt";
 import {
   DRAFT_EXTRACTION_JSON_SCHEMA,
@@ -35,7 +35,7 @@ interface ReadSource {
 }
 
 /** What the model reads: the uploaded document, or the conversation with the Advogado IA. */
-function readSource(payload: DraftSuggestionPayload): ReadSource {
+function readSource(payload: DraftSuggestionPayload, ownerId: string | null): ReadSource {
   if (payload.source === "document") {
     const { document } = payload;
     return {
@@ -44,7 +44,7 @@ function readSource(payload: DraftSuggestionPayload): ReadSource {
       baseDocument: document,
     };
   }
-  const conversation = getChatRepository().get(payload.conversationId);
+  const conversation = getChatRepository().get(payload.conversationId, taskOwner({ ownerId }));
   if (!conversation) throw new TaskInputError(CONVERSATION_NOT_FOUND_MESSAGE);
   const transcript = buildTranscript(conversation.messages);
   if (!transcript) throw new TaskInputError(EMPTY_CONVERSATION_MESSAGE);
@@ -68,9 +68,9 @@ export const suggestDraftTask: TaskHandler<DraftSuggestionPayload, DraftSuggesti
   payloadSchema: draftSuggestionPayloadSchema,
   resultSchema: draftSuggestionResultSchema,
 
-  async run({ payload, signal, reportProgress }) {
+  async run({ payload, ownerId, signal, reportProgress }) {
     reportProgress(0, null, READING_LABELS[payload.source]);
-    const { source, sourceName, baseDocument } = readSource(payload);
+    const { source, sourceName, baseDocument } = readSource(payload, ownerId);
     const clauses = getClauseRepository().list();
     const personas = getPersonaRepository().list().map(toPersonaSummary);
     const prompt = buildDraftSuggestionPrompt(source, { clauses, personas });

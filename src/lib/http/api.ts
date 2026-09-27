@@ -1,4 +1,4 @@
-import type { z } from "zod";
+import type { User } from "@/lib/auth/types";
 import type { BatchJobDetail } from "@/lib/batch/types";
 import type { ChatConversation, ChatConversationSummary } from "@/lib/chat/types";
 import type { Clause } from "@/lib/clauses/types";
@@ -86,6 +86,20 @@ export interface ConversationCreatedResponseBody {
   taskId: string;
 }
 
+export const LOGIN_ENDPOINT = "/api/auth/login";
+export const LOGOUT_ENDPOINT = "/api/auth/logout";
+export const SETUP_ENDPOINT = "/api/auth/setup";
+export const PASSWORD_ENDPOINT = "/api/auth/password";
+export const USERS_ENDPOINT = "/api/users";
+
+export function userEndpoint(id: string): string {
+  return `${USERS_ENDPOINT}/${encodeURIComponent(id)}`;
+}
+
+export interface UserResponseBody {
+  user: User;
+}
+
 export const TASKS_ENDPOINT = "/api/tasks";
 
 export function taskEndpoint(id: string): string {
@@ -143,11 +157,15 @@ export const HTTP_CREATED = 201;
 export const HTTP_ACCEPTED = 202;
 export const HTTP_NO_CONTENT = 204;
 export const HTTP_BAD_REQUEST = 400;
+export const HTTP_UNAUTHORIZED = 401;
+export const HTTP_FORBIDDEN = 403;
 export const HTTP_NOT_FOUND = 404;
 export const HTTP_CONFLICT = 409;
 export const HTTP_PAYLOAD_TOO_LARGE = 413;
 export const HTTP_UNSUPPORTED_MEDIA_TYPE = 415;
+export const HTTP_MISDIRECTED_REQUEST = 421;
 export const HTTP_UNPROCESSABLE_CONTENT = 422;
+export const HTTP_TOO_MANY_REQUESTS = 429;
 
 export const NETWORK_ERROR_MESSAGE =
   "Falha de conexão com o servidor. Verifique sua internet e tente novamente.";
@@ -240,25 +258,6 @@ export function postJson(url: string, body: unknown): Promise<Response> {
 
 export function errorResponse(status: number, message: string): Response {
   return Response.json({ error: message } satisfies ApiErrorBody, { status });
-}
-
-/** Parses a JSON request body against a schema; returns either the data or a ready 400 response. */
-export async function parseJsonBody<T>(
-  request: Request,
-  schema: z.ZodType<T>,
-): Promise<{ data: T } | { response: Response }> {
-  let body: unknown;
-  try {
-    body = await request.json();
-  } catch {
-    return { response: errorResponse(HTTP_BAD_REQUEST, "Corpo da requisição inválido.") };
-  }
-
-  const result = schema.safeParse(body);
-  if (!result.success) {
-    return { response: errorResponse(HTTP_BAD_REQUEST, result.error.issues[0].message) };
-  }
-  return { data: result.data };
 }
 
 /** Reads the error message from a failed API response, falling back when the body isn't JSON. */

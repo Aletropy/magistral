@@ -13,3 +13,11 @@ export class TaskInputError extends Error {
     this.name = "TaskInputError";
   }
 }
+
+/** The user already has as many tasks waiting for the AI as one person may queue. */
+export class TaskQuotaError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "TaskQuotaError";
+  }
+}

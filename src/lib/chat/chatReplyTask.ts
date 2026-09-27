@@ -7,7 +7,7 @@ import { getMinutaRepository } from "@/lib/minutas/getMinutaRepository";
 import { getLibraryRepository } from "@/lib/rag/getLibraryRepository";
 import { selectLibraryContext, type ContextSource } from "@/lib/rag/selectContext";
 import { TaskInputError } from "@/lib/tasks/errors";
-import type { TaskHandler } from "@/lib/tasks/handler";
+import { taskOwner, type TaskHandler } from "@/lib/tasks/handler";
 import { buildChatPrompt, buildChatRetrievalQuery } from "./buildChatPrompt";
 import { getChatRepository } from "./getChatRepository";
 import { normalizeChatHistory, normalizeCitations } from "./history";
@@ -41,9 +41,11 @@ export const chatReplyTask: TaskHandler<ChatReplyPayload, ChatReplyResult> = {
   payloadSchema: chatReplyPayloadSchema,
   resultSchema: chatReplyResultSchema,
 
-  async run({ payload, signal, reportProgress, commit }) {
+  async run(context) {
+    const { payload, signal, reportProgress, commit } = context;
+    const ownerId = taskOwner(context);
     const chats = getChatRepository();
-    const conversation = chats.get(payload.conversationId);
+    const conversation = chats.get(payload.conversationId, ownerId);
     if (!conversation) throw new TaskInputError(CONVERSATION_NOT_FOUND_MESSAGE);
     const reply = conversation.messages.find((message) => message.id === payload.replyId);
     if (reply?.status !== "pending") throw new TaskInputError(REPLY_NOT_PENDING_MESSAGE);
@@ -66,7 +68,7 @@ export const chatReplyTask: TaskHandler<ChatReplyPayload, ChatReplyResult> = {
 
     signal.throwIfAborted();
     reportProgress(1, REPLY_STEPS, WRITING_LABEL);
-    const saved = conversation.minutaId ? getMinutaRepository().get(conversation.minutaId) : null;
+    const saved = conversation.minutaId ? getMinutaRepository().get(conversation.minutaId, ownerId) : null;
     const minuta = saved ? { title: saved.title, markdown: saved.result.markdown.slice(0, CHAT_MINUTA_MAX_CHARS) } : null;
     const prompt = buildChatPrompt(
       { appData: loadAppData(), sources, libraryRequested: conversation.useLibrary, minuta },

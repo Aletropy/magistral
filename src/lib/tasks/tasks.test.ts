@@ -1,6 +1,7 @@
 import type { DatabaseSync } from "node:sqlite";
 import { beforeEach, describe, expect, it } from "vitest";
 import { z } from "zod";
+import { insertTestUser } from "@/lib/auth/testHelpers";
 import { IN_MEMORY_DATABASE, openDatabase } from "@/lib/db/openDatabase";
 import { createNotificationRepository, type NotificationRepository } from "@/lib/notifications/repository";
 import { retryDelayMs } from "@/lib/queue/retryPolicy";
@@ -14,6 +15,20 @@ import { createTaskWorker, TASK_MAX_ATTEMPTS } from "./worker";
 const START = new Date(Date.now() + 1000);
 
 class TransientError extends Error {}
+
+/** The user who queues the tasks of the current test; set whenever a test opens a database. */
+let owner: string;
+
+function openTestDatabase(): DatabaseSync {
+  const db = openDatabase(IN_MEMORY_DATABASE);
+  owner = insertTestUser(db);
+  return db;
+}
+
+/** Queued and running tasks in every lane. */
+function activeCount(tasks: TaskRepository): number {
+  return tasks.countActive(owner, "llm") + tasks.countActive(owner, "library");
+}
 
 function deferred() {
   let resolve!: () => void;
@@ -37,7 +52,7 @@ function handler(kind: TaskKind, lane: TaskLane, run: Run, hooks: Partial<AnyTas
 }
 
 function setup(handlers: AnyTaskHandler[], now = () => START) {
-  const db = openDatabase(IN_MEMORY_DATABASE);
+  const db = openTestDatabase();
   const tasks = createTaskRepository(db);
   const notifications = createNotificationRepository(db);
   const worker = createTaskWorker({
@@ -52,7 +67,7 @@ function setup(handlers: AnyTaskHandler[], now = () => START) {
 }
 
 function enqueue(tasks: TaskRepository, name: string, kind: TaskKind = "minuta.draft", lane: TaskLane = "llm") {
-  return tasks.create({ kind, lane, title: `Tarefa ${name}`, payload: { name } });
+  return tasks.create({ ownerId: owner, kind, lane, title: `Tarefa ${name}`, payload: { name } });
 }
 
 describe("task repository", () => {
@@ -60,7 +75,7 @@ describe("task repository", () => {
   let tasks: TaskRepository;
 
   beforeEach(() => {
-    db = openDatabase(IN_MEMORY_DATABASE);
+    db = openTestDatabase();
     tasks = createTaskRepository(db);
   });
 
@@ -73,11 +88,11 @@ describe("task repository", () => {
     expect(tasks.claim("llm", 5, START).map((task) => task.payload)).toEqual([{ name: "b" }]);
     expect(tasks.claim("llm", 5, START)).toEqual([]);
     expect(tasks.claim("library", 5, START)).toHaveLength(1);
-    expect(tasks.get(first)).toMatchObject({ status: "running", attempts: 1 });
+    expect(tasks.get(first, owner)).toMatchObject({ status: "running", attempts: 1 });
   });
 
   it("keeps files until the task succeeds and records per-file outcomes", () => {
-    const id = tasks.create({
+    const id = tasks.create({ ownerId: owner,
       kind: "library.upload",
       lane: "library",
       title: "Envio",
@@ -93,7 +108,7 @@ describe("task repository", () => {
     tasks.claim("library", 1, START);
     tasks.complete(id, START, () => ({ ok: true }));
     expect(tasks.files(id)).toEqual([]);
-    expect(tasks.get(id)).toMatchObject({ status: "succeeded", result: { ok: true } });
+    expect(tasks.get(id, owner)).toMatchObject({ status: "succeeded", result: { ok: true } });
   });
 
   it("refuses to complete a cancelled task and rolls back its side effect", () => {
@@ -107,7 +122,7 @@ describe("task repository", () => {
     );
     expect(db.prepare("SELECT COUNT(*) AS n FROM side_effects").get()).toEqual({ n: 0 });
     expect(tasks.fail(id, "tarde demais", START)).toBe(false);
-    expect(tasks.get(id)!.status).toBe("canceled");
+    expect(tasks.get(id, owner)!.status).toBe("canceled");
   });
 
   it("requeues interrupted tasks on restart, failing those with no attempts left", () => {
@@ -117,8 +132,8 @@ describe("task repository", () => {
     db.prepare("UPDATE tasks SET attempts = 5 WHERE id = ?").run(exhausted);
 
     expect(tasks.resetRunning(5, START)).toBe(2);
-    expect(tasks.get(fresh)!.status).toBe("pending");
-    expect(tasks.get(exhausted)).toMatchObject({ status: "failed", error: INTERRUPTED_TASK_MESSAGE });
+    expect(tasks.get(fresh, owner)!.status).toBe("pending");
+    expect(tasks.get(exhausted, owner)).toMatchObject({ status: "failed", error: INTERRUPTED_TASK_MESSAGE });
   });
 
   it("requeues failed tasks with fresh attempts, lists active ones and purges old finished ones", () => {
@@ -127,16 +142,16 @@ describe("task repository", () => {
     tasks.claim("llm", 1, START);
     tasks.fail(id, "erro", START);
 
-    expect(tasks.list({ activeOnly: true, limit: 10 })).toHaveLength(1);
-    expect(tasks.countActive()).toBe(1);
+    expect(tasks.list({ ownerId: owner, activeOnly: true, limit: 10 })).toHaveLength(1);
+    expect(activeCount(tasks)).toBe(1);
     expect(tasks.requeue(id, START)).toBe(true);
-    expect(tasks.get(id)).toMatchObject({ status: "pending", attempts: 0, error: null });
+    expect(tasks.get(id, owner)).toMatchObject({ status: "pending", attempts: 0, error: null });
 
     tasks.claim("llm", 2, START);
     tasks.complete(id, START, () => null);
     expect(tasks.purgeFinishedBefore(new Date(START.getTime() + 1))).toBe(1);
-    expect(tasks.get(id)).toBeNull();
-    expect(tasks.list({ limit: 10 })).toHaveLength(1);
+    expect(tasks.get(id, owner)).toBeNull();
+    expect(tasks.list({ ownerId: owner, limit: 10 })).toHaveLength(1);
   });
 });
 
@@ -151,8 +166,8 @@ describe("createTaskWorker", () => {
     const id = enqueue(tasks, "Ana");
 
     expect(await worker.tick()).toBe(1);
-    expect(tasks.get(id)).toMatchObject({ status: "succeeded", result: { greeting: "Olá, Ana" }, progress: null, href: "/ok" });
-    expect(notifications.listRecent(5)).toMatchObject([{ level: "success", title: "Olá, Ana", taskId: id }]);
+    expect(tasks.get(id, owner)).toMatchObject({ status: "succeeded", result: { greeting: "Olá, Ana" }, progress: null, href: "/ok" });
+    expect(notifications.listRecent(owner, 5)).toMatchObject([{ level: "success", title: "Olá, Ana", taskId: id }]);
   });
 
   it("refills a lane as soon as a slot frees, without waiting for the rest of the wave", async () => {
@@ -174,7 +189,7 @@ describe("createTaskWorker", () => {
 
     slow.resolve();
     await worker.drain();
-    expect(tasks.countActive()).toBe(0);
+    expect(activeCount(tasks)).toBe(0);
   });
 
   it("keeps the llm lane moving while a long library task runs", async () => {
@@ -192,13 +207,13 @@ describe("createTaskWorker", () => {
 
     expect(worker.fill()).toBe(2);
     await new Promise((resolve) => setTimeout(resolve, 0));
-    expect(tasks.get(draft)!.status).toBe("succeeded");
-    expect(tasks.countActive()).toBe(2);
+    expect(tasks.get(draft, owner)!.status).toBe("succeeded");
+    expect(activeCount(tasks)).toBe(2);
 
     reindex.resolve();
     await worker.drain();
     await worker.tick();
-    expect(tasks.countActive()).toBe(0);
+    expect(activeCount(tasks)).toBe(0);
   });
 
   it("retries transient failures after the backoff and fails permanent ones with a notification", async () => {
@@ -217,17 +232,17 @@ describe("createTaskWorker", () => {
     );
     const flaky = enqueue(tasks, "instável");
     await worker.tick();
-    expect(tasks.get(flaky)).toMatchObject({ status: "pending", error: "Muitas solicitações", attempts: 1 });
+    expect(tasks.get(flaky, owner)).toMatchObject({ status: "pending", error: "Muitas solicitações", attempts: 1 });
     expect(await worker.tick()).toBe(0);
 
     clock = new Date(START.getTime() + retryDelayMs(1));
     await worker.tick();
-    expect(tasks.get(flaky)!.status).toBe("succeeded");
+    expect(tasks.get(flaky, owner)!.status).toBe("succeeded");
 
     const invalid = enqueue(tasks, "inválida");
     await worker.tick();
-    expect(tasks.get(invalid)).toMatchObject({ status: "failed", error: "Dados inválidos.", attempts: 1 });
-    expect(notifications.listRecent(1)).toMatchObject([{ level: "error", body: "Dados inválidos.", taskId: invalid }]);
+    expect(tasks.get(invalid, owner)).toMatchObject({ status: "failed", error: "Dados inválidos.", attempts: 1 });
+    expect(notifications.listRecent(owner, 1)).toMatchObject([{ level: "error", body: "Dados inválidos.", taskId: invalid }]);
   });
 
   it("gives up after the maximum number of attempts", async () => {
@@ -241,7 +256,7 @@ describe("createTaskWorker", () => {
       await worker.tick();
       clock = new Date(clock.getTime() + retryDelayMs(attempt));
     }
-    expect(tasks.get(id)).toMatchObject({ status: "failed", attempts: TASK_MAX_ATTEMPTS });
+    expect(tasks.get(id, owner)).toMatchObject({ status: "failed", attempts: TASK_MAX_ATTEMPTS });
   });
 
   it("aborts a running task on cancel, discarding its result and running the cleanup hook", async () => {
@@ -263,9 +278,9 @@ describe("createTaskWorker", () => {
     worker.fill();
     expect(worker.cancel(id)).toBe(true);
     await worker.drain();
-    expect(tasks.get(id)).toMatchObject({ status: "canceled", result: null });
+    expect(tasks.get(id, owner)).toMatchObject({ status: "canceled", result: null });
     expect(canceled).toEqual(["Ana"]);
-    expect(notifications.listRecent(5)).toEqual([]);
+    expect(notifications.listRecent(owner, 5)).toEqual([]);
     expect(worker.cancel(id)).toBe(false);
   });
 
@@ -285,33 +300,65 @@ describe("createTaskWorker", () => {
   it("fails tasks with an unknown kind or an invalid payload instead of crashing", async () => {
     const { tasks, worker } = setup([handler("minuta.draft", "llm", async () => ({ greeting: "ok" }))]);
     const unknown = enqueue(tasks, "x", "style.capture");
-    const invalid = tasks.create({ kind: "minuta.draft", lane: "llm", title: "Inválida", payload: { nome: 1 } });
+    const invalid = tasks.create({ ownerId: owner, kind: "minuta.draft", lane: "llm", title: "Inválida", payload: { nome: 1 } });
 
     await worker.tick();
-    expect(tasks.get(unknown)!.status).toBe("failed");
-    expect(tasks.get(invalid)!.status).toBe("failed");
+    expect(tasks.get(unknown, owner)!.status).toBe("failed");
+    expect(tasks.get(invalid, owner)!.status).toBe("failed");
   });
 });
 
 describe("notification repository", () => {
   let notifications: NotificationRepository;
+  let other: string;
 
   beforeEach(() => {
-    notifications = createNotificationRepository(openDatabase(IN_MEMORY_DATABASE));
+    const db = openTestDatabase();
+    other = insertTestUser(db, "bruno");
+    notifications = createNotificationRepository(db);
   });
 
   it("lists notifications after a cursor, counts unread ones and marks them read", () => {
-    expect(notifications.latestId()).toBe(0);
-    const first = notifications.create({ level: "success", title: "A", body: "", href: null, taskId: null });
-    const second = notifications.create({ level: "error", title: "B", body: "falhou", href: "/x", taskId: null });
+    expect(notifications.latestId(owner)).toBe(0);
+    const first = notifications.create({ ownerId: owner, level: "success", title: "A", body: "", href: null, taskId: null });
+    const second = notifications.create({ ownerId: owner, level: "error", title: "B", body: "falhou", href: "/x", taskId: null });
 
-    expect(notifications.listSince(first.id, 10).map((item) => item.title)).toEqual(["B"]);
-    expect(notifications.listRecent(10).map((item) => item.title)).toEqual(["B", "A"]);
-    expect(notifications.latestId()).toBe(second.id);
-    expect(notifications.unreadCount()).toBe(2);
-    expect(notifications.markRead([first.id], START)).toBe(1);
-    expect(notifications.unreadCount()).toBe(1);
-    expect(notifications.markAllRead(START)).toBe(1);
-    expect(notifications.unreadCount()).toBe(0);
+    expect(notifications.listSince(owner, first.id, 10).map((item) => item.title)).toEqual(["B"]);
+    expect(notifications.listRecent(owner, 10).map((item) => item.title)).toEqual(["B", "A"]);
+    expect(notifications.latestId(owner)).toBe(second.id);
+    expect(notifications.unreadCount(owner)).toBe(2);
+    expect(notifications.markRead(owner, [first.id], START)).toBe(1);
+    expect(notifications.unreadCount(owner)).toBe(1);
+    expect(notifications.markAllRead(owner, START)).toBe(1);
+    expect(notifications.unreadCount(owner)).toBe(0);
+  });
+
+  it("shows each user only their own notifications", () => {
+    const mine = notifications.create({ ownerId: owner, level: "success", title: "A", body: "", href: null, taskId: null });
+
+    expect(notifications.listRecent(other, 10)).toEqual([]);
+    expect(notifications.listSince(other, 0, 10)).toEqual([]);
+    expect(notifications.latestId(other)).toBe(0);
+    expect(notifications.markRead(other, [mine.id], START)).toBe(0);
+    expect(notifications.unreadCount(owner)).toBe(1);
+  });
+});
+
+describe("task ownership", () => {
+  it("hides other users' tasks, caps counting per lane and erases the payload once a task succeeds", () => {
+    const db = openTestDatabase();
+    const tasks = createTaskRepository(db);
+    const other = insertTestUser(db, "bruno");
+    const id = enqueue(tasks, "Ana");
+
+    expect(tasks.get(id, other)).toBeNull();
+    expect(tasks.list({ ownerId: other, limit: 10 })).toEqual([]);
+    expect(tasks.countActive(other, "llm")).toBe(0);
+    expect(tasks.countActive(owner, "llm")).toBe(1);
+
+    const [claimed] = tasks.claim("llm", 1, START);
+    expect(claimed.ownerId).toBe(owner);
+    tasks.complete(id, START, () => ({ ok: true }));
+    expect(tasks.getPayload(id)?.payload).toEqual({});
   });
 });

@@ -4,6 +4,7 @@ import { connection } from "next/server";
 import { DeleteMinutaButton } from "@/components/DeleteMinutaButton";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { requireUser } from "@/lib/auth/dal";
 import { getMinutaRepository } from "@/lib/minutas/getMinutaRepository";
 import { HOME_PATH, minutaPath } from "@/lib/minutas/paths";
 import { formatDateTime } from "@/lib/usage/format";
@@ -12,7 +13,8 @@ export const metadata: Metadata = { title: "Histórico" };
 
 export default async function HistoryPage() {
   await connection();
-  const minutas = getMinutaRepository().list();
+  const user = await requireUser();
+  const minutas = getMinutaRepository().list(user.id);
 
   return (
     <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 px-4 py-10 sm:px-8">

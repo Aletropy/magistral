@@ -12,6 +12,8 @@ export const BATCH_ITEM_STATUS_LABELS: Record<BatchItemStatus, string> = {
 
 export interface BatchJobSummary {
   id: string;
+  /** Who created the job and gets its notification; null for jobs from before accounts existed. */
+  ownerId: string | null;
   name: string;
   createdAt: string;
   total: number;
@@ -37,6 +39,7 @@ export interface BatchJobDetail extends BatchJobSummary {
 export interface ClaimedBatchItem {
   id: number;
   jobId: string;
+  ownerId: string | null;
   position: number;
   template: MinutaRequest;
   row: Record<string, string>;

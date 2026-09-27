@@ -3,8 +3,10 @@ import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { ClauseEditor } from "@/components/ClauseEditor";
 import { getClauseRepository } from "@/lib/clauses/getClauseRepository";
+import { requireUser } from "@/lib/auth/dal";
 
 export async function generateMetadata({ params }: PageProps<"/clausulas/[id]">): Promise<Metadata> {
+  await requireUser();
   const { id } = await params;
   const item = getClauseRepository().get(id);
   return { title: item ? `Editar ${item.title}` : "Cláusula" };
@@ -12,6 +14,7 @@ export async function generateMetadata({ params }: PageProps<"/clausulas/[id]">)
 
 export default async function EditClausePage({ params }: PageProps<"/clausulas/[id]">) {
   await connection();
+  await requireUser();
   const { id } = await params;
   const clause = getClauseRepository().get(id);
   if (!clause) notFound();

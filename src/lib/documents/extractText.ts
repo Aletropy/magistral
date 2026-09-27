@@ -1,5 +1,6 @@
 import mammoth from "mammoth";
 import { extractText as extractPdfText, getDocumentProxy } from "unpdf";
+import { isZipWithinLimits } from "./checkZipSize";
 import { DocumentExtractionError } from "./errors";
 import { MAX_UPLOAD_BYTES, detectDocumentFormat, type DocumentFormat } from "./formats";
 
@@ -22,6 +23,7 @@ const EXTRACTORS: Record<DocumentFormat, (bytes: Uint8Array) => Promise<string>>
     return text;
   },
   async docx(bytes) {
+    if (!isZipWithinLimits(bytes)) throw new DocumentExtractionError("too_large");
     const { value } = await mammoth.extractRawText({ buffer: Buffer.from(bytes) });
     return value;
   },
@@ -41,6 +43,7 @@ export async function extractText(document: UploadedDocument): Promise<string> {
   try {
     text = tidy(await EXTRACTORS[format](document.bytes));
   } catch (error) {
+    if (error instanceof DocumentExtractionError) throw error;
     throw new DocumentExtractionError("unreadable", error);
   }
   if (text.length < MIN_EXTRACTED_CHARS) throw new DocumentExtractionError("no_text");

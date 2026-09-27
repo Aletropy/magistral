@@ -12,6 +12,8 @@ import {
   personaEditPath,
   personaPlaygroundPath,
 } from "@/lib/personas/paths";
+import { requireUser } from "@/lib/auth/dal";
+import { isAdmin } from "@/lib/auth/types";
 
 export const metadata: Metadata = { title: "Personas" };
 
@@ -19,6 +21,7 @@ const TEMPERATURE_DECIMALS = 2;
 
 export default async function PersonasPage() {
   await connection();
+  const user = await requireUser();
   const personas = getPersonaRepository().list();
 
   return (
@@ -81,7 +84,7 @@ export default async function PersonasPage() {
                     <Button asChild variant="outline" size="sm">
                       <Link href={personaEditPath(persona.id)}>Editar</Link>
                     </Button>
-                    {!persona.isBuiltin && <DeletePersonaButton id={persona.id} name={persona.name} />}
+                    {!persona.isBuiltin && isAdmin(user) && <DeletePersonaButton id={persona.id} name={persona.name} />}
                   </div>
                 </TableCell>
               </TableRow>

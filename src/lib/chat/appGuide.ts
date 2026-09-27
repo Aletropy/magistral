@@ -1,3 +1,4 @@
+import { ACCOUNT_PATH, TEAM_PATH } from "@/lib/auth/paths";
 import { BATCHES_PATH, NEW_BATCH_PATH } from "@/lib/batch/paths";
 import { CLAUSES_PATH } from "@/lib/clauses/paths";
 import { HISTORY_PATH, HOME_PATH } from "@/lib/minutas/paths";
@@ -76,7 +77,14 @@ export const APP_GUIDE: readonly GuideEntry[] = [
   {
     feature: "Uso",
     path: USAGE_PATH,
-    howTo: "Consumo de IA por dia, operação e modelo: chamadas, tokens, custo estimado e latência.",
+    howTo:
+      "Só para administradores: consumo de IA por dia, operação, modelo e pessoa (chamadas, tokens, custo estimado e latência) e a política de privacidade dos dados em vigor.",
+  },
+  {
+    feature: "Equipe e conta",
+    path: `${TEAM_PATH} e ${ACCOUNT_PATH}`,
+    howTo:
+      "Cada pessoa entra com a própria conta. Minutas, conversas, lotes e tarefas são de cada um; personas, cláusulas e a biblioteca são do escritório. Administradores cadastram pessoas em Equipe; qualquer um troca a senha em Minha conta.",
   },
   {
     feature: "Advogado IA",

@@ -1,7 +1,14 @@
 import "server-only";
 import { LlmConfigurationError } from "../errors";
 import type { OpenRouterClient } from "./api";
-import { OPENROUTER_API_KEY_ENV_VAR, OPENROUTER_MODELS_ENV_VAR, resolveOpenRouterModels } from "./config";
+import {
+  OPENROUTER_ALLOW_DATA_COLLECTION_ENV_VAR,
+  OPENROUTER_API_KEY_ENV_VAR,
+  OPENROUTER_MODELS_ENV_VAR,
+  resolveOpenRouterModels,
+  resolveProviderRouting,
+  type ProviderRouting,
+} from "./config";
 import { createOpenRouterClient } from "./httpClient";
 
 let client: OpenRouterClient | undefined;
@@ -13,6 +20,11 @@ export function getOpenRouterClient(): OpenRouterClient {
   }
   client ??= createOpenRouterClient(apiKey);
   return client;
+}
+
+/** Zero data retention unless OPENROUTER_ALLOW_DATA_COLLECTION=true. */
+export function getOpenRouterRouting(): ProviderRouting {
+  return resolveProviderRouting(process.env[OPENROUTER_ALLOW_DATA_COLLECTION_ENV_VAR]);
 }
 
 /** The fallback model list from OPENROUTER_MODELS, or the defaults. */

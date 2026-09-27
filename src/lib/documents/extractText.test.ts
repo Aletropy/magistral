@@ -1,8 +1,10 @@
+import { zipSync } from "fflate";
 import { describe, expect, it } from "vitest";
 import { renderDocument } from "@/lib/export/renderDocument";
 import { parseMarkdown } from "@/lib/markdown/parseMarkdown";
 import { DocumentExtractionError } from "./errors";
 import { extractText } from "./extractText";
+import { MAX_DOCX_UNCOMPRESSED_BYTES } from "./checkZipSize";
 import { MAX_UPLOAD_BYTES } from "./formats";
 
 const SAMPLE = `# CONTRATO DE LOCAÇÃO
@@ -25,6 +27,12 @@ describe("extractText", () => {
 
     expect(text).toContain("CLÁUSULA PRIMEIRA – DO OBJETO");
     expect(text).toContain("O prazo da locação é de 30 (trinta) meses.");
+  });
+
+  it("rejects a DOCX that would inflate past the limit without inflating it", async () => {
+    const bomb = zipSync({ "word/document.xml": new Uint8Array(MAX_DOCX_UNCOMPRESSED_BYTES + 1) }, { level: 9 });
+    expect(bomb.byteLength).toBeLessThan(MAX_UPLOAD_BYTES);
+    await expect(extractText({ name: "bomba.docx", bytes: bomb })).rejects.toMatchObject({ reason: "too_large" });
   });
 
   it("rejects unsupported extensions, oversized files and unreadable content", async () => {

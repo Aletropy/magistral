@@ -6,6 +6,8 @@ import { LibraryUploadForm } from "@/components/LibraryUploadForm";
 import { LoadLibraryExamplesButton } from "@/components/LoadLibraryExamplesButton";
 import { ReindexLibraryButton } from "@/components/ReindexLibraryButton";
 import { WarningCallout } from "@/components/ui/WarningCallout";
+import { requireUser } from "@/lib/auth/dal";
+import { isAdmin } from "@/lib/auth/types";
 import { getActiveEmbeddingIdentity } from "@/lib/llm/getEmbedder";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -29,8 +31,10 @@ function taskOfKind(task: TaskDetail | null, kind: TaskKind): TaskDetail | null 
 
 export default async function LibraryPage({ searchParams }: PageProps<"/biblioteca">) {
   await connection();
+  const user = await requireUser();
+  const canManage = isAdmin(user);
   const taskId = readTaskParam(await searchParams);
-  const task = taskId ? getTaskRepository().get(taskId) : null;
+  const task = taskId ? getTaskRepository().get(taskId, user.id) : null;
   const library = getLibraryRepository();
   const sources = library.listSources();
   const totalChars = library.totalChars();
@@ -57,7 +61,7 @@ export default async function LibraryPage({ searchParams }: PageProps<"/bibliote
         )}
       </header>
 
-      {needsReindex && (
+      {needsReindex && canManage && (
         <WarningCallout className="flex flex-col gap-3">
           <p>{LIBRARY_INDEX_MISMATCH_MESSAGE}</p>
           <ReindexLibraryButton initialTask={taskOfKind(task, "library.reindex")} />
@@ -66,7 +70,7 @@ export default async function LibraryPage({ searchParams }: PageProps<"/bibliote
 
       <div className="grid items-start gap-4 lg:grid-cols-2">
         <LibraryUploadForm initialTask={taskOfKind(task, "library.upload")} />
-        <LibrarySyncPanel folder={resolveLibraryDir()} initialTask={taskOfKind(task, "library.sync")} />
+        {canManage && <LibrarySyncPanel folder={resolveLibraryDir()} initialTask={taskOfKind(task, "library.sync")} />}
       </div>
 
       <div className="rounded-lg border bg-card">
@@ -79,13 +83,13 @@ export default async function LibraryPage({ searchParams }: PageProps<"/bibliote
               <TableHead className="hidden text-right md:table-cell">Trechos</TableHead>
               <TableHead className="hidden text-right md:table-cell">Caracteres</TableHead>
               <TableHead className="hidden md:table-cell">Adicionado em</TableHead>
-              <TableHead className="text-right">Ações</TableHead>
+              {canManage && <TableHead className="text-right">Ações</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
             {sources.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="whitespace-normal text-muted-foreground">
+                <TableCell colSpan={canManage ? 7 : 6} className="whitespace-normal text-muted-foreground">
                   <div className="flex flex-col items-start gap-3 py-4">
                     A biblioteca está vazia. Envie leis, decretos e pareceres, ou experimente com uma lei e um
                     decreto fictícios de exemplo.
@@ -112,15 +116,17 @@ export default async function LibraryPage({ searchParams }: PageProps<"/bibliote
                   <TableCell className="hidden text-right tabular-nums md:table-cell">{formatInteger(source.chunkCount)}</TableCell>
                   <TableCell className="hidden text-right tabular-nums md:table-cell">{formatInteger(source.charCount)}</TableCell>
                   <TableCell className="hidden tabular-nums md:table-cell">{formatDateTime(source.createdAt)}</TableCell>
-                  <TableCell>
-                    <div className="flex justify-end">
-                      <DeleteLibrarySourceButton
-                        id={source.id}
-                        title={source.title}
-                        fromFolder={source.folderPath !== null}
-                      />
-                    </div>
-                  </TableCell>
+                  {canManage && (
+                    <TableCell>
+                      <div className="flex justify-end">
+                        <DeleteLibrarySourceButton
+                          id={source.id}
+                          title={source.title}
+                          fromFolder={source.folderPath !== null}
+                        />
+                      </div>
+                    </TableCell>
+                  )}
                 </TableRow>
               ))
             )}

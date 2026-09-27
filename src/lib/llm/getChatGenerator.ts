@@ -1,4 +1,5 @@
 import "server-only";
+import { currentActorId } from "@/lib/auth/actor";
 import { getUsageRepository } from "@/lib/usage/getUsageRepository";
 import type { LlmOperation } from "@/lib/usage/types";
 import { withUsageAudit } from "@/lib/usage/withUsageAudit";
@@ -14,6 +15,6 @@ export function getChatGenerator(operation: LlmOperation): ChatGenerator {
     operation,
     provider,
     configuredModel: CONFIGURED_MODELS[provider](),
-    record: (call) => usage.record(call),
+    record: (call) => usage.record(call, currentActorId()),
   });
 }

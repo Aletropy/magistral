@@ -1,17 +1,10 @@
 import { getClauseRepository } from "@/lib/clauses/getClauseRepository";
 import { clauseInputSchema } from "@/lib/clauses/schema";
-import { HTTP_CREATED, errorResponse, parseJsonBody, type ClauseResponseBody } from "@/lib/http/api";
-import { UNEXPECTED_ERROR } from "@/lib/llm/errors";
+import { HTTP_CREATED, type ClauseResponseBody } from "@/lib/http/api";
+import { defineRoute } from "@/lib/http/route";
 
-export async function POST(request: Request): Promise<Response> {
-  const parsed = await parseJsonBody(request, clauseInputSchema);
-  if ("response" in parsed) return parsed.response;
-
-  try {
-    const clause = getClauseRepository().create(parsed.data);
-    return Response.json({ clause } satisfies ClauseResponseBody, { status: HTTP_CREATED });
-  } catch (error) {
-    console.error("[api/clauses] create failed", error);
-    return errorResponse(UNEXPECTED_ERROR.status, UNEXPECTED_ERROR.message);
-  }
-}
+/** Clauses are shared by the whole office; any user can add one. */
+export const POST = defineRoute({ body: clauseInputSchema }, ({ body }) => {
+  const clause = getClauseRepository().create(body);
+  return Response.json({ clause } satisfies ClauseResponseBody, { status: HTTP_CREATED });
+});

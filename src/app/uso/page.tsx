@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import { connection } from "next/server";
+import { DataPrivacyNotice } from "@/components/DataPrivacyNotice";
 import { RecentCallsTable } from "@/components/RecentCallsTable";
 import { StatTile } from "@/components/StatTile";
 import { UsageGroupTable } from "@/components/UsageGroupTable";
+import { requireAdmin } from "@/lib/auth/dal";
 import { formatDay, formatInteger, formatLatency, formatUsd } from "@/lib/usage/format";
 import { getUsageRepository } from "@/lib/usage/getUsageRepository";
 import { LLM_OPERATIONS, LLM_OPERATION_LABELS, type LlmOperation } from "@/lib/usage/types";
@@ -11,6 +13,8 @@ export const metadata: Metadata = { title: "Uso e custos" };
 
 const USAGE_WINDOW_DAYS = 30;
 const RECENT_CALLS_LIMIT = 25;
+/** Calls recorded before accounts existed. */
+const NO_USER_LABEL = "Antes das contas";
 
 function formatOperation(key: string): string {
   return (LLM_OPERATIONS as readonly string[]).includes(key)
@@ -20,6 +24,7 @@ function formatOperation(key: string): string {
 
 export default async function UsagePage() {
   await connection();
+  await requireAdmin();
   const usage = getUsageRepository();
   const totals = usage.totals(USAGE_WINDOW_DAYS);
 
@@ -32,6 +37,8 @@ export default async function UsagePage() {
           pelo preço de tabela de cada modelo. Tokens de raciocínio contam como saída.
         </p>
       </header>
+
+      <DataPrivacyNotice />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <StatTile label="Custo estimado" value={formatUsd(totals.costUsd)} />
@@ -63,6 +70,12 @@ export default async function UsagePage() {
           keyHeader="Modelo"
           groups={usage.groupedTotals("model", USAGE_WINDOW_DAYS)}
           formatKey={(key) => key}
+        />
+        <UsageGroupTable
+          title="Por pessoa"
+          keyHeader="Pessoa"
+          groups={usage.groupedTotals("user", USAGE_WINDOW_DAYS)}
+          formatKey={(key) => key || NO_USER_LABEL}
         />
       </div>
       <RecentCallsTable calls={usage.recent(RECENT_CALLS_LIMIT)} />

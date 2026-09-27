@@ -70,6 +70,8 @@ export interface TaskDetail extends TaskSummary {
 /** A task the worker has claimed, with everything its handler needs. */
 export interface ClaimedTask {
   id: string;
+  /** Null only for tasks queued before accounts existed. */
+  ownerId: string | null;
   kind: TaskKind;
   lane: TaskLane;
   title: string;
@@ -92,6 +94,7 @@ export interface NewTaskFile {
 }
 
 export interface NewTask {
+  ownerId: string;
   kind: TaskKind;
   lane: TaskLane;
   title: string;

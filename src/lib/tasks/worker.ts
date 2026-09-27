@@ -1,3 +1,4 @@
+import { runAsUser } from "@/lib/auth/actor";
 import type { NewNotification } from "@/lib/notifications/types";
 import { retryDelayMs } from "@/lib/queue/retryPolicy";
 import { TaskCanceledError, TaskInputError } from "./errors";
@@ -92,7 +93,7 @@ export function createTaskWorker(options: TaskWorkerOptions): TaskWorker {
       body: message,
       href: null,
     };
-    safeNotify({ ...draft, taskId: task.id });
+    safeNotify({ ...draft, ownerId: task.ownerId, taskId: task.id });
   }
 
   async function execute(task: ClaimedTask, signal: AbortSignal): Promise<void> {
@@ -105,6 +106,7 @@ export function createTaskWorker(options: TaskWorkerOptions): TaskWorker {
     let committed = false;
     const context: TaskContext<unknown> = {
       taskId: task.id,
+      ownerId: task.ownerId,
       title: task.title,
       payload,
       signal,
@@ -119,9 +121,10 @@ export function createTaskWorker(options: TaskWorkerOptions): TaskWorker {
     };
 
     try {
-      const result: unknown = await handler.run(context);
+      // LLM calls made by the handler are attributed to the task's owner.
+      const result: unknown = await runAsUser(task.ownerId, () => handler.run(context));
       if (!committed) tasks.complete(task.id, now(), () => result);
-      safeNotify({ ...handler.describeSuccess(result, task), taskId: task.id });
+      safeNotify({ ...handler.describeSuccess(result, task), ownerId: task.ownerId, taskId: task.id });
     } catch (error) {
       if (signal.aborted || error instanceof TaskCanceledError) {
         const cancellation = handler.onCanceled;

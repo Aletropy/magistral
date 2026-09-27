@@ -22,13 +22,14 @@ const fullRowSchema = summaryRowSchema.extend({
 
 const SUMMARY_COLUMNS = "id, title, persona_name, document_type_label, created_at, updated_at";
 
+/** Every read and write is limited to the minutas of one owner; another user's id reads as missing. */
 export interface MinutaRepository {
   create(minuta: NewMinuta): string;
-  list(): MinutaSummary[];
-  get(id: string): SavedMinuta | null;
-  /** Returns false when no minuta has this id. */
-  updateMarkdown(id: string, markdown: string): boolean;
-  delete(id: string): boolean;
+  list(ownerId: string): MinutaSummary[];
+  get(id: string, ownerId: string): SavedMinuta | null;
+  /** Returns false when the owner has no minuta with this id. */
+  updateMarkdown(id: string, ownerId: string, markdown: string): boolean;
+  delete(id: string, ownerId: string): boolean;
 }
 
 function toSummary(row: unknown): MinutaSummary {
@@ -45,29 +46,29 @@ function toSummary(row: unknown): MinutaSummary {
 
 export function createMinutaRepository(db: DatabaseSync): MinutaRepository {
   const insert = db.prepare(
-    `INSERT INTO minutas (id, title, persona_name, document_type_label, request, result, markdown)
-     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO minutas (id, owner_id, title, persona_name, document_type_label, request, result, markdown)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
   );
-  const selectAll = db.prepare(`SELECT ${SUMMARY_COLUMNS} FROM minutas ORDER BY created_at DESC`);
-  const selectOne = db.prepare("SELECT * FROM minutas WHERE id = ?");
+  const selectAll = db.prepare(`SELECT ${SUMMARY_COLUMNS} FROM minutas WHERE owner_id = ? ORDER BY created_at DESC`);
+  const selectOne = db.prepare("SELECT * FROM minutas WHERE id = ? AND owner_id = ?");
   const update = db.prepare(
-    "UPDATE minutas SET markdown = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?",
+    "UPDATE minutas SET markdown = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ? AND owner_id = ?",
   );
-  const remove = db.prepare("DELETE FROM minutas WHERE id = ?");
+  const remove = db.prepare("DELETE FROM minutas WHERE id = ? AND owner_id = ?");
 
   return {
-    create({ title, personaName, documentTypeLabel, request, result }) {
+    create({ ownerId, title, personaName, documentTypeLabel, request, result }) {
       const id = randomUUID();
       // The Markdown lives in its own column so reviews can replace it; the rest of the result is kept as generated.
       const { markdown, ...rest } = result;
-      insert.run(id, title, personaName, documentTypeLabel, JSON.stringify(request), JSON.stringify(rest), markdown);
+      insert.run(id, ownerId, title, personaName, documentTypeLabel, JSON.stringify(request), JSON.stringify(rest), markdown);
       return id;
     },
 
-    list: () => selectAll.all().map(toSummary),
+    list: (ownerId) => selectAll.all(ownerId).map(toSummary),
 
-    get(id) {
-      const row = selectOne.get(id);
+    get(id, ownerId) {
+      const row = selectOne.get(id, ownerId);
       if (!row) return null;
       const parsed = fullRowSchema.parse(row);
       const rest = storedResultSchema.parse(JSON.parse(parsed.result));
@@ -78,7 +79,7 @@ export function createMinutaRepository(db: DatabaseSync): MinutaRepository {
       };
     },
 
-    updateMarkdown: (id, markdown) => update.run(markdown, id).changes > 0,
-    delete: (id) => remove.run(id).changes > 0,
+    updateMarkdown: (id, ownerId, markdown) => update.run(markdown, id, ownerId).changes > 0,
+    delete: (id, ownerId) => remove.run(id, ownerId).changes > 0,
   };
 }

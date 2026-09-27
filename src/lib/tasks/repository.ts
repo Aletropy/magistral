@@ -39,6 +39,7 @@ const detailRowSchema = summaryRowSchema.extend({ result: z.string().nullable() 
 
 const claimedRowSchema = z.object({
   id: z.string(),
+  owner_id: z.string().nullable(),
   kind: z.enum(TASK_KINDS),
   lane: z.enum(TASK_LANES),
   title: z.string(),
@@ -57,6 +58,7 @@ const fileRowSchema = z.object({
 const statusRowSchema = z.object({ status: z.enum(TASK_STATUSES) });
 
 export interface TaskListOptions {
+  ownerId: string;
   /** Only pending and running tasks. */
   activeOnly?: boolean;
   limit: number;
@@ -72,7 +74,8 @@ export interface TaskRepository {
   /**
    * Marks a running task as succeeded with the value `produce` returns, running it in the same transaction
    * so side effects (saving a minuta, a chat reply) happen only if the task still counts. Throws
-   * TaskCanceledError, without calling `produce`, when the task was cancelled in the meantime.
+   * TaskCanceledError, without calling `produce`, when the task was cancelled in the meantime. The payload
+   * (which may hold document text) is erased: a succeeded task is never run again.
    */
   complete<R>(id: string, now: Date, produce: () => R): R;
   fail(id: string, error: string, now: Date): boolean;
@@ -84,11 +87,13 @@ export interface TaskRepository {
   requeue(id: string, now: Date): boolean;
   /** Requeues tasks left running by a previous process, failing those with no attempts left. */
   resetRunning(maxAttempts: number, now: Date): number;
-  get(id: string): TaskDetail | null;
+  /** A task of this owner; another user's id reads as missing. */
+  get(id: string, ownerId: string): TaskDetail | null;
   /** The task's kind and stored payload, for cleanup hooks. */
   getPayload(id: string): { kind: TaskKind; payload: unknown } | null;
   list(options: TaskListOptions): TaskSummary[];
-  countActive(): number;
+  /** Queued and running tasks of one owner in a lane, to cap how much one person can queue. */
+  countActive(ownerId: string, lane: TaskLane): number;
   /** Deletes finished tasks (and their files) older than `before`; returns how many. */
   purgeFinishedBefore(before: Date): number;
 }
@@ -121,7 +126,9 @@ function toSummary(row: unknown): TaskSummary {
 }
 
 export function createTaskRepository(db: DatabaseSync): TaskRepository {
-  const insertTask = db.prepare("INSERT INTO tasks (id, kind, lane, title, payload) VALUES (?, ?, ?, ?, ?)");
+  const insertTask = db.prepare(
+    "INSERT INTO tasks (id, owner_id, kind, lane, title, payload) VALUES (?, ?, ?, ?, ?, ?)",
+  );
   const insertFile = db.prepare("INSERT INTO task_files (task_id, position, name, bytes) VALUES (?, ?, ?, ?)");
   const claimDue = db.prepare(
     `UPDATE tasks SET status = 'running', attempts = attempts + 1, started_at = COALESCE(started_at, ?)
@@ -129,7 +136,7 @@ export function createTaskRepository(db: DatabaseSync): TaskRepository {
        SELECT id FROM tasks WHERE lane = ? AND status = 'pending' AND next_attempt_at <= ?
        ORDER BY created_at LIMIT ?
      )
-     RETURNING id, kind, lane, title, payload, attempts, created_at`,
+     RETURNING id, owner_id, kind, lane, title, payload, attempts, created_at`,
   );
   const selectFiles = db.prepare(
     "SELECT position, name, bytes, outcome FROM task_files WHERE task_id = ? ORDER BY position",
@@ -142,7 +149,7 @@ export function createTaskRepository(db: DatabaseSync): TaskRepository {
   );
   const selectStatus = db.prepare("SELECT status FROM tasks WHERE id = ?");
   const succeed = db.prepare(
-    `UPDATE tasks SET status = 'succeeded', result = ?, error = NULL, finished_at = ?,
+    `UPDATE tasks SET status = 'succeeded', result = ?, payload = '{}', error = NULL, finished_at = ?,
        progress_current = NULL, progress_total = NULL, progress_label = NULL
      WHERE id = ? AND status = 'running'`,
   );
@@ -170,22 +177,27 @@ export function createTaskRepository(db: DatabaseSync): TaskRepository {
   const failExhausted = db.prepare(
     "UPDATE tasks SET status = 'failed', error = ?, finished_at = ? WHERE status = 'running' AND attempts >= ?",
   );
-  const selectDetail = db.prepare(`SELECT ${TASK_COLUMNS}, t.result FROM tasks t WHERE t.id = ?`);
+  const selectDetail = db.prepare(`SELECT ${TASK_COLUMNS}, t.result FROM tasks t WHERE t.id = ? AND t.owner_id = ?`);
   const selectPayload = db.prepare("SELECT kind, payload FROM tasks WHERE id = ?");
-  const selectRecent = db.prepare(`SELECT ${TASK_COLUMNS} FROM tasks t ORDER BY t.created_at DESC LIMIT ?`);
-  const selectActive = db.prepare(
-    `SELECT ${TASK_COLUMNS} FROM tasks t WHERE t.status IN ('pending', 'running') ORDER BY t.created_at LIMIT ?`,
+  const selectRecent = db.prepare(
+    `SELECT ${TASK_COLUMNS} FROM tasks t WHERE t.owner_id = ? ORDER BY t.created_at DESC LIMIT ?`,
   );
-  const countActiveTasks = db.prepare("SELECT COUNT(*) AS count FROM tasks WHERE status IN ('pending', 'running')");
+  const selectActive = db.prepare(
+    `SELECT ${TASK_COLUMNS} FROM tasks t
+     WHERE t.owner_id = ? AND t.status IN ('pending', 'running') ORDER BY t.created_at LIMIT ?`,
+  );
+  const countActiveTasks = db.prepare(
+    "SELECT COUNT(*) AS count FROM tasks WHERE owner_id = ? AND lane = ? AND status IN ('pending', 'running')",
+  );
   const purgeFinished = db.prepare(
     "DELETE FROM tasks WHERE status IN ('succeeded', 'failed', 'canceled') AND finished_at < ?",
   );
 
   return {
-    create({ kind, lane, title, payload, files = [] }) {
+    create({ ownerId, kind, lane, title, payload, files = [] }) {
       const id = randomUUID();
       withTransaction(db, () => {
-        insertTask.run(id, kind, lane, title, JSON.stringify(payload));
+        insertTask.run(id, ownerId, kind, lane, title, JSON.stringify(payload));
         files.forEach((file, index) => insertFile.run(id, index + 1, file.name, file.bytes));
       });
       return id;
@@ -197,8 +209,9 @@ export function createTaskRepository(db: DatabaseSync): TaskRepository {
       return withTransaction(db, () => claimDue.all(at, lane, at, limit))
         .map((row) => claimedRowSchema.parse(row))
         .sort((a, b) => a.created_at.localeCompare(b.created_at))
-        .map(({ id, kind, lane: taskLane, title, payload, attempts }) => ({
+        .map(({ id, owner_id, kind, lane: taskLane, title, payload, attempts }) => ({
           id,
+          ownerId: owner_id,
           kind,
           lane: taskLane,
           title,
@@ -242,8 +255,8 @@ export function createTaskRepository(db: DatabaseSync): TaskRepository {
       });
     },
 
-    get(id) {
-      const row = selectDetail.get(id);
+    get(id, ownerId) {
+      const row = selectDetail.get(id, ownerId);
       if (!row) return null;
       const { result } = detailRowSchema.parse(row);
       return { ...toSummary(row), result: result === null ? null : (JSON.parse(result) as unknown) };
@@ -256,8 +269,9 @@ export function createTaskRepository(db: DatabaseSync): TaskRepository {
       return { kind, payload: JSON.parse(payload) as unknown };
     },
 
-    list: ({ activeOnly = false, limit }) => (activeOnly ? selectActive : selectRecent).all(limit).map(toSummary),
-    countActive: () => z.object({ count: z.number() }).parse(countActiveTasks.get()).count,
+    list: ({ ownerId, activeOnly = false, limit }) =>
+      (activeOnly ? selectActive : selectRecent).all(ownerId, limit).map(toSummary),
+    countActive: (ownerId, lane) => z.object({ count: z.number() }).parse(countActiveTasks.get(ownerId, lane)).count,
     purgeFinishedBefore: (before) => Number(purgeFinished.run(before.toISOString()).changes),
   };
 }

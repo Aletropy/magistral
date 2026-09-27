@@ -4,18 +4,20 @@ import { connection } from "next/server";
 import { DiscussMinutaButton } from "@/components/chat/DiscussMinutaButton";
 import { DeleteMinutaButton } from "@/components/DeleteMinutaButton";
 import { SavedMinutaView } from "@/components/SavedMinutaView";
+import { requireUser } from "@/lib/auth/dal";
 import { getMinutaRepository } from "@/lib/minutas/getMinutaRepository";
 import { formatDateTime } from "@/lib/usage/format";
 
 export async function generateMetadata({ params }: PageProps<"/historico/[id]">): Promise<Metadata> {
-  const { id } = await params;
-  return { title: getMinutaRepository().get(id)?.title ?? "Minuta" };
+  const [{ id }, user] = await Promise.all([params, requireUser()]);
+  return { title: getMinutaRepository().get(id, user.id)?.title ?? "Minuta" };
 }
 
 export default async function SavedMinutaPage({ params }: PageProps<"/historico/[id]">) {
   await connection();
+  const user = await requireUser();
   const { id } = await params;
-  const minuta = getMinutaRepository().get(id);
+  const minuta = getMinutaRepository().get(id, user.id);
   if (!minuta) notFound();
 
   const edited = minuta.updatedAt !== minuta.createdAt;

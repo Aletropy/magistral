@@ -25,7 +25,7 @@ import {
 import { initialMinutaValues } from "@/lib/minuta/formDefaults";
 import { DRAFT_SUGGESTION_QUERY_PARAM } from "@/lib/minuta/paths";
 import type { MinutaFormValues, MinutaRequest } from "@/lib/minuta/schema";
-import { MINUTA_DRAFT_STORAGE_KEY, parseStoredDraft, serializeDraft } from "@/lib/minuta/storedDraft";
+import { minutaDraftStorageKey, parseStoredDraft, serializeDraft } from "@/lib/minuta/storedDraft";
 import type { WizardStepId } from "@/lib/minuta/wizardSteps";
 import { minutaPath } from "@/lib/minutas/paths";
 import type { PersonaSummary } from "@/lib/personas/types";
@@ -38,6 +38,8 @@ const MODE_STORAGE_KEY = "magistral-minuta-modo";
 const SUGGESTION_FAILED = "Não foi possível enviar o documento para leitura. Tente novamente.";
 
 interface MinutaStudioProps {
+  /** Keys the unsent draft kept in this browser, which may be shared by the office. */
+  userId: string;
   personas: PersonaSummary[];
   clauses: ClauseOption[];
   librarySourceCount: number;
@@ -65,6 +67,7 @@ function initialForm(personas: PersonaSummary[], catalog: SuggestionCatalog, sug
 
 /** The minuta page: a guided wizard or the full form over the same values, and the background draft's result. */
 export function MinutaStudio({
+  userId,
   personas,
   clauses,
   librarySourceCount,
@@ -88,7 +91,7 @@ export function MinutaStudio({
   });
   const [hasEdited, setHasEdited] = useState(start.appliedSuggestionId !== null);
   const [storedMode, setStoredMode] = useLocalValue(MODE_STORAGE_KEY);
-  const [storedDraftJson, setStoredDraftJson] = useLocalValue(MINUTA_DRAFT_STORAGE_KEY);
+  const [storedDraftJson, setStoredDraftJson] = useLocalValue(minutaDraftStorageKey(userId));
   const storedDraft = hasEdited ? null : parseStoredDraft(storedDraftJson);
   const mode: Mode = initialSuggestion || storedMode !== MODES.form ? MODES.wizard : MODES.form;
 

@@ -23,6 +23,17 @@ export function writeLocalValue(key: string, value: string | null): void {
   window.dispatchEvent(new Event(CHANGE_EVENT));
 }
 
+/** Removes every value whose key starts with `prefix`, e.g. private drafts when signing out. */
+export function removeLocalValues(prefix: string): void {
+  try {
+    const keys = Array.from({ length: localStorage.length }, (_, index) => localStorage.key(index));
+    for (const key of keys) if (key?.startsWith(prefix)) localStorage.removeItem(key);
+  } catch {
+    // Storage unavailable: nothing was stored.
+  }
+  window.dispatchEvent(new Event(CHANGE_EVENT));
+}
+
 export function subscribeLocalValues(onChange: () => void): () => void {
   window.addEventListener(CHANGE_EVENT, onChange);
   window.addEventListener("storage", onChange);

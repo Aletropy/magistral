@@ -1,5 +1,7 @@
 /** EmbeddingGemma 300M: multilingual (pt-BR included), 768 dimensions, runs on CPU through ONNX. */
 export const LOCAL_EMBEDDING_REPO = "onnx-community/embeddinggemma-300m-ONNX";
+/** Pinned commit: a change pushed to the model repository can't swap the weights this server runs. */
+export const LOCAL_EMBEDDING_REVISION = "5090578d9565bb06545b4552f76e6bc2c93e4a66";
 /** Stored with the index and in the usage log. */
 export const LOCAL_EMBEDDING_MODEL_ID = "local/embeddinggemma-300m";
 export const LOCAL_EMBEDDING_DIMENSIONS = 768;

@@ -1,6 +1,7 @@
 import { styleSliderInstructions } from "@/lib/personas/styleSliders";
 import type { PersonaStyle } from "@/lib/personas/types";
 import { formatStyleProfile } from "@/lib/style/formatStyleProfile";
+import { taggedBlock } from "./taggedBlock";
 
 export function toBulletList(items: string[]): string {
   return items.map((item) => `- ${item}`).join("\n");
@@ -28,6 +29,6 @@ export function buildPersonaSections(style: PersonaStyle): string[] {
 /** Few-shot samples, each in its own block; null when the persona has none. */
 export function buildExamplesSection(style: PersonaStyle): string | null {
   if (style.examples.length === 0) return null;
-  const blocks = style.examples.map((example) => `<exemplo>\n${example}\n</exemplo>`).join("\n\n");
+  const blocks = style.examples.map((example) => taggedBlock("exemplo", example)).join("\n\n");
   return `## Exemplos de tom (imite o estilo, não o conteúdo)\n${blocks}`;
 }

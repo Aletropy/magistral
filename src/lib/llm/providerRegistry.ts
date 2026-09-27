@@ -5,14 +5,14 @@ import { createAnthropicChatGenerator } from "./anthropic/generate";
 import { getGeminiClient } from "./gemini/client";
 import { GEMINI_MODEL } from "./gemini/config";
 import { createGeminiChatGenerator } from "./gemini/generate";
-import { getOpenRouterClient, getOpenRouterModels } from "./openrouter/client";
+import { getOpenRouterClient, getOpenRouterModels, getOpenRouterRouting } from "./openrouter/client";
 import { createOpenRouterChatGenerator } from "./openrouter/generate";
 import { LLM_PROVIDER_ENV_VAR, resolveLlmProvider, type LlmProvider } from "./providers";
 import type { ChatGenerator } from "./types";
 
 /** Clients are created on the first call, so a missing API key is thrown (and audited) then. */
 export const CHAT_GENERATOR_FACTORIES: Record<LlmProvider, () => ChatGenerator> = {
-  openrouter: () => createOpenRouterChatGenerator(getOpenRouterClient(), getOpenRouterModels()),
+  openrouter: () => createOpenRouterChatGenerator(getOpenRouterClient(), getOpenRouterModels(), getOpenRouterRouting()),
   gemini: () => createGeminiChatGenerator(getGeminiClient()),
   anthropic: () => createAnthropicChatGenerator(getAnthropicClient()),
 };

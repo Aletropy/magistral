@@ -3,12 +3,19 @@ import { asMinutaGenerator } from "../chatPrompt";
 import {
   CONFIGURATION_ERROR,
   DAILY_QUOTA_EXHAUSTED,
+  NO_PRIVATE_PROVIDER,
   RATE_LIMITED,
   SERVICE_UNAVAILABLE,
   UPSTREAM_TIMEOUT,
 } from "../errors";
 import { OpenRouterApiError, type ChatCompletion, type OpenRouterClient } from "./api";
-import { DEFAULT_OPENROUTER_MODELS, OPENROUTER_BASE_URL, resolveOpenRouterModels } from "./config";
+import {
+  DEFAULT_OPENROUTER_MODELS,
+  OPENROUTER_BASE_URL,
+  PRIVATE_ROUTING,
+  resolveOpenRouterModels,
+  resolveProviderRouting,
+} from "./config";
 import { openRouterErrorInfo } from "./errors";
 import { createOpenRouterChatGenerator } from "./generate";
 import { createOpenRouterJsonGenerator } from "./generateJson";
@@ -87,6 +94,16 @@ describe("createOpenRouterChatGenerator", () => {
     });
     expect(chat.mock.calls[0][0].messages.map((message) => message.role)).toEqual(["system", "user", "assistant", "user"]);
   });
+
+  it("only routes to zero-data-retention endpoints unless told otherwise", async () => {
+    const { client, chat } = fakeClient(completion());
+    await createOpenRouterGenerator(client, MODELS)(PROMPT);
+    expect(chat.mock.calls[0][0].provider).toEqual({ data_collection: "deny", zdr: true });
+
+    await asMinutaGenerator(createOpenRouterChatGenerator(client, MODELS, resolveProviderRouting("true")))(PROMPT);
+    expect(chat.mock.calls[1][0].provider).toEqual({ data_collection: "allow", zdr: false });
+    expect(resolveProviderRouting(undefined)).toEqual(PRIVATE_ROUTING);
+  });
 });
 
 describe("createOpenRouterJsonGenerator", () => {
@@ -103,7 +120,7 @@ describe("createOpenRouterJsonGenerator", () => {
       text: '{"tom":"direto"}',
     });
     const [request, options] = chat.mock.calls[0];
-    expect(request.provider).toEqual({ require_parameters: true });
+    expect(request.provider).toEqual({ data_collection: "deny", zdr: true, require_parameters: true });
     expect(request.response_format?.json_schema).toEqual({ name: "perfil", strict: true, schema: { type: "object" } });
     expect(options).toEqual({ signal });
   });
@@ -114,7 +131,7 @@ describe("createOpenRouterClient", () => {
   function fetchReturning(status: number, body: unknown) {
     return vi.fn<typeof fetch>().mockResolvedValue(new Response(JSON.stringify(body), { status }));
   }
-  const REQUEST = { models: MODELS, messages: [], temperature: 0, max_tokens: 10 };
+  const REQUEST = { models: MODELS, messages: [], temperature: 0, max_tokens: 10, provider: PRIVATE_ROUTING };
 
   it("posts to the chat endpoint with the key and parses the completion", async () => {
     const fetchImpl = fetchReturning(200, completion());
@@ -198,6 +215,9 @@ describe("openRouterErrorInfo", () => {
     expect(openRouterErrorInfo(new OpenRouterApiError(402, "Insufficient credits"))).toBe(CONFIGURATION_ERROR);
     expect(openRouterErrorInfo(new OpenRouterApiError(503, "down"))).toBe(SERVICE_UNAVAILABLE);
     expect(openRouterErrorInfo(new OpenRouterApiError(504, "slow"))).toBe(UPSTREAM_TIMEOUT);
+    expect(openRouterErrorInfo(new OpenRouterApiError(404, "No endpoints found matching your data policy"))).toBe(
+      NO_PRIVATE_PROVIDER,
+    );
     expect(openRouterErrorInfo(new Error("other"))).toBeNull();
   });
 });

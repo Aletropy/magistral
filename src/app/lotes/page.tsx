@@ -4,6 +4,7 @@ import { connection } from "next/server";
 import { BatchProgressBar } from "@/components/BatchProgressBar";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { requireUser } from "@/lib/auth/dal";
 import { getBatchRepository } from "@/lib/batch/getBatchRepository";
 import { NEW_BATCH_PATH, batchPath } from "@/lib/batch/paths";
 import { isJobActive } from "@/lib/batch/types";
@@ -13,7 +14,8 @@ export const metadata: Metadata = { title: "Lotes" };
 
 export default async function BatchesPage() {
   await connection();
-  const jobs = getBatchRepository().listJobs();
+  const user = await requireUser();
+  const jobs = getBatchRepository().listJobs(user.id);
 
   return (
     <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 px-4 py-10 sm:px-8">

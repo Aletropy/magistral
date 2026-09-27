@@ -10,11 +10,14 @@ import { getClauseRepository } from "@/lib/clauses/getClauseRepository";
 import { NEW_CLAUSE_PATH, clauseEditPath } from "@/lib/clauses/paths";
 import { DEMO_CLAUSES_ENDPOINT } from "@/lib/http/api";
 import { DOCUMENT_TYPE_LABELS } from "@/lib/minuta/documentTypes";
+import { requireUser } from "@/lib/auth/dal";
+import { isAdmin } from "@/lib/auth/types";
 
 export const metadata: Metadata = { title: "Cláusulas aprovadas" };
 
 export default async function ClausesPage() {
   await connection();
+  const user = await requireUser();
   const clauses = getClauseRepository().list();
 
   return (
@@ -87,7 +90,7 @@ export default async function ClausesPage() {
                       <Button asChild variant="outline" size="sm">
                         <Link href={clauseEditPath(clause.id)}>Editar</Link>
                       </Button>
-                      <DeleteClauseButton id={clause.id} title={clause.title} />
+                      {isAdmin(user) && <DeleteClauseButton id={clause.id} title={clause.title} />}
                     </div>
                   </TableCell>
                 </TableRow>

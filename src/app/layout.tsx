@@ -1,8 +1,12 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import { Geist } from "next/font/google";
 import { ActivityProvider } from "@/components/activity/ActivityProvider";
 import { AppNav } from "@/components/AppNav";
 import { Toaster } from "@/components/ui/sonner";
+import { getCurrentUser } from "@/lib/auth/dal";
+import { toCurrentUser } from "@/lib/auth/types";
+import { NONCE_HEADER } from "@/lib/http/contentSecurityPolicy";
 import { THEME_INIT_SCRIPT } from "@/lib/theme/theme";
 import "./globals.css";
 
@@ -16,19 +20,28 @@ export const metadata: Metadata = {
   description: "Gere minutas de contratos com o tom de voz certo e baixe em Word ou PDF.",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  const [user, requestHeaders] = await Promise.all([getCurrentUser(), headers()]);
+  // The Content-Security-Policy only lets inline scripts with this request's nonce run.
+  const nonce = requestHeaders.get(NONCE_HEADER) ?? undefined;
+
   return (
     // The theme script adds the "dark" class before React hydrates, so the class list may differ.
     <html lang="pt-BR" className={`${geistSans.variable} h-full antialiased`} suppressHydrationWarning>
       <head>
-        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+        <script nonce={nonce} dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>
       <body className="flex min-h-full flex-col">
-        <ActivityProvider>
-          <AppNav />
-          {children}
-          <Toaster position="bottom-right" closeButton />
-        </ActivityProvider>
+        {user ? (
+          <ActivityProvider>
+            <AppNav user={toCurrentUser(user)} />
+            {children}
+          </ActivityProvider>
+        ) : (
+          // The sign-in and setup pages: no navigation, and nothing to poll.
+          children
+        )}
+        <Toaster position="bottom-right" closeButton />
       </body>
     </html>
   );

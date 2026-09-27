@@ -280,7 +280,7 @@ function tableExists(db: DatabaseSync, name: string): boolean {
  * in the chat migration's slot and "assistant" usage rows. Their conversations move to the final tables
  * and the usage is relabelled; on every other database this only confirms the chat tables exist.
  */
-function reconcileLegacyChat(db: DatabaseSync): void {
+export function reconcileLegacyChat(db: DatabaseSync): void {
   createChatTables(db);
   if (tableExists(db, "chat_threads")) {
     db.exec(`
@@ -294,6 +294,49 @@ function reconcileLegacyChat(db: DatabaseSync): void {
     `);
   }
   db.exec("UPDATE llm_calls SET operation = 'chat' WHERE operation = 'assistant'");
+}
+
+function createAuthTables(db: DatabaseSync): void {
+  db.exec(`
+    CREATE TABLE users (
+      id TEXT PRIMARY KEY,
+      username TEXT NOT NULL UNIQUE COLLATE NOCASE,
+      display_name TEXT NOT NULL,
+      password_hash TEXT NOT NULL,
+      role TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+      disabled_at TEXT
+    );
+    CREATE TABLE sessions (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+      expires_at TEXT NOT NULL,
+      last_seen_at TEXT NOT NULL,
+      user_agent TEXT
+    );
+    CREATE INDEX sessions_user ON sessions (user_id);
+  `);
+}
+
+/**
+ * Private records belong to the user who created them. Rows written before accounts existed keep a NULL
+ * owner until the first admin claims them at setup.
+ */
+function addRecordOwners(db: DatabaseSync): void {
+  db.exec(`
+    ALTER TABLE minutas ADD COLUMN owner_id TEXT REFERENCES users(id);
+    ALTER TABLE chat_conversations ADD COLUMN owner_id TEXT REFERENCES users(id);
+    ALTER TABLE batch_jobs ADD COLUMN owner_id TEXT REFERENCES users(id);
+    ALTER TABLE tasks ADD COLUMN owner_id TEXT REFERENCES users(id);
+    ALTER TABLE notifications ADD COLUMN owner_id TEXT REFERENCES users(id);
+    ALTER TABLE llm_calls ADD COLUMN user_id TEXT REFERENCES users(id);
+    CREATE INDEX minutas_owner ON minutas (owner_id, created_at);
+    CREATE INDEX chat_conversations_owner ON chat_conversations (owner_id, updated_at);
+    CREATE INDEX batch_jobs_owner ON batch_jobs (owner_id, created_at);
+    CREATE INDEX tasks_owner ON tasks (owner_id, created_at);
+    CREATE INDEX notifications_owner ON notifications (owner_id, id);
+  `);
 }
 
 /** Ordered schema changes. Append new migrations; never edit or reorder existing ones. */
@@ -310,6 +353,8 @@ export const MIGRATIONS: readonly Migration[] = [
   createTaskTables,
   createChatTables,
   reconcileLegacyChat,
+  createAuthTables,
+  addRecordOwners,
 ];
 
 function readSchemaVersion(db: DatabaseSync): number {

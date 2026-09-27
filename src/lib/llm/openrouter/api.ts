@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { ProviderRouting } from "./config";
 
 /** A non-OK answer from OpenRouter (or a network failure, reported as 503). */
 export class OpenRouterApiError extends Error {
@@ -61,8 +62,8 @@ export interface ChatRequest {
     type: "json_schema";
     json_schema: { name: string; strict: boolean; schema: unknown };
   };
-  /** Routes only to providers that honour every parameter sent (needed for structured outputs). */
-  provider?: { require_parameters: boolean };
+  /** Which endpoints may serve the request: data policy, and (for structured outputs) parameter support. */
+  provider: ProviderRouting & { require_parameters?: boolean };
 }
 
 export interface ChatCallOptions {

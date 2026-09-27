@@ -1,41 +1,33 @@
-import {
-  HTTP_NOT_FOUND,
-  HTTP_NO_CONTENT,
-  errorResponse,
-  parseJsonBody,
-  type MinutaResponseBody,
-} from "@/lib/http/api";
-import { UNEXPECTED_ERROR } from "@/lib/llm/errors";
+import { MAX_MARKDOWN_BODY_BYTES } from "@/lib/export/schema";
+import { HTTP_NOT_FOUND, HTTP_NO_CONTENT, errorResponse, type MinutaResponseBody } from "@/lib/http/api";
+import { defineRoute } from "@/lib/http/route";
 import { getMinutaRepository } from "@/lib/minutas/getMinutaRepository";
 import { MINUTA_NOT_FOUND_MESSAGE } from "@/lib/minutas/messages";
 import { minutaUpdateSchema } from "@/lib/minutas/schema";
 
+type Context = RouteContext<"/api/minutas/[id]">;
+
 /** A saved minuta with its drafting report, as the result panel shows it. */
-export async function GET(_request: Request, ctx: RouteContext<"/api/minutas/[id]">): Promise<Response> {
-  const minuta = getMinutaRepository().get((await ctx.params).id);
+export const GET = defineRoute({}, async ({ user }, ctx: Context) => {
+  const minuta = getMinutaRepository().get((await ctx.params).id, user.id);
   if (!minuta) return errorResponse(HTTP_NOT_FOUND, MINUTA_NOT_FOUND_MESSAGE);
   return Response.json({ ...minuta.result, id: minuta.id } satisfies MinutaResponseBody);
-}
+});
 
 /** Saves a reviewed version of the minuta's text. */
-export async function PUT(request: Request, ctx: RouteContext<"/api/minutas/[id]">): Promise<Response> {
-  const parsed = await parseJsonBody(request, minutaUpdateSchema);
-  if ("response" in parsed) return parsed.response;
-  const { id } = await ctx.params;
-
-  try {
-    if (!getMinutaRepository().updateMarkdown(id, parsed.data.markdown)) {
+export const PUT = defineRoute(
+  { body: minutaUpdateSchema, maxBodyBytes: MAX_MARKDOWN_BODY_BYTES },
+  async ({ user, body }, ctx: Context) => {
+    if (!getMinutaRepository().updateMarkdown((await ctx.params).id, user.id, body.markdown)) {
       return errorResponse(HTTP_NOT_FOUND, MINUTA_NOT_FOUND_MESSAGE);
     }
     return new Response(null, { status: HTTP_NO_CONTENT });
-  } catch (error) {
-    console.error("[api/minutas] update failed", error);
-    return errorResponse(UNEXPECTED_ERROR.status, UNEXPECTED_ERROR.message);
-  }
-}
+  },
+);
 
-export async function DELETE(_request: Request, ctx: RouteContext<"/api/minutas/[id]">): Promise<Response> {
-  const { id } = await ctx.params;
-  if (!getMinutaRepository().delete(id)) return errorResponse(HTTP_NOT_FOUND, MINUTA_NOT_FOUND_MESSAGE);
+export const DELETE = defineRoute({}, async ({ user }, ctx: Context) => {
+  if (!getMinutaRepository().delete((await ctx.params).id, user.id)) {
+    return errorResponse(HTTP_NOT_FOUND, MINUTA_NOT_FOUND_MESSAGE);
+  }
   return new Response(null, { status: HTTP_NO_CONTENT });
-}
+});

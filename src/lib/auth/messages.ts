@@ -1,0 +1,11 @@
+export const NOT_SIGNED_IN_MESSAGE = "Sua sessão expirou. Entre novamente para continuar.";
+export const FORBIDDEN_MESSAGE = "Você não tem permissão para esta ação. Fale com o administrador.";
+export const INVALID_CREDENTIALS_MESSAGE = "Usuário ou senha incorretos.";
+export const TOO_MANY_ATTEMPTS_MESSAGE = "Muitas tentativas de acesso. Aguarde alguns minutos e tente de novo.";
+export const SETUP_DONE_MESSAGE = "O Magistral já foi configurado. Entre com sua conta.";
+export const INVALID_SETUP_TOKEN_MESSAGE = "Código de configuração incorreto. Confira o código no terminal do servidor.";
+export const USERNAME_TAKEN_MESSAGE = "Já existe um usuário com este nome de acesso.";
+export const USER_NOT_FOUND_MESSAGE = "Usuário não encontrado.";
+export const LAST_ADMIN_MESSAGE = "O escritório precisa de ao menos um administrador ativo.";
+export const SELF_DISABLE_MESSAGE = "Você não pode desativar a própria conta.";
+export const WRONG_CURRENT_PASSWORD_MESSAGE = "A senha atual está incorreta.";

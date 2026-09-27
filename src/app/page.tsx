@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { connection } from "next/server";
 import { MinutaStudio } from "@/components/MinutaStudio";
+import { requireUser } from "@/lib/auth/dal";
 import { ASSISTANT_PATH } from "@/lib/chat/paths";
 import { loadGenerationState } from "@/lib/minuta/loadGenerationState";
 import { loadMinutaFormOptions } from "@/lib/minuta/loadMinutaFormOptions";
@@ -10,11 +11,12 @@ import { readTaskParam } from "@/lib/tasks/readTaskParam";
 
 export default async function Home({ searchParams }: PageProps<"/">) {
   await connection();
+  const user = await requireUser();
   const params = await searchParams;
   const options = loadMinutaFormOptions();
-  const initialGeneration = loadGenerationState(readTaskParam(params));
+  const initialGeneration = loadGenerationState(readTaskParam(params), user.id);
   const suggestionId = readTaskParam(params, DRAFT_SUGGESTION_QUERY_PARAM);
-  const suggestion = suggestionId ? getTaskRepository().get(suggestionId) : null;
+  const suggestion = suggestionId ? getTaskRepository().get(suggestionId, user.id) : null;
 
   return (
     <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-8 px-4 py-10 sm:px-8">
@@ -33,6 +35,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
         </p>
       </header>
       <MinutaStudio
+        userId={user.id}
         {...options}
         initialGeneration={initialGeneration}
         initialSuggestion={suggestion?.kind === "minuta.extract" ? suggestion : null}

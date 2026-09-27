@@ -1,7 +1,7 @@
 import { DatabaseSync } from "node:sqlite";
 import { describe, expect, it, vi } from "vitest";
 import { BUILTIN_PERSONAS } from "@/lib/personas/seeds";
-import { MIGRATIONS, runMigrations } from "./migrations";
+import { MIGRATIONS, reconcileLegacyChat, runMigrations } from "./migrations";
 import { IN_MEMORY_DATABASE, openDatabase } from "./openDatabase";
 
 function schemaVersion(db: DatabaseSync): number {
@@ -43,7 +43,6 @@ describe("runMigrations", () => {
 describe("legacy chat reconciliation", () => {
   it("moves a prototype's conversations into the chat tables and relabels its usage", () => {
     const db = openDatabase(IN_MEMORY_DATABASE);
-    const reconcile = MIGRATIONS.at(-1)!;
     db.exec(`
       DROP TABLE chat_conversation_messages;
       DROP TABLE chat_conversations;
@@ -58,7 +57,7 @@ describe("legacy chat reconciliation", () => {
         VALUES ('assistant', 'openrouter', 'm', 1, 1, 0, 1, 'ok');
     `);
 
-    reconcile(db);
+    reconcileLegacyChat(db);
 
     expect(db.prepare("SELECT id, title FROM chat_conversations").all()).toEqual([{ id: "t1", title: "Como crio uma minuta?" }]);
     const messages = db.prepare("SELECT role, status FROM chat_conversation_messages ORDER BY id").all();

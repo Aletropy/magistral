@@ -23,6 +23,7 @@ const rowJson = jsonOf(z.record(z.string(), z.string()));
 
 const jobRowSchema = z.object({
   id: z.string(),
+  owner_id: z.string().nullable(),
   name: z.string(),
   created_at: z.string(),
   request_template: z.string(),
@@ -57,13 +58,14 @@ export interface NewBatchRow {
   row: Record<string, string>;
 }
 
+/** Jobs are private to their owner: reads and deletes take the owner, and another user's id reads as missing. */
 export interface BatchRepository {
-  createJob(name: string, template: MinutaRequest, rows: NewBatchRow[]): string;
-  listJobs(): BatchJobSummary[];
-  /** How many jobs still have pending or running items. */
-  countActiveJobs(): number;
-  getJob(id: string): BatchJobDetail | null;
-  deleteJob(id: string): boolean;
+  createJob(ownerId: string, name: string, template: MinutaRequest, rows: NewBatchRow[]): string;
+  listJobs(ownerId: string): BatchJobSummary[];
+  /** How many of the owner's jobs still have pending or running items. */
+  countActiveJobs(ownerId: string): number;
+  getJob(id: string, ownerId: string): BatchJobDetail | null;
+  deleteJob(id: string, ownerId: string): boolean;
   /** Atomically marks up to `limit` due pending items as running and returns them, oldest job first. */
   claimItems(limit: number, now: Date): ClaimedBatchItem[];
   completeItem(id: number, markdown: string): void;
@@ -83,7 +85,7 @@ export interface BatchRepository {
 }
 
 const JOB_COLUMNS = `
-  j.id, j.name, j.created_at, j.request_template,
+  j.id, j.owner_id, j.name, j.created_at, j.request_template,
   COUNT(i.id) AS total,
   COALESCE(SUM(i.status = 'pending'), 0) AS pending,
   COALESCE(SUM(i.status = 'running'), 0) AS running,
@@ -100,6 +102,7 @@ function toSummary(row: unknown): BatchJobSummary {
   };
   return {
     id: parsed.id,
+    ownerId: parsed.owner_id,
     name: parsed.name,
     createdAt: parsed.created_at,
     total: parsed.total,
@@ -112,19 +115,23 @@ function templateOf(row: unknown): MinutaRequest {
 }
 
 export function createBatchRepository(db: DatabaseSync): BatchRepository {
-  const insertJob = db.prepare("INSERT INTO batch_jobs (id, name, request_template) VALUES (?, ?, ?)");
+  const insertJob = db.prepare("INSERT INTO batch_jobs (id, owner_id, name, request_template) VALUES (?, ?, ?, ?)");
   const insertItem = db.prepare("INSERT INTO batch_items (job_id, position, label, row_data) VALUES (?, ?, ?, ?)");
   const selectJobs = db.prepare(
     `SELECT ${JOB_COLUMNS} FROM batch_jobs j LEFT JOIN batch_items i ON i.job_id = j.id
-     GROUP BY j.id ORDER BY j.created_at DESC`,
+     WHERE j.owner_id = ? GROUP BY j.id ORDER BY j.created_at DESC`,
   );
   const selectJob = db.prepare(
     `SELECT ${JOB_COLUMNS} FROM batch_jobs j LEFT JOIN batch_items i ON i.job_id = j.id WHERE j.id = ? GROUP BY j.id`,
   );
+  const selectOwnedJob = db.prepare(
+    `SELECT ${JOB_COLUMNS} FROM batch_jobs j LEFT JOIN batch_items i ON i.job_id = j.id
+     WHERE j.id = ? AND j.owner_id = ? GROUP BY j.id`,
+  );
   const selectItems = db.prepare(
     "SELECT id, position, label, status, error, attempts FROM batch_items WHERE job_id = ? ORDER BY position",
   );
-  const deleteJobById = db.prepare("DELETE FROM batch_jobs WHERE id = ?");
+  const deleteJobById = db.prepare("DELETE FROM batch_jobs WHERE id = ? AND owner_id = ?");
   const claim = db.prepare(
     `UPDATE batch_items SET status = 'running', attempts = attempts + 1
      WHERE id IN (
@@ -135,9 +142,10 @@ export function createBatchRepository(db: DatabaseSync): BatchRepository {
      RETURNING id, job_id, position, row_data, attempts`,
   );
   const countActive = db.prepare(
-    "SELECT COUNT(DISTINCT job_id) AS count FROM batch_items WHERE status IN ('pending', 'running')",
+    `SELECT COUNT(DISTINCT i.job_id) AS count FROM batch_items i JOIN batch_jobs j ON j.id = i.job_id
+     WHERE j.owner_id = ? AND i.status IN ('pending', 'running')`,
   );
-  const selectTemplate = db.prepare("SELECT request_template FROM batch_jobs WHERE id = ?");
+  const selectTemplate = db.prepare("SELECT owner_id, request_template FROM batch_jobs WHERE id = ?");
   const complete = db.prepare(
     "UPDATE batch_items SET status = 'done', markdown = ?, error = NULL WHERE id = ? AND status = 'running'",
   );
@@ -162,20 +170,20 @@ export function createBatchRepository(db: DatabaseSync): BatchRepository {
   );
 
   return {
-    createJob(name, template, rows) {
+    createJob(ownerId, name, template, rows) {
       const id = randomUUID();
       withTransaction(db, () => {
-        insertJob.run(id, name, JSON.stringify(template));
+        insertJob.run(id, ownerId, name, JSON.stringify(template));
         rows.forEach(({ label, row }, index) => insertItem.run(id, index + 1, label, JSON.stringify(row)));
       });
       return id;
     },
 
-    listJobs: () => selectJobs.all().map(toSummary),
-    countActiveJobs: () => z.object({ count: z.number() }).parse(countActive.get()).count,
+    listJobs: (ownerId) => selectJobs.all(ownerId).map(toSummary),
+    countActiveJobs: (ownerId) => z.object({ count: z.number() }).parse(countActive.get(ownerId)).count,
 
-    getJob(id) {
-      const row = selectJob.get(id);
+    getJob(id, ownerId) {
+      const row = selectOwnedJob.get(id, ownerId);
       if (!row) return null;
       return {
         ...toSummary(row),
@@ -184,18 +192,21 @@ export function createBatchRepository(db: DatabaseSync): BatchRepository {
       };
     },
 
-    deleteJob: (id) => deleteJobById.run(id).changes > 0,
+    deleteJob: (id, ownerId) => deleteJobById.run(id, ownerId).changes > 0,
 
     claimItems(limit, now) {
       return withTransaction(db, () =>
         claim.all(now.toISOString(), limit).map((row) => {
           const parsed = claimedRowSchema.parse(row);
-          const { request_template } = z.object({ request_template: z.string() }).parse(selectTemplate.get(parsed.job_id));
+          const job = z
+            .object({ owner_id: z.string().nullable(), request_template: z.string() })
+            .parse(selectTemplate.get(parsed.job_id));
           return {
             id: parsed.id,
             jobId: parsed.job_id,
+            ownerId: job.owner_id,
             position: parsed.position,
-            template: templateJson.parse(request_template),
+            template: templateJson.parse(job.request_template),
             row: parsed.row_data,
             attempts: parsed.attempts,
           };

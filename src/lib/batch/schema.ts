@@ -3,6 +3,8 @@ import { minutaRequestSchema } from "@/lib/minuta/schema";
 import { MAX_BATCH_COLUMNS, MAX_BATCH_ROWS, MAX_CELL_CHARS } from "./spreadsheet";
 
 export const MAX_BATCH_NAME_CHARS = 120;
+/** A full spreadsheet (rows × columns × cell size) plus the template, as JSON. */
+export const MAX_BATCH_BODY_BYTES = 20 * 1024 * 1024;
 
 const rowSchema = z
   .record(z.string().max(MAX_CELL_CHARS), z.string().max(MAX_CELL_CHARS))

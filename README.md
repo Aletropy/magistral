@@ -11,7 +11,8 @@ Gera minutas jurídicas (contratos, NDAs, notificações, pareceres) no tom de v
 - **Cláusulas aprovadas**: textos pré-aprovados que você escolhe e ordena (arrastando) para montar a minuta; a IA só ajusta o tom.
 - **Revisar alterações**: veja palavra por palavra o que a IA mudou em cada cláusula aprovada (ou em relação a um texto original) e aceite ou rejeite cada mudança.
 - **Lotes**: uma minuta por linha de uma planilha CSV/XLSX (ex.: notificações de débito), geradas em segundo plano e baixadas num ZIP.
-- **Uso**: cada chamada à IA com tokens, tempo e custo estimado.
+- **Uso** (administradores): cada chamada à IA com tokens, tempo, custo estimado e quem a fez.
+- **Equipe** (administradores): quem pode entrar. Minutas, conversas, lotes e tarefas são de cada pessoa; personas, cláusulas e a biblioteca são do escritório.
 
 ## Requisitos
 
@@ -36,14 +37,22 @@ O pnpm avisa que o script de instalação do `onnxruntime-node` foi ignorado: é
 | `LLM_PROVIDER` | `openrouter` (padrão), `gemini` ou `anthropic`. |
 | `GEMINI_API_KEY` / `ANTHROPIC_API_KEY` | Só se escolher esses provedores. |
 | `EMBEDDING_PROVIDER` | Busca da biblioteca: `local` (padrão, roda na CPU, sem chave) ou `gemini`. |
+| `OPENROUTER_ALLOW_DATA_COLLECTION` | Opcional. `true` libera provedores que podem guardar os textos (veja Privacidade). |
 | `MAGISTRAL_DATA_DIR` | Pasta dos dados (padrão `./data`). |
+| `MAGISTRAL_ALLOWED_HOSTS` | Nomes pelos quais o escritório acessa o servidor, além de `localhost` e endereços IP (ex.: `magistral.escritorio`). |
+| `MAGISTRAL_DEV_ORIGINS` | Só em `pnpm dev`: endereços usados por outros aparelhos (ex.: `192.168.1.6`). |
+| `MAGISTRAL_SETUP_TOKEN` | Opcional. Fixa o código de configuração do primeiro acesso (senão ele é sorteado e impresso no terminal). |
 
-**Limites e privacidade dos modelos gratuitos do OpenRouter**
+**Privacidade**
 
-- São **50 pedidos por dia** (1.000 depois de comprar US$ 10 em créditos) e 20 por minuto. Quando a cota acaba, o app avisa que a cota diária gratuita terminou.
+- Por padrão, o app só envia textos ao OpenRouter para provedores **sem retenção de dados** (ZDR): nada é guardado nem usado para treinar modelos. Todo modelo em `OPENROUTER_MODELS` precisa ter um endpoint ZDR (lista em [openrouter.ai/api/v1/endpoints/zdr](https://openrouter.ai/api/v1/endpoints/zdr)); os demais são ignorados, e se nenhum servir o app avisa. Hoje o único gratuito é `qwen/qwen3.8-27b:free`, o padrão.
+- `OPENROUTER_ALLOW_DATA_COLLECTION=true` libera os outros provedores gratuitos, que **podem guardar e usar os textos enviados** (inclusive CPFs e nomes). A página **Uso** mostra qual política está valendo.
+- Com `LLM_PROVIDER=gemini` e uma chave do plano gratuito, o Google pode usar os textos; use uma chave com faturamento ativo.
+
+**Limites dos modelos gratuitos do OpenRouter**
+
+- São **50 pedidos por dia** (1.000 depois de comprar US$ 10 em créditos) e 20 por minuto. Quando a cota acaba, o app avisa que a cota diária gratuita terminou. Cada pessoa pode ter até 5 tarefas de IA na fila ao mesmo tempo.
 - Respondem em dezenas de segundos até alguns minutos. Se um modelo falha, o próximo da lista é tentado automaticamente.
-- Nas configurações de privacidade do OpenRouter, permita os provedores gratuitos, ou os pedidos serão recusados.
-- **Provedores gratuitos podem guardar e usar os textos enviados.** Em demonstrações, use dados fictícios; não envie CPFs, endereços ou nomes reais.
 
 ## Rodando
 
@@ -51,6 +60,14 @@ O pnpm avisa que o script de instalação do `onnxruntime-node` foi ignorado: é
 pnpm dev          # desenvolvimento em http://localhost:3000
 pnpm build && pnpm start   # produção local
 ```
+
+### Primeiro acesso e equipe
+
+1. Ao iniciar sem nenhum usuário, o servidor imprime no terminal um **código de configuração**.
+2. Abra o app: ele leva a **/configurar**, onde você cria a conta de administrador com esse código. Minutas e conversas criadas antes disso passam a ser dela.
+3. Em **Equipe**, o administrador cadastra as outras pessoas e informa a senha inicial; cada uma pode trocá-la em **Minha conta**.
+
+Para acessar de outros computadores do escritório, rode `pnpm build && pnpm start` e use o endereço IP da máquina (ex.: `http://192.168.1.6:3000`) ou um nome listado em `MAGISTRAL_ALLOWED_HOSTS`. A sessão dura 12 horas sem uso; cinco senhas erradas seguidas bloqueiam a conta por 15 minutos.
 
 Na primeira indexação da biblioteca, o modelo de busca (EmbeddingGemma, cerca de 190 MB) é baixado para `data/models`. Depois disso, a busca funciona sem internet.
 
@@ -69,8 +86,8 @@ Outros comandos: `pnpm test` (testes), `pnpm lint`, `pnpm typecheck`.
 
 ## Onde ficam os dados
 
-Tudo em `data/`, que não vai para o git:
-- `data/magistral.db`: personas, cláusulas, histórico, lotes, biblioteca e uso;
+Tudo em `data/` (só a conta que roda o servidor consegue ler o banco), que não vai para o git:
+- `data/magistral.db`: contas, personas, cláusulas, histórico, lotes, biblioteca e uso;
 - `data/biblioteca/`: a pasta que "Sincronizar pasta" espelha;
 - `data/models/`: o modelo de busca baixado.
 

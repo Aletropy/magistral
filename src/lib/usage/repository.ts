@@ -36,16 +36,20 @@ const TOTALS_COLUMNS = `
 
 const SINCE_FILTER = "created_at >= strftime('%Y-%m-%dT%H:%M:%fZ', 'now', ?)";
 
-export type UsageGrouping = "day" | "operation" | "model";
+export type UsageGrouping = "day" | "operation" | "model" | "user";
+/** The key of calls made outside any user's request (none are expected, but old rows may lack a user). */
+export const NO_USER_KEY = "";
 
 const GROUP_EXPRESSIONS: Record<UsageGrouping, string> = {
   day: "date(created_at, 'localtime')",
   operation: "operation",
   model: "model",
+  user: `COALESCE((SELECT display_name FROM users WHERE users.id = llm_calls.user_id), '${NO_USER_KEY}')`,
 };
 
 export interface UsageRepository {
-  record(call: NewLlmCall): void;
+  /** `userId` is who the call was made for; null outside a request or task. */
+  record(call: NewLlmCall, userId: string | null): void;
   totals(sinceDays: number): UsageTotals;
   /** Days sort newest first; operations and models sort by cost. */
   groupedTotals(grouping: UsageGrouping, sinceDays: number): UsageGroup[];
@@ -71,14 +75,14 @@ function toTotals(row: unknown): UsageTotals {
 export function createUsageRepository(db: DatabaseSync): UsageRepository {
   const insert = db.prepare(
     `INSERT INTO llm_calls (operation, provider, model, input_tokens, output_tokens, thinking_tokens,
-                            latency_ms, estimated_cost_usd, status)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                            latency_ms, estimated_cost_usd, status, user_id)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
   );
   const selectTotals = db.prepare(`SELECT ${TOTALS_COLUMNS} FROM llm_calls WHERE ${SINCE_FILTER}`);
   const selectRecent = db.prepare("SELECT * FROM llm_calls ORDER BY id DESC LIMIT ?");
 
   return {
-    record(call) {
+    record(call, userId) {
       insert.run(
         call.operation,
         call.provider,
@@ -89,6 +93,7 @@ export function createUsageRepository(db: DatabaseSync): UsageRepository {
         call.latencyMs,
         call.estimatedCostUsd,
         call.status,
+        userId,
       );
     },
 
