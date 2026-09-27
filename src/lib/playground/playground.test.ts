@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { MinutaGenerationError } from "@/lib/llm/errors";
+import { LlmOutputError } from "@/lib/llm/errors";
 import { NO_USAGE, type MinutaGenerator } from "@/lib/llm/types";
 import { DEFAULT_STYLE_SLIDERS } from "@/lib/personas/styleSliders";
 import type { PersonaStyle } from "@/lib/personas/types";
@@ -36,7 +36,7 @@ describe("rewriteSample", () => {
     generate.mockResolvedValueOnce({ text: " ", model: "m", usage: NO_USAGE });
 
     await expect(rewriteSample(generate, STYLE, 0.3, "x")).resolves.toBe("## Encerramento\n\nTexto.");
-    await expect(rewriteSample(generate, STYLE, 0.3, "x")).rejects.toEqual(new MinutaGenerationError("empty"));
+    await expect(rewriteSample(generate, STYLE, 0.3, "x")).rejects.toEqual(new LlmOutputError("empty"));
   });
 });
 

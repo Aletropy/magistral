@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { NETWORK_ERROR_MESSAGE, readErrorMessage } from "@/lib/http/api";
+import { NETWORK_ERROR_MESSAGE, readErrorMessage } from "@/lib/http/client";
 
 const LOAD_FAILED = "Não foi possível carregar os exemplos. Tente novamente.";
 

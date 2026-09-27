@@ -1,14 +1,10 @@
 import { getChatRepository } from "@/lib/chat/getChatRepository";
 import { newConversationSchema, titleFromMessage } from "@/lib/chat/schema";
 import { startReply } from "@/lib/chat/startReply";
-import {
-  HTTP_CREATED,
-  HTTP_NOT_FOUND,
-  errorResponse,
-  type ConversationCreatedResponseBody,
-  type ConversationsResponseBody,
-} from "@/lib/http/api";
+import type { ConversationCreatedResponseBody, ConversationsResponseBody } from "@/lib/http/contracts";
+import { errorResponse } from "@/lib/http/responses";
 import { defineRoute } from "@/lib/http/route";
+import { HTTP_CREATED, HTTP_NOT_FOUND } from "@/lib/http/status";
 import { getMinutaRepository } from "@/lib/minutas/getMinutaRepository";
 import { MINUTA_NOT_FOUND_MESSAGE } from "@/lib/minutas/messages";
 

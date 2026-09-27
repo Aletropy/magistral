@@ -1,17 +1,17 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { Button } from "@/components/ui/button";
-import { FormField } from "@/components/ui/FormField";
-import { FileInput } from "@/components/ui/FileInput";
-import { NATIVE_SELECT_CLASS } from "@/components/ui/nativeSelect";
 import { FollowedTaskStatus } from "@/components/tasks/FollowedTaskStatus";
+import { Button } from "@/components/ui/button";
+import { FileInput } from "@/components/ui/FileInput";
+import { FormField } from "@/components/ui/FormField";
+import { NATIVE_SELECT_CLASS } from "@/components/ui/nativeSelect";
 import { useBackgroundTask } from "@/hooks/useBackgroundTask";
 import { DOCUMENT_ACCEPT, MAX_FILES_PER_UPLOAD, MAX_UPLOAD_MEBIBYTES } from "@/lib/documents/formats";
-import { LIBRARY_SOURCES_ENDPOINT, UPLOAD_FILE_FIELD, UPLOAD_KIND_FIELD } from "@/lib/http/api";
+import { LIBRARY_SOURCES_ENDPOINT, UPLOAD_FILE_FIELD, UPLOAD_KIND_FIELD } from "@/lib/http/endpoints";
 import { libraryUploadResultSchema, type LibraryUploadOutcome } from "@/lib/rag/taskResults";
-import type { TaskDetail } from "@/lib/tasks/types";
 import { LIBRARY_SOURCE_KINDS, LIBRARY_SOURCE_KIND_LABELS, type LibrarySourceKind } from "@/lib/rag/types";
+import type { TaskDetail } from "@/lib/tasks/types";
 
 const OUTCOME_LABELS: Record<LibraryUploadOutcome["status"], string> = {
   added: "✓ Adicionado",

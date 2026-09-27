@@ -1,14 +1,10 @@
 import { getChatRepository } from "@/lib/chat/getChatRepository";
 import { CONVERSATION_NOT_FOUND_MESSAGE, REPLY_NOT_RETRYABLE_MESSAGE } from "@/lib/chat/messages";
 import { startReply } from "@/lib/chat/startReply";
-import {
-  HTTP_ACCEPTED,
-  HTTP_CONFLICT,
-  HTTP_NOT_FOUND,
-  errorResponse,
-  type TaskCreatedResponseBody,
-} from "@/lib/http/api";
+import type { TaskCreatedResponseBody } from "@/lib/http/contracts";
+import { errorResponse } from "@/lib/http/responses";
 import { defineRoute } from "@/lib/http/route";
+import { HTTP_ACCEPTED, HTTP_CONFLICT, HTTP_NOT_FOUND } from "@/lib/http/status";
 
 type Context = RouteContext<"/api/chat/conversations/[id]/messages/[messageId]/retry">;
 

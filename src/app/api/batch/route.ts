@@ -1,9 +1,11 @@
-import { ensureBatchWorkerStarted } from "@/lib/batch/getBatchWorker";
 import { getBatchRepository } from "@/lib/batch/getBatchRepository";
+import { ensureBatchWorkerStarted } from "@/lib/batch/getBatchWorker";
 import { MAX_BATCH_BODY_BYTES, batchRequestSchema } from "@/lib/batch/schema";
 import { fillRequestTemplate, rowLabel } from "@/lib/batch/template";
-import { HTTP_CREATED, type BatchCreatedResponseBody } from "@/lib/http/api";
+import { publishActivity } from "@/lib/events/activityEvents";
+import type { BatchCreatedResponseBody } from "@/lib/http/contracts";
 import { defineRoute } from "@/lib/http/route";
+import { HTTP_CREATED } from "@/lib/http/status";
 
 const MAX_LABEL_CHARS = 120;
 
@@ -20,6 +22,7 @@ export const POST = defineRoute(
       })),
     );
     ensureBatchWorkerStarted().wake();
+    publishActivity(user.id);
     return Response.json({ id } satisfies BatchCreatedResponseBody, { status: HTTP_CREATED });
   },
 );

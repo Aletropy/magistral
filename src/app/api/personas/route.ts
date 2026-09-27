@@ -1,5 +1,6 @@
-import { HTTP_CREATED, type PersonaResponseBody } from "@/lib/http/api";
+import type { PersonaResponseBody } from "@/lib/http/contracts";
 import { defineRoute } from "@/lib/http/route";
+import { HTTP_CREATED } from "@/lib/http/status";
 import { getPersonaRepository } from "@/lib/personas/getPersonaRepository";
 import { personaInputSchema } from "@/lib/personas/schema";
 

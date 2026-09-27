@@ -6,13 +6,9 @@ import { useState } from "react";
 import { useActivity } from "@/components/activity/ActivityProvider";
 import { conversationPath } from "@/lib/chat/paths";
 import type { NewConversationInput } from "@/lib/chat/schema";
-import {
-  CONVERSATIONS_ENDPOINT,
-  NETWORK_ERROR_MESSAGE,
-  postJson,
-  readErrorMessage,
-  type ConversationCreatedResponseBody,
-} from "@/lib/http/api";
+import { NETWORK_ERROR_MESSAGE, postJson, readErrorMessage } from "@/lib/http/client";
+import type { ConversationCreatedResponseBody } from "@/lib/http/contracts";
+import { CONVERSATIONS_ENDPOINT } from "@/lib/http/endpoints";
 import { ChatComposer } from "./ChatComposer";
 
 const START_FAILED = "Não foi possível iniciar a conversa. Tente novamente.";

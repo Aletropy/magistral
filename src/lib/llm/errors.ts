@@ -10,14 +10,15 @@ export class LlmConfigurationError extends Error {
 
 export type GenerationFailureReason = "refusal" | "truncated" | "empty" | "invalid_output";
 
-export class MinutaGenerationError extends Error {
+/** A provider answered, but the answer can't be used (refused, cut off, empty or malformed). */
+export class LlmOutputError extends Error {
   readonly reason: GenerationFailureReason;
   /** Tokens the provider billed before the failure, when it answered at all. */
   readonly usage?: TokenUsage;
 
   constructor(reason: GenerationFailureReason, usage?: TokenUsage) {
-    super(`Minuta generation failed: ${reason}`);
-    this.name = "MinutaGenerationError";
+    super(`The LLM output was rejected: ${reason}`);
+    this.name = "LlmOutputError";
     this.reason = reason;
     this.usage = usage;
   }

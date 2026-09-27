@@ -1,7 +1,9 @@
 import { runAsUser } from "@/lib/auth/actor";
+import { AppError } from "@/lib/errors/AppError";
 import type { NewNotification, NotificationDraft } from "@/lib/notifications/types";
 import { retryDelayMs } from "@/lib/queue/retryPolicy";
-import { TaskCanceledError, TaskInputError } from "./errors";
+import type { SlotPool } from "@/lib/queue/slotPool";
+import { TaskCanceledError } from "./errors";
 import type { AnyTaskHandler, TaskContext } from "./handler";
 import { INVALID_TASK_PAYLOAD_MESSAGE, UNKNOWN_TASK_KIND_MESSAGE } from "./messages";
 import type { TaskRepository } from "./repository";
@@ -21,6 +23,10 @@ export interface TaskWorkerOptions {
   describeError: (error: unknown) => string;
   notify: (notification: NewNotification) => void;
   laneCapacity?: Record<TaskLane, number>;
+  /** Called when a user's task starts, reports progress or ends, so their open pages can refresh. */
+  onActivity?: (ownerId: string | null) => void;
+  /** Limits shared with other workers per lane (e.g. LLM calls, shared with the batch worker). */
+  sharedSlots?: Partial<Record<TaskLane, SlotPool>>;
   maxAttempts?: number;
   pollIntervalMs?: number;
   now?: () => Date;
@@ -55,6 +61,8 @@ export function createTaskWorker(options: TaskWorkerOptions): TaskWorker {
     describeError,
     notify,
     laneCapacity = DEFAULT_LANE_CAPACITY,
+    sharedSlots = {},
+    onActivity = () => {},
     maxAttempts = TASK_MAX_ATTEMPTS,
     pollIntervalMs = TASK_POLL_INTERVAL_MS,
     now = () => new Date(),
@@ -124,7 +132,10 @@ export function createTaskWorker(options: TaskWorkerOptions): TaskWorker {
       signal,
       files: () => tasks.files(task.id),
       setFileOutcome: (position, outcome) => tasks.setFileOutcome(task.id, position, outcome),
-      reportProgress: (current, total, label) => tasks.reportProgress(task.id, current, total, label),
+      reportProgress(current, total, label) {
+        tasks.reportProgress(task.id, current, total, label);
+        onActivity(task.ownerId);
+      },
       commit(write) {
         const result = tasks.complete(task.id, now(), write);
         committed = true;
@@ -143,12 +154,14 @@ export function createTaskWorker(options: TaskWorkerOptions): TaskWorker {
         if (cancellation) safely(() => cancellation(payload));
         return;
       }
-      const message = error instanceof TaskInputError ? error.message : describeError(error);
-      if (!(error instanceof TaskInputError) && isRetryable(error) && task.attempts < maxAttempts) {
+      // An AppError is an expected failure with its own message (bad input, a busy conversation): no retry.
+      const expected = error instanceof AppError;
+      const message = expected ? error.message : describeError(error);
+      if (!expected && isRetryable(error) && task.attempts < maxAttempts) {
         tasks.retry(task.id, message, new Date(now().getTime() + retryDelayMs(task.attempts)));
         return;
       }
-      if (!(error instanceof TaskInputError)) console.error(`[tasks] ${task.kind} failed`, error);
+      if (!expected) console.error(`[tasks] ${task.kind} failed`, error);
       failPermanently(task, message, handler, payload);
     }
   }
@@ -157,13 +170,17 @@ export function createTaskWorker(options: TaskWorkerOptions): TaskWorker {
     const controller = new AbortController();
     const lane = runningByLane.get(task.lane)!;
     lane.add(task.id);
+    onActivity(task.ownerId);
     const done = execute(task, controller.signal)
       .catch((error: unknown) => console.error("[tasks] unexpected worker failure", error))
       .finally(() => {
         running.delete(task.id);
         lane.delete(task.id);
-        // A slot is free: look for more work right away.
-        wakeUp?.();
+        onActivity(task.ownerId);
+        // Releasing a shared slot wakes the workers waiting on it, this one included.
+        const shared = sharedSlots[task.lane];
+        if (shared) shared.release();
+        else wakeUp?.();
       });
     running.set(task.id, { controller, done });
   }
@@ -172,7 +189,11 @@ export function createTaskWorker(options: TaskWorkerOptions): TaskWorker {
     let started = 0;
     for (const lane of TASK_LANES) {
       const free = laneCapacity[lane] - runningByLane.get(lane)!.size;
-      for (const task of tasks.claim(lane, free, now())) {
+      const shared = sharedSlots[lane];
+      const granted = shared ? shared.tryAcquire(free) : free;
+      const claimed = tasks.claim(lane, granted, now());
+      shared?.release(granted - claimed.length);
+      for (const task of claimed) {
         launch(task);
         started++;
       }
@@ -207,6 +228,8 @@ export function createTaskWorker(options: TaskWorkerOptions): TaskWorker {
       await idle();
     }
   }
+
+  for (const shared of Object.values(sharedSlots)) shared.onRelease(() => wakeUp?.());
 
   return {
     start() {

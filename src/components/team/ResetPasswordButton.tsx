@@ -15,7 +15,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useJsonSubmit } from "@/hooks/useJsonSubmit";
 import { newPasswordSchema } from "@/lib/auth/schema";
-import { userEndpoint } from "@/lib/http/api";
+import { userEndpoint } from "@/lib/http/endpoints";
 
 const RESET_FAILED = "Não foi possível redefinir a senha. Tente novamente.";
 

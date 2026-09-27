@@ -1,7 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { ApiError as GeminiApiError } from "@google/genai";
 import { describe, expect, it } from "vitest";
-import { LlmConfigurationError, MinutaGenerationError } from "./errors";
+import { LlmConfigurationError, LlmOutputError } from "./errors";
 import { toErrorResponseInfo } from "./toErrorResponseInfo";
 
 /** Builds the same error subclass the Anthropic SDK raises for an HTTP status. */
@@ -16,9 +16,9 @@ function geminiError(status: number) {
 describe("toErrorResponseInfo", () => {
   it.each([
     ["LLM configuration", new LlmConfigurationError("GEMINI_API_KEY is not set"), 500],
-    ["refusal", new MinutaGenerationError("refusal"), 422],
-    ["truncated output", new MinutaGenerationError("truncated"), 502],
-    ["empty output", new MinutaGenerationError("empty"), 502],
+    ["refusal", new LlmOutputError("refusal"), 422],
+    ["truncated output", new LlmOutputError("truncated"), 502],
+    ["empty output", new LlmOutputError("empty"), 502],
     ["Anthropic authentication", anthropicError(401), 500],
     ["Anthropic rate limit", anthropicError(429), 429],
     ["Anthropic overloaded", anthropicError(529), 503],

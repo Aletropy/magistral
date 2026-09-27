@@ -10,7 +10,7 @@ import { NATIVE_SELECT_CLASS } from "@/components/ui/nativeSelect";
 import { useJsonSubmit } from "@/hooks/useJsonSubmit";
 import { MAX_DISPLAY_NAME_CHARS, MAX_USERNAME_CHARS, newUserSchema, type NewUserInput } from "@/lib/auth/schema";
 import { USER_ROLES, USER_ROLE_LABELS, type UserRole } from "@/lib/auth/types";
-import { USERS_ENDPOINT } from "@/lib/http/api";
+import { USERS_ENDPOINT } from "@/lib/http/endpoints";
 import { collectFieldErrors } from "@/lib/validation/collectFieldErrors";
 
 const CREATE_FAILED = "Não foi possível cadastrar a pessoa. Tente novamente.";

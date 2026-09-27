@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useDocumentText } from "@/hooks/useDocumentText";
 import { locateClauseSections, replaceSectionBody } from "@/lib/clauses/locateClauseSections";
 import { DOCUMENT_ACCEPT } from "@/lib/documents/formats";
-import type { ApprovedClauseText } from "@/lib/http/api";
+import type { ApprovedClauseText } from "@/lib/minuta/types";
 
 type OriginalSource = "clauses" | "pasted";
 

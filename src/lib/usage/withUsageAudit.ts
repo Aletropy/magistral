@@ -1,5 +1,5 @@
 import { isAbortError } from "@/lib/llm/abort";
-import { LlmConfigurationError, MinutaGenerationError } from "@/lib/llm/errors";
+import { LlmConfigurationError, LlmOutputError } from "@/lib/llm/errors";
 import { NO_USAGE, type TokenUsage } from "@/lib/llm/types";
 import { estimateCostUsd } from "./pricing";
 import type { LlmCallStatus, LlmOperation, NewLlmCall, UsageProvider } from "./types";
@@ -15,7 +15,7 @@ export interface UsageAuditOptions {
 }
 
 function failureStatus(error: unknown): LlmCallStatus {
-  if (error instanceof MinutaGenerationError) return error.reason;
+  if (error instanceof LlmOutputError) return error.reason;
   if (error instanceof LlmConfigurationError) return "configuration";
   if (isAbortError(error)) return "canceled";
   return "upstream";
@@ -58,7 +58,7 @@ export function withUsageAudit<Args extends unknown[], Result extends AuditedRes
       safeRecord(result.model, result.usage, startedAt, "ok");
       return result;
     } catch (error) {
-      const usage = error instanceof MinutaGenerationError ? (error.usage ?? NO_USAGE) : NO_USAGE;
+      const usage = error instanceof LlmOutputError ? (error.usage ?? NO_USAGE) : NO_USAGE;
       safeRecord(configuredModel, usage, startedAt, failureStatus(error));
       throw error;
     }

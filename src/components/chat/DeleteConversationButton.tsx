@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { ConfirmDeleteButton } from "@/components/ConfirmDeleteButton";
 import { useResourceMutations } from "@/hooks/useResourceMutations";
 import { ASSISTANT_PATH } from "@/lib/chat/paths";
-import { CONVERSATIONS_ENDPOINT, conversationEndpoint } from "@/lib/http/api";
+import { CONVERSATIONS_ENDPOINT, conversationEndpoint } from "@/lib/http/endpoints";
 
 const ENDPOINTS = { collection: CONVERSATIONS_ENDPOINT, item: conversationEndpoint };
 const MESSAGES = {

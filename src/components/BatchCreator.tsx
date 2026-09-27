@@ -5,8 +5,8 @@ import { useState } from "react";
 import { MinutaForm } from "@/components/MinutaForm";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { FormField } from "@/components/ui/FormField";
 import { FileInput } from "@/components/ui/FileInput";
+import { FormField } from "@/components/ui/FormField";
 import { Input } from "@/components/ui/input";
 import { WarningCallout } from "@/components/ui/WarningCallout";
 import { batchPath } from "@/lib/batch/paths";
@@ -19,16 +19,12 @@ import {
   type Spreadsheet,
 } from "@/lib/batch/spreadsheet";
 import { fillRequestTemplate, unknownPlaceholders } from "@/lib/batch/template";
-import {
-  BATCHES_ENDPOINT,
-  NETWORK_ERROR_MESSAGE,
-  postJson,
-  readErrorMessage,
-  type BatchCreatedResponseBody,
-} from "@/lib/http/api";
-import type { MinutaRequest } from "@/lib/minuta/schema";
+import { NETWORK_ERROR_MESSAGE, postJson, readErrorMessage } from "@/lib/http/client";
+import type { BatchCreatedResponseBody } from "@/lib/http/contracts";
+import { BATCHES_ENDPOINT } from "@/lib/http/endpoints";
 import { initialMinutaValues } from "@/lib/minuta/formDefaults";
 import type { MinutaFormOptions } from "@/lib/minuta/loadMinutaFormOptions";
+import type { MinutaRequest } from "@/lib/minuta/schema";
 import { plural } from "@/lib/text/plural";
 
 const CREATE_FAILED = "Não foi possível criar o lote. Tente novamente.";

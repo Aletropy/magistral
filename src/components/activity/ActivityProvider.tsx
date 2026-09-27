@@ -3,15 +3,19 @@
 import { useRouter } from "next/navigation";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { toast } from "sonner";
-import { showOsNotification } from "@/lib/browser/osNotifications";
 import { loginPath } from "@/lib/auth/paths";
-import { HTTP_UNAUTHORIZED, activityEndpoint, type ActivityResponseBody } from "@/lib/http/api";
+import { showOsNotification } from "@/lib/browser/osNotifications";
+import type { ActivityResponseBody } from "@/lib/http/contracts";
+import { ACTIVITY_EVENT_NAME, EVENTS_ENDPOINT, activityEndpoint } from "@/lib/http/endpoints";
+import { HTTP_UNAUTHORIZED } from "@/lib/http/status";
 import type { AppNotification, NotificationLevel } from "@/lib/notifications/types";
 import type { TaskSummary } from "@/lib/tasks/types";
 
 /** Poll often while something runs, rarely otherwise. Background tabs are throttled by the browser anyway. */
 export const ACTIVE_POLL_MS = 2000;
 export const IDLE_POLL_MS = 15000;
+/** While the event stream is connected, polling is only a safety net. */
+export const LIVE_SAFETY_POLL_MS = 30000;
 const TOAST_ACTION_LABEL = "Ver";
 /** Finished background work matters more than a passing hint, so its toasts stay longer than the default. */
 const TOAST_DURATION_MS = 8000;
@@ -23,13 +27,22 @@ interface ActivitySnapshot {
 }
 
 interface ActivityContextValue extends ActivitySnapshot {
+  /** The server's event stream is connected: pages refresh on its events instead of polling. */
+  live: boolean;
+  /** Increases on every event from the stream; pages following work refresh when it changes. */
+  changeCount: number;
   /** Polls now, e.g. right after starting a task or reading notifications. */
   refresh: () => void;
 }
 
 const EMPTY_SNAPSHOT: ActivitySnapshot = { activeTasks: [], activeBatches: 0, unreadCount: 0 };
 
-const ActivityContext = createContext<ActivityContextValue>({ ...EMPTY_SNAPSHOT, refresh: () => {} });
+const ActivityContext = createContext<ActivityContextValue>({
+  ...EMPTY_SNAPSHOT,
+  live: false,
+  changeCount: 0,
+  refresh: () => {},
+});
 
 export function useActivity(): ActivityContextValue {
   return useContext(ActivityContext);
@@ -52,6 +65,9 @@ const TOASTS: Record<NotificationLevel, typeof toast.success> = {
 export function ActivityProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
   const [snapshot, setSnapshot] = useState<ActivitySnapshot>(EMPTY_SNAPSHOT);
+  const [live, setLive] = useState(false);
+  const [changeCount, setChangeCount] = useState(0);
+  const liveRef = useRef(false);
   const cursor = useRef<number | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pollRef = useRef<() => Promise<void>>(async () => {});
@@ -116,7 +132,8 @@ export function ActivityProvider({ children }: { children: ReactNode }) {
       return;
     }
     if (timer.current) clearTimeout(timer.current);
-    timer.current = setTimeout(() => void pollRef.current(), busy ? ACTIVE_POLL_MS : IDLE_POLL_MS);
+    const busyInterval = liveRef.current ? LIVE_SAFETY_POLL_MS : ACTIVE_POLL_MS;
+    timer.current = setTimeout(() => void pollRef.current(), busy ? busyInterval : IDLE_POLL_MS);
   }, [announce, router]);
 
   useEffect(() => {
@@ -135,8 +152,24 @@ export function ActivityProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  // The event stream: each event means some of the user's work changed. EventSource reconnects by itself.
+  useEffect(() => {
+    const source = new EventSource(EVENTS_ENDPOINT);
+    const setConnected = (connected: boolean) => {
+      liveRef.current = connected;
+      setLive(connected);
+    };
+    source.onopen = () => setConnected(true);
+    source.onerror = () => setConnected(false);
+    source.addEventListener(ACTIVITY_EVENT_NAME, () => {
+      setChangeCount((count) => count + 1);
+      void pollRef.current();
+    });
+    return () => source.close();
+  }, []);
+
   const refresh = useCallback(() => void pollRef.current(), []);
-  const value = useMemo(() => ({ ...snapshot, refresh }), [snapshot, refresh]);
+  const value = useMemo(() => ({ ...snapshot, live, changeCount, refresh }), [snapshot, live, changeCount, refresh]);
 
   return <ActivityContext value={value}>{children}</ActivityContext>;
 }

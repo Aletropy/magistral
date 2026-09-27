@@ -7,7 +7,7 @@ import { FormField } from "@/components/ui/FormField";
 import { Input } from "@/components/ui/input";
 import { useJsonSubmit } from "@/hooks/useJsonSubmit";
 import { MAX_DISPLAY_NAME_CHARS, MAX_USERNAME_CHARS, setupSchema, type SetupInput } from "@/lib/auth/schema";
-import { SETUP_ENDPOINT } from "@/lib/http/api";
+import { SETUP_ENDPOINT } from "@/lib/http/endpoints";
 import { HOME_PATH } from "@/lib/minutas/paths";
 import { collectFieldErrors } from "@/lib/validation/collectFieldErrors";
 

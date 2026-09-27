@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { insertTestUser } from "@/lib/auth/testHelpers";
 import { IN_MEMORY_DATABASE, openDatabase } from "@/lib/db/openDatabase";
-import type { DraftResult } from "@/lib/http/api";
 import type { MinutaRequest } from "@/lib/minuta/schema";
+import type { DraftResult } from "@/lib/minuta/types";
 import { createMinutaRepository, type MinutaRepository } from "./repository";
 import { titleFromMarkdown } from "./titleFromMarkdown";
 

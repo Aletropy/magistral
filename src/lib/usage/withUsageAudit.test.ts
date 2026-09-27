@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { LlmConfigurationError, MinutaGenerationError } from "@/lib/llm/errors";
+import { LlmConfigurationError, LlmOutputError } from "@/lib/llm/errors";
 import type { MinutaGenerator } from "@/lib/llm/types";
 import type { NewLlmCall } from "./types";
 import { withUsageAudit } from "./withUsageAudit";
@@ -40,7 +40,7 @@ describe("withUsageAudit", () => {
   });
 
   it("records a generation failure with the tokens billed before it, then rethrows", async () => {
-    const failure = new MinutaGenerationError("truncated", USAGE);
+    const failure = new LlmOutputError("truncated", USAGE);
     const { wrapped, record } = audited(async () => {
       throw failure;
     });

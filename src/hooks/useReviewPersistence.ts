@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { minutaEndpoint, sendJson } from "@/lib/http/api";
+import { sendJson } from "@/lib/http/client";
+import { minutaEndpoint } from "@/lib/http/endpoints";
 import { REVIEW_SAVE_FAILED_MESSAGE } from "@/lib/minutas/messages";
 import type { MinutaUpdate } from "@/lib/minutas/schema";
 

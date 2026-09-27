@@ -1,13 +1,9 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import {
-  NETWORK_ERROR_MESSAGE,
-  PLAYGROUND_ENDPOINT,
-  postJson,
-  readErrorMessage,
-  type PlaygroundResponseBody,
-} from "@/lib/http/api";
+import { NETWORK_ERROR_MESSAGE, postJson, readErrorMessage } from "@/lib/http/client";
+import type { PlaygroundResponseBody } from "@/lib/http/contracts";
+import { PLAYGROUND_ENDPOINT } from "@/lib/http/endpoints";
 import type { PlaygroundRequest } from "@/lib/playground/schema";
 
 const REWRITE_FAILED = "Não foi possível reescrever o texto. Tente novamente.";

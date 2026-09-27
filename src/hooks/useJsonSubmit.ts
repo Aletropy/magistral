@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { NETWORK_ERROR_MESSAGE, readErrorMessage, sendJson } from "@/lib/http/api";
+import { NETWORK_ERROR_MESSAGE, readErrorMessage, sendJson } from "@/lib/http/client";
 
 /** Sends one JSON request for a form, keeping its pending state and the pt-BR error to show. */
 export function useJsonSubmit() {

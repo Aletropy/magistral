@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { ResultPanel } from "@/components/ResultPanel";
 import { useReviewPersistence } from "@/hooks/useReviewPersistence";
-import type { MinutaResponseBody } from "@/lib/http/api";
+import type { MinutaResponseBody } from "@/lib/http/contracts";
 
 /** A minuta from the history, with the same export, review and source panels as right after generating. */
 export function SavedMinutaView({ initial }: { initial: MinutaResponseBody }) {

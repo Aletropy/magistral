@@ -17,14 +17,8 @@ import {
   type BatchJobDetail,
 } from "@/lib/batch/types";
 import { EXPORT_FORMATS, EXPORT_FORMAT_INFO } from "@/lib/export/formats";
-import {
-  BATCHES_ENDPOINT,
-  NETWORK_ERROR_MESSAGE,
-  batchDownloadEndpoint,
-  batchEndpoint,
-  batchRetryEndpoint,
-  readErrorMessage,
-} from "@/lib/http/api";
+import { NETWORK_ERROR_MESSAGE, readErrorMessage } from "@/lib/http/client";
+import { BATCHES_ENDPOINT, batchDownloadEndpoint, batchEndpoint, batchRetryEndpoint } from "@/lib/http/endpoints";
 
 const STATUS_VARIANTS: Record<BatchItemStatus, "secondary" | "outline" | "default" | "destructive"> = {
   pending: "outline",

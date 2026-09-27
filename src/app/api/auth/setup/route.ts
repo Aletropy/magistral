@@ -1,8 +1,8 @@
 import { setUpFirstAdmin } from "@/lib/auth/accounts";
 import { setupSchema } from "@/lib/auth/schema";
 import { startSession } from "@/lib/auth/session";
-import { HTTP_CREATED } from "@/lib/http/api";
 import { definePublicRoute } from "@/lib/http/route";
+import { HTTP_CREATED } from "@/lib/http/status";
 
 /** Creates the first admin (only while there are no users) and signs them in. */
 export const POST = definePublicRoute({ body: setupSchema }, async ({ request, body }) => {

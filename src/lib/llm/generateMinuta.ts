@@ -2,7 +2,7 @@ import type { MinutaRequest } from "@/lib/minuta/schema";
 import type { Persona } from "@/lib/personas/types";
 import { buildSystemPrompt } from "@/lib/prompt/buildSystemPrompt";
 import { EMPTY_PROMPT_CONTEXT, buildUserPrompt, type UserPromptContext } from "@/lib/prompt/buildUserPrompt";
-import { MinutaGenerationError } from "./errors";
+import { LlmOutputError } from "./errors";
 import type { GenerationOptions, MinutaGenerator } from "./types";
 
 /** Builds the prompts, runs the provider's generator and returns the trimmed Markdown. */
@@ -24,7 +24,7 @@ export async function generateMinuta(
   };
   const { text } = await generate(prompt, options);
   const markdown = text.trim();
-  if (!markdown) throw new MinutaGenerationError("empty");
+  if (!markdown) throw new LlmOutputError("empty");
 
   return markdown;
 }

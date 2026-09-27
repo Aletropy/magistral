@@ -8,7 +8,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { ACCOUNT_PATH, LOGIN_PATH } from "@/lib/auth/paths";
 import { USER_ROLE_LABELS, type CurrentUser } from "@/lib/auth/types";
 import { removeLocalValues } from "@/lib/browser/localValue";
-import { LOGOUT_ENDPOINT } from "@/lib/http/api";
+import { LOGOUT_ENDPOINT } from "@/lib/http/endpoints";
 import { MINUTA_DRAFT_STORAGE_PREFIX } from "@/lib/minuta/storedDraft";
 
 /** Who is signed in, a link to their account and signing out (which also clears private drafts here). */

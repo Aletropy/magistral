@@ -1,7 +1,7 @@
 import { FinishReason, type GoogleGenAI } from "@google/genai";
 import { describe, expect, it, vi } from "vitest";
 import { asMinutaGenerator } from "../chatPrompt";
-import { MinutaGenerationError } from "../errors";
+import { LlmOutputError } from "../errors";
 import { GEMINI_MODEL } from "./config";
 import { createGeminiChatGenerator } from "./generate";
 
@@ -68,7 +68,7 @@ describe("createGeminiGenerator", () => {
       usageMetadata: { promptTokenCount: 900, candidatesTokenCount: 60000, thoughtsTokenCount: 5536 },
     });
     await expect(createGeminiGenerator(client)(PROMPT)).rejects.toEqual(
-      new MinutaGenerationError("truncated", { inputTokens: 900, outputTokens: 60000, thinkingTokens: 5536 }),
+      new LlmOutputError("truncated", { inputTokens: 900, outputTokens: 60000, thinkingTokens: 5536 }),
     );
   });
 });

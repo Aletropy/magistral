@@ -1,4 +1,4 @@
-import { MinutaGenerationError } from "@/lib/llm/errors";
+import { LlmOutputError } from "@/lib/llm/errors";
 import type { MinutaGenerator } from "@/lib/llm/types";
 import type { PersonaStyle } from "@/lib/personas/types";
 import { buildPlaygroundPrompt } from "./buildPlaygroundPrompt";
@@ -12,6 +12,6 @@ export async function rewriteSample(
 ): Promise<string> {
   const { text } = await generate(buildPlaygroundPrompt(style, temperature, sampleText));
   const markdown = text.trim();
-  if (!markdown) throw new MinutaGenerationError("empty");
+  if (!markdown) throw new LlmOutputError("empty");
   return markdown;
 }

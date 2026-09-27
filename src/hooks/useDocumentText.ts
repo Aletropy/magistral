@@ -1,13 +1,9 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import {
-  EXTRACT_TEXT_ENDPOINT,
-  NETWORK_ERROR_MESSAGE,
-  UPLOAD_FILE_FIELD,
-  readErrorMessage,
-  type ExtractTextResponseBody,
-} from "@/lib/http/api";
+import { NETWORK_ERROR_MESSAGE, readErrorMessage } from "@/lib/http/client";
+import type { ExtractTextResponseBody } from "@/lib/http/contracts";
+import { EXTRACT_TEXT_ENDPOINT, UPLOAD_FILE_FIELD } from "@/lib/http/endpoints";
 
 const EXTRACT_FAILED = "Não foi possível ler o arquivo. Tente outro PDF ou DOCX.";
 

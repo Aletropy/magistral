@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { NATIVE_SELECT_CLASS } from "@/components/ui/nativeSelect";
 import { useJsonSubmit } from "@/hooks/useJsonSubmit";
 import { USER_ROLES, USER_ROLE_LABELS, type User, type UserRole } from "@/lib/auth/types";
-import { userEndpoint } from "@/lib/http/api";
+import { userEndpoint } from "@/lib/http/endpoints";
 import { cn } from "@/lib/utils";
 
 const UPDATE_FAILED = "Não foi possível atualizar a conta. Tente novamente.";

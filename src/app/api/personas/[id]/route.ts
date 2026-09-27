@@ -1,5 +1,7 @@
-import { HTTP_CONFLICT, HTTP_NOT_FOUND, HTTP_NO_CONTENT, errorResponse, type PersonaResponseBody } from "@/lib/http/api";
+import type { PersonaResponseBody } from "@/lib/http/contracts";
+import { errorResponse } from "@/lib/http/responses";
 import { defineRoute } from "@/lib/http/route";
+import { HTTP_CONFLICT, HTTP_NOT_FOUND, HTTP_NO_CONTENT } from "@/lib/http/status";
 import { getPersonaRepository } from "@/lib/personas/getPersonaRepository";
 import { BUILTIN_PERSONA_DELETE_MESSAGE, PERSONA_NOT_FOUND_MESSAGE } from "@/lib/personas/messages";
 import { personaInputSchema } from "@/lib/personas/schema";

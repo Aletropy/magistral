@@ -1,8 +1,10 @@
 import { getClauseRepository } from "@/lib/clauses/getClauseRepository";
 import { CLAUSE_NOT_FOUND_MESSAGE } from "@/lib/clauses/messages";
 import { clauseInputSchema } from "@/lib/clauses/schema";
-import { HTTP_NOT_FOUND, HTTP_NO_CONTENT, errorResponse, type ClauseResponseBody } from "@/lib/http/api";
+import type { ClauseResponseBody } from "@/lib/http/contracts";
+import { errorResponse } from "@/lib/http/responses";
 import { defineRoute } from "@/lib/http/route";
+import { HTTP_NOT_FOUND, HTTP_NO_CONTENT } from "@/lib/http/status";
 
 type Context = RouteContext<"/api/clauses/[id]">;
 

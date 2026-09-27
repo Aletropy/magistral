@@ -1,10 +1,13 @@
 import "server-only";
+
 import { getSessionRepository } from "@/lib/auth/getAuthRepositories";
+import { toPublicError } from "@/lib/errors/toPublicError";
+import { publishActivity } from "@/lib/events/activityEvents";
 import { getNotificationRepository } from "@/lib/notifications/getNotificationRepository";
 import { isRetryableFailure } from "@/lib/queue/retryPolicy";
-import { describeTaskFailure } from "./describeTaskFailure";
-import { getTaskRepository } from "./getTaskRepository";
+import { getLlmSlots } from "@/lib/queue/slotPool";
 import { TaskQuotaError } from "./errors";
+import { getTaskRepository } from "./getTaskRepository";
 import type { TaskHandler } from "./handler";
 import { TASK_HANDLERS } from "./registry";
 import type { NewTaskFile } from "./types";
@@ -28,9 +31,11 @@ export function getTaskWorker(): TaskWorker {
   globalForWorker.magistralTaskWorker ??= createTaskWorker({
     tasks: getTaskRepository(),
     handlers: Object.values(TASK_HANDLERS),
-    isRetryable: (error) => isRetryableFailure(describeTaskFailure(error)),
-    describeError: (error) => describeTaskFailure(error).message,
+    isRetryable: (error) => isRetryableFailure(toPublicError(error)),
+    describeError: (error) => toPublicError(error).message,
     notify: (notification) => getNotificationRepository().create(notification),
+    sharedSlots: { llm: getLlmSlots() },
+    onActivity: publishActivity,
   });
   return globalForWorker.magistralTaskWorker;
 }
@@ -86,5 +91,6 @@ export function enqueueTask<P>(handler: TaskHandler<P, unknown>, request: TaskRe
     files: request.files,
   });
   ensureTaskWorkerStarted().wake();
+  publishActivity(request.ownerId);
   return id;
 }

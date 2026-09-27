@@ -1,4 +1,4 @@
-import type { TasksResponseBody } from "@/lib/http/api";
+import type { TasksResponseBody } from "@/lib/http/contracts";
 import { defineRoute } from "@/lib/http/route";
 import { getTaskRepository } from "@/lib/tasks/getTaskRepository";
 

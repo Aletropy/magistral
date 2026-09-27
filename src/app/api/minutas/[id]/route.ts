@@ -1,6 +1,8 @@
 import { MAX_MARKDOWN_BODY_BYTES } from "@/lib/export/schema";
-import { HTTP_NOT_FOUND, HTTP_NO_CONTENT, errorResponse, type MinutaResponseBody } from "@/lib/http/api";
+import type { MinutaResponseBody } from "@/lib/http/contracts";
+import { errorResponse } from "@/lib/http/responses";
 import { defineRoute } from "@/lib/http/route";
+import { HTTP_NOT_FOUND, HTTP_NO_CONTENT } from "@/lib/http/status";
 import { getMinutaRepository } from "@/lib/minutas/getMinutaRepository";
 import { MINUTA_NOT_FOUND_MESSAGE } from "@/lib/minutas/messages";
 import { minutaUpdateSchema } from "@/lib/minutas/schema";

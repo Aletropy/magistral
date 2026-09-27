@@ -68,6 +68,8 @@ export interface TaskRepository {
   create(task: NewTask): string;
   /** Atomically marks up to `limit` due pending tasks of a lane as running and returns them, oldest first. */
   claim(lane: TaskLane, limit: number, now: Date): ClaimedTask[];
+  /** How many pending tasks of a lane are due, so lower-priority work (batches) can wait for them. */
+  countDue(lane: TaskLane, now: Date): number;
   files(taskId: string): TaskFile[];
   setFileOutcome(taskId: string, position: number, outcome: string): void;
   reportProgress(id: string, current: number, total: number | null, label: string | null): void;
@@ -137,6 +139,9 @@ export function createTaskRepository(db: DatabaseSync): TaskRepository {
        ORDER BY created_at LIMIT ?
      )
      RETURNING id, owner_id, kind, lane, title, payload, attempts, created_at`,
+  );
+  const countDueTasks = db.prepare(
+    "SELECT COUNT(*) AS count FROM tasks WHERE lane = ? AND status = 'pending' AND next_attempt_at <= ?",
   );
   const selectFiles = db.prepare(
     "SELECT position, name, bytes, outcome FROM task_files WHERE task_id = ? ORDER BY position",
@@ -220,6 +225,7 @@ export function createTaskRepository(db: DatabaseSync): TaskRepository {
         }));
     },
 
+    countDue: (lane, now) => z.object({ count: z.number() }).parse(countDueTasks.get(lane, now.toISOString())).count,
     files: (taskId) => selectFiles.all(taskId).map((row) => fileRowSchema.parse(row)),
     setFileOutcome: (taskId, position, outcome) => void updateFileOutcome.run(outcome, taskId, position),
     reportProgress: (id, current, total, label) => void updateProgress.run(current, total, label, id),

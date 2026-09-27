@@ -5,7 +5,8 @@ import type { MinutaRequest } from "@/lib/minuta/schema";
 import { createBatchRepository, type BatchRepository } from "./repository";
 import type { ClaimedBatchItem } from "./types";
 import { retryDelayMs } from "@/lib/queue/retryPolicy";
-import { BATCH_MAX_ATTEMPTS, createBatchWorker } from "./worker";
+import { createSlotPool } from "@/lib/queue/slotPool";
+import { BATCH_MAX_ATTEMPTS, INTERRUPTED_ITEM_MESSAGE, createBatchWorker } from "./worker";
 
 const TEMPLATE: MinutaRequest = {
   documentType: "outro",
@@ -180,6 +181,75 @@ describe("createBatchWorker", () => {
     batches.retryFailedItems(jobId, START);
     await worker.tick();
     expect(finished).toEqual(["2/1", "3/0"]);
+  });
+
+  it("aborts the items of a deleted job that are being drafted, releasing their slots", async () => {
+    const slots = createSlotPool(2);
+    const db = openDatabase(IN_MEMORY_DATABASE);
+    const owner = insertTestUser(db);
+    const batches = createBatchRepository(db);
+    const jobId = batches.createJob(owner, "Lote", TEMPLATE, ROWS);
+    const started: string[] = [];
+    const worker = createBatchWorker({
+      batches,
+      slots,
+      processItem: (item, signal) =>
+        new Promise((_resolve, reject) => {
+          started.push(item.row.nome);
+          signal.addEventListener("abort", () => reject(signal.reason));
+        }),
+      isRetryable: () => true,
+      describeError: () => "erro",
+      now: () => START,
+    });
+
+    const wave = worker.tick();
+    await vi.waitFor(() => expect(started).toHaveLength(2));
+    expect(slots.available()).toBe(0);
+    batches.deleteJob(jobId, owner);
+    expect(worker.cancelJob(jobId)).toBe(2);
+    await expect(wave).resolves.toBe(2);
+    expect(slots.available()).toBe(2);
+    expect(batches.claimItems(10, START)).toEqual([]);
+  });
+
+  it("shares LLM slots with other work and yields to waiting interactive tasks", async () => {
+    const slots = createSlotPool(2);
+    let yieldToTasks = true;
+    const db = openDatabase(IN_MEMORY_DATABASE);
+    const owner = insertTestUser(db);
+    const batches = createBatchRepository(db);
+    const jobId = batches.createJob(owner, "Lote", TEMPLATE, ROWS);
+    const worker = createBatchWorker({
+      batches,
+      slots,
+      shouldYield: () => yieldToTasks,
+      processItem: async () => "# ok",
+      isRetryable: () => false,
+      describeError: () => "erro",
+      now: () => START,
+    });
+
+    expect(await worker.tick()).toBe(0);
+    yieldToTasks = false;
+    slots.tryAcquire(1); // a background task holds one slot
+    expect(await worker.tick()).toBe(1);
+    expect(batches.getJob(jobId, owner)!.counts.done).toBe(1);
+    expect(slots.available()).toBe(1);
+  });
+
+  it("on restart, fails items that were running with no attempts left instead of looping on them", () => {
+    const db = openDatabase(IN_MEMORY_DATABASE);
+    const owner = insertTestUser(db);
+    const batches = createBatchRepository(db);
+    const jobId = batches.createJob(owner, "Lote", TEMPLATE, ROWS);
+    batches.claimItems(2, START);
+    db.prepare("UPDATE batch_items SET attempts = ? WHERE position = 1").run(BATCH_MAX_ATTEMPTS);
+
+    expect(batches.resetRunningItems(BATCH_MAX_ATTEMPTS, INTERRUPTED_ITEM_MESSAGE)).toBe(2);
+    const items = batches.getJob(jobId, owner)!.items;
+    expect(items[0]).toMatchObject({ status: "failed", error: INTERRUPTED_ITEM_MESSAGE });
+    expect(items[1].status).toBe("pending");
   });
 
   it("ignores the result of an item whose job was deleted mid-flight", async () => {

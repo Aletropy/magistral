@@ -1,5 +1,5 @@
-import type { DraftResult } from "@/lib/http/api";
 import type { MinutaRequest } from "@/lib/minuta/schema";
+import type { DraftResult } from "@/lib/minuta/types";
 
 export interface MinutaSummary {
   id: string;

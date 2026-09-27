@@ -1,8 +1,10 @@
 import { getChatRepository } from "@/lib/chat/getChatRepository";
 import { CONVERSATION_NOT_FOUND_MESSAGE } from "@/lib/chat/messages";
 import { conversationUpdateSchema } from "@/lib/chat/schema";
-import { HTTP_NOT_FOUND, HTTP_NO_CONTENT, errorResponse, type ConversationResponseBody } from "@/lib/http/api";
+import type { ConversationResponseBody } from "@/lib/http/contracts";
+import { errorResponse } from "@/lib/http/responses";
 import { defineRoute } from "@/lib/http/route";
+import { HTTP_NOT_FOUND, HTTP_NO_CONTENT } from "@/lib/http/status";
 import { ensureTaskWorkerStarted } from "@/lib/tasks/getTaskWorker";
 
 type Context = RouteContext<"/api/chat/conversations/[id]">;

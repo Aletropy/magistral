@@ -1,6 +1,6 @@
 import { endSession } from "@/lib/auth/session";
-import { HTTP_NO_CONTENT } from "@/lib/http/api";
 import { definePublicRoute } from "@/lib/http/route";
+import { HTTP_NO_CONTENT } from "@/lib/http/status";
 
 /** Public so an expired session can still clear its cookie. */
 export const POST = definePublicRoute({}, async () => {

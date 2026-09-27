@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { NETWORK_ERROR_MESSAGE, readErrorMessage, sendJson } from "@/lib/http/api";
+import { NETWORK_ERROR_MESSAGE, readErrorMessage, sendJson } from "@/lib/http/client";
 
 export interface ResourceEndpoints {
   collection: string;

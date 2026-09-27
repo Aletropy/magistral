@@ -1,4 +1,4 @@
-import type { NotificationsResponseBody } from "@/lib/http/api";
+import type { NotificationsResponseBody } from "@/lib/http/contracts";
 import { defineRoute } from "@/lib/http/route";
 import { getNotificationRepository } from "@/lib/notifications/getNotificationRepository";
 

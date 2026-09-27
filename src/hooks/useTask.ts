@@ -1,19 +1,15 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { useActivity } from "@/components/activity/ActivityProvider";
-import {
-  HTTP_NOT_FOUND,
-  NETWORK_ERROR_MESSAGE,
-  readErrorMessage,
-  taskCancelEndpoint,
-  taskEndpoint,
-  taskRetryEndpoint,
-  type TaskResponseBody,
-} from "@/lib/http/api";
+import { NETWORK_ERROR_MESSAGE, readErrorMessage } from "@/lib/http/client";
+import type { TaskResponseBody } from "@/lib/http/contracts";
+import { taskCancelEndpoint, taskEndpoint, taskRetryEndpoint } from "@/lib/http/endpoints";
+import { HTTP_NOT_FOUND } from "@/lib/http/status";
 import { isTaskActive, type TaskDetail } from "@/lib/tasks/types";
+import { useLiveRefresh } from "./useLiveRefresh";
 
-/** How often a task the page is waiting on is refreshed. */
+/** How often a task the page is waiting on is refreshed while the event stream is down. */
 export const TASK_POLL_INTERVAL_MS = 2000;
 
 const ACTION_FAILED = "Não foi possível atualizar a tarefa. Tente novamente.";
@@ -59,16 +55,8 @@ export function useTask(taskId: string | null, initial: TaskDetail | null = null
     }
   }, [taskId, refreshActivity]);
 
-  useEffect(() => {
-    if (!active) return;
-    // First check right away (a just-queued task has no state yet), then on every interval.
-    const first = setTimeout(() => void refresh(), 0);
-    const timer = setInterval(() => void refresh(), TASK_POLL_INTERVAL_MS);
-    return () => {
-      clearTimeout(first);
-      clearInterval(timer);
-    };
-  }, [active, refresh]);
+  // First check right away (a just-queued task has no state yet), then whenever the server says work changed.
+  useLiveRefresh(refresh, active, TASK_POLL_INTERVAL_MS);
 
   const act = useCallback(
     async (endpoint: (id: string) => string) => {

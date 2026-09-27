@@ -1,5 +1,6 @@
-import { HTTP_ACCEPTED, type TaskCreatedResponseBody } from "@/lib/http/api";
+import type { TaskCreatedResponseBody } from "@/lib/http/contracts";
 import { defineRoute } from "@/lib/http/route";
+import { HTTP_ACCEPTED } from "@/lib/http/status";
 import { loadDraftInputs } from "@/lib/minuta/draftMinuta";
 import { draftMinutaTask, draftTaskTitle } from "@/lib/minuta/draftMinutaTask";
 import { minutaRequestSchema } from "@/lib/minuta/schema";

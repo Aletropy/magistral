@@ -3,7 +3,7 @@
 import { FollowedTaskStatus } from "@/components/tasks/FollowedTaskStatus";
 import { Button } from "@/components/ui/button";
 import { useBackgroundTask } from "@/hooks/useBackgroundTask";
-import { LIBRARY_SYNC_ENDPOINT } from "@/lib/http/api";
+import { LIBRARY_SYNC_ENDPOINT } from "@/lib/http/endpoints";
 import { librarySyncResultSchema, type FolderSyncReport } from "@/lib/rag/taskResults";
 import type { TaskDetail } from "@/lib/tasks/types";
 import { plural } from "@/lib/text/plural";

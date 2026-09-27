@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { ConfirmDeleteButton } from "@/components/ConfirmDeleteButton";
 import { useResourceMutations } from "@/hooks/useResourceMutations";
-import { MINUTAS_ENDPOINT, minutaEndpoint } from "@/lib/http/api";
+import { MINUTAS_ENDPOINT, minutaEndpoint } from "@/lib/http/endpoints";
 import { HISTORY_PATH } from "@/lib/minutas/paths";
 
 const ENDPOINTS = { collection: MINUTAS_ENDPOINT, item: minutaEndpoint };

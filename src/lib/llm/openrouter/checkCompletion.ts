@@ -1,4 +1,4 @@
-import { MinutaGenerationError } from "../errors";
+import { LlmOutputError } from "../errors";
 import type { GenerationResult, TokenUsage } from "../types";
 import type { ChatCompletion } from "./api";
 
@@ -18,9 +18,9 @@ export function checkCompletion(completion: ChatCompletion): GenerationResult {
   const [choice] = completion.choices;
 
   if (choice.finish_reason === FINISH_REASON_CONTENT_FILTER || choice.message.refusal) {
-    throw new MinutaGenerationError("refusal", usage);
+    throw new LlmOutputError("refusal", usage);
   }
-  if (choice.finish_reason === FINISH_REASON_LENGTH) throw new MinutaGenerationError("truncated", usage);
+  if (choice.finish_reason === FINISH_REASON_LENGTH) throw new LlmOutputError("truncated", usage);
 
   return { text: choice.message.content ?? "", model: completion.model, usage };
 }

@@ -1,14 +1,10 @@
 import { MAX_FILES_PER_UPLOAD, MAX_LIBRARY_UPLOAD_REQUEST_BYTES, MAX_UPLOAD_BYTES } from "@/lib/documents/formats";
 import { DOCUMENT_EXTRACTION_ERRORS } from "@/lib/documents/messages";
-import {
-  HTTP_ACCEPTED,
-  HTTP_BAD_REQUEST,
-  UPLOAD_FILE_FIELD,
-  UPLOAD_KIND_FIELD,
-  errorResponse,
-  type TaskCreatedResponseBody,
-} from "@/lib/http/api";
+import type { TaskCreatedResponseBody } from "@/lib/http/contracts";
+import { UPLOAD_FILE_FIELD, UPLOAD_KIND_FIELD } from "@/lib/http/endpoints";
+import { errorResponse } from "@/lib/http/responses";
 import { defineRoute } from "@/lib/http/route";
+import { HTTP_ACCEPTED, HTTP_BAD_REQUEST } from "@/lib/http/status";
 import { libraryUploadTask } from "@/lib/rag/libraryTasks";
 import { LIBRARY_SOURCE_KINDS, type LibrarySourceKind } from "@/lib/rag/types";
 import { enqueueTask } from "@/lib/tasks/getTaskWorker";

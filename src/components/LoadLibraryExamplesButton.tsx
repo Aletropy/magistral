@@ -3,7 +3,7 @@
 import { FollowedTaskStatus } from "@/components/tasks/FollowedTaskStatus";
 import { Button } from "@/components/ui/button";
 import { useBackgroundTask } from "@/hooks/useBackgroundTask";
-import { DEMO_LIBRARY_ENDPOINT } from "@/lib/http/api";
+import { DEMO_LIBRARY_ENDPOINT } from "@/lib/http/endpoints";
 import { demoLibraryResultSchema } from "@/lib/rag/taskResults";
 import type { TaskDetail } from "@/lib/tasks/types";
 

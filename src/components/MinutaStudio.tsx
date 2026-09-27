@@ -15,7 +15,8 @@ import { useLocalValue } from "@/hooks/useLocalValue";
 import { useMinutaGeneration, type MinutaGenerationInitialState } from "@/hooks/useMinutaGeneration";
 import { useReviewPersistence } from "@/hooks/useReviewPersistence";
 import type { ClauseOption } from "@/lib/clauses/types";
-import { DRAFT_SUGGESTIONS_ENDPOINT, postJson } from "@/lib/http/api";
+import { postJson } from "@/lib/http/client";
+import { DRAFT_SUGGESTIONS_ENDPOINT } from "@/lib/http/endpoints";
 import {
   applySuggestion,
   draftSuggestionResultSchema,

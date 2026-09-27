@@ -1,5 +1,5 @@
 import { abortErrorOf } from "../abort";
-import { MinutaGenerationError } from "../errors";
+import { LlmOutputError } from "../errors";
 import type { EmbedFunction } from "../embeddings";
 import type { TokenUsage } from "../types";
 import { LOCAL_EMBEDDING_DIMENSIONS, LOCAL_EMBEDDING_MODEL_ID, formatLocalEmbeddingInput } from "./config";
@@ -25,7 +25,7 @@ export function createLocalEmbed(loadExtractor: () => Promise<FeatureExtractor>)
     const output = (await extractor(inputs, { pooling: "mean", normalize: true })).tolist() as number[][];
     if (signal?.aborted) throw abortErrorOf(signal);
     if (output.length !== texts.length || output.some((vector) => vector.length !== LOCAL_EMBEDDING_DIMENSIONS)) {
-      throw new MinutaGenerationError("invalid_output", usage);
+      throw new LlmOutputError("invalid_output", usage);
     }
     return { embeddings: output, model: LOCAL_EMBEDDING_MODEL_ID, usage };
   };

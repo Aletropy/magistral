@@ -1,13 +1,14 @@
 import "server-only";
+
 import { getClauseRepository } from "@/lib/clauses/getClauseRepository";
 import { isApprovedClauseOrderKept } from "@/lib/clauses/locateClauseSections";
 import { APPROVED_CLAUSE_MISSING_MESSAGE } from "@/lib/clauses/messages";
 import type { Clause } from "@/lib/clauses/types";
-import type { DraftResult } from "@/lib/http/api";
 import { generateMinuta } from "@/lib/llm/generateMinuta";
 import { getEmbedder } from "@/lib/llm/getEmbedder";
 import { getMinutaGenerator } from "@/lib/llm/getMinutaGenerator";
 import { activeLibraryContextBudget } from "@/lib/llm/providerRegistry";
+import type { DraftResult } from "@/lib/minuta/types";
 import { findNegativeConstraintViolations } from "@/lib/personas/findNegativeConstraintViolations";
 import { getPersonaRepository } from "@/lib/personas/getPersonaRepository";
 import { PERSONA_NOT_FOUND_MESSAGE } from "@/lib/personas/messages";

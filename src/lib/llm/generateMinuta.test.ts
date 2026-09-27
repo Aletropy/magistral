@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { MinutaRequest } from "@/lib/minuta/schema";
 import { DEFAULT_STYLE_SLIDERS } from "@/lib/personas/styleSliders";
 import type { Persona } from "@/lib/personas/types";
-import { MinutaGenerationError } from "./errors";
+import { LlmOutputError } from "./errors";
 import { generateMinuta } from "./generateMinuta";
 import { NO_USAGE, type GenerationResult, type MinutaGenerator } from "./types";
 
@@ -58,6 +58,6 @@ describe("generateMinuta", () => {
 
   it("rejects an empty answer", async () => {
     const generate: MinutaGenerator = async () => result("   ");
-    await expect(generateMinuta(generate, REQUEST, PERSONA)).rejects.toEqual(new MinutaGenerationError("empty"));
+    await expect(generateMinuta(generate, REQUEST, PERSONA)).rejects.toEqual(new LlmOutputError("empty"));
   });
 });

@@ -1,5 +1,5 @@
 import type Anthropic from "@anthropic-ai/sdk";
-import { MinutaGenerationError } from "../errors";
+import { LlmOutputError } from "../errors";
 import type { ChatGenerator, TokenUsage } from "../types";
 import {
   ANTHROPIC_MAX_TOKENS,
@@ -31,8 +31,8 @@ export function createAnthropicChatGenerator(client: Anthropic): ChatGenerator {
       thinkingTokens: 0,
     };
 
-    if (message.stop_reason === "refusal") throw new MinutaGenerationError("refusal", usage);
-    if (message.stop_reason === "max_tokens") throw new MinutaGenerationError("truncated", usage);
+    if (message.stop_reason === "refusal") throw new LlmOutputError("refusal", usage);
+    if (message.stop_reason === "max_tokens") throw new LlmOutputError("truncated", usage);
 
     return {
       text: message.content.flatMap((block) => (block.type === "text" ? [block.text] : [])).join(""),

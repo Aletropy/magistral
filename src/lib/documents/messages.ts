@@ -1,9 +1,4 @@
-import {
-  HTTP_BAD_REQUEST,
-  HTTP_PAYLOAD_TOO_LARGE,
-  HTTP_UNPROCESSABLE_CONTENT,
-  HTTP_UNSUPPORTED_MEDIA_TYPE,
-} from "@/lib/http/api";
+import { HTTP_BAD_REQUEST, HTTP_PAYLOAD_TOO_LARGE, HTTP_UNPROCESSABLE_CONTENT, HTTP_UNSUPPORTED_MEDIA_TYPE } from "@/lib/http/status";
 import type { ErrorResponseInfo } from "@/lib/llm/errors";
 import type { DocumentExtractionFailure } from "./errors";
 import { MAX_UPLOAD_MEBIBYTES } from "./formats";

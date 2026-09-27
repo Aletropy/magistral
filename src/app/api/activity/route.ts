@@ -1,5 +1,6 @@
 import { getBatchRepository } from "@/lib/batch/getBatchRepository";
-import { ACTIVITY_SINCE_PARAM, type ActivityResponseBody } from "@/lib/http/api";
+import type { ActivityResponseBody } from "@/lib/http/contracts";
+import { ACTIVITY_SINCE_PARAM } from "@/lib/http/endpoints";
 import { defineRoute } from "@/lib/http/route";
 import { getNotificationRepository } from "@/lib/notifications/getNotificationRepository";
 import { getTaskRepository } from "@/lib/tasks/getTaskRepository";

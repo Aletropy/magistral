@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { NETWORK_ERROR_MESSAGE, librarySourceEndpoint, readErrorMessage } from "@/lib/http/api";
+import { NETWORK_ERROR_MESSAGE, readErrorMessage } from "@/lib/http/client";
+import { librarySourceEndpoint } from "@/lib/http/endpoints";
 
 const REMOVE_FAILED = "Não foi possível remover o documento. Tente novamente.";
 

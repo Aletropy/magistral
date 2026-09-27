@@ -4,12 +4,8 @@ import { useCallback, useState } from "react";
 import { saveBlob } from "@/lib/browser/saveBlob";
 import type { ExportFormat } from "@/lib/export/formats";
 import type { ExportRequest } from "@/lib/export/schema";
-import {
-  EXPORT_ENDPOINT,
-  NETWORK_ERROR_MESSAGE,
-  postJson,
-  readErrorMessage,
-} from "@/lib/http/api";
+import { NETWORK_ERROR_MESSAGE, postJson, readErrorMessage } from "@/lib/http/client";
+import { EXPORT_ENDPOINT } from "@/lib/http/endpoints";
 
 const EXPORT_FAILED = "Não foi possível gerar o arquivo. Tente novamente.";
 

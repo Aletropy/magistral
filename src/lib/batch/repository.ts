@@ -74,8 +74,11 @@ export interface BatchRepository {
   retryItem(id: number, error: string, retryAt: Date): void;
   /** Puts a job's failed items back in the queue with fresh attempts; returns how many. */
   retryFailedItems(jobId: string, now: Date): number;
-  /** Requeues items left running by a previous process; returns how many. */
-  resetRunningItems(): number;
+  /**
+   * Requeues items left running by a previous process and fails those with no attempts left (an item
+   * that crashes the process must not loop forever); returns how many were touched.
+   */
+  resetRunningItems(maxAttempts: number, interruptedMessage: string): number;
   /**
    * Marks the job as finished when nothing is pending or running, returning its summary only the first
    * time, so concurrent items finishing together notify once. A retry of failed items resets the mark.
@@ -164,6 +167,9 @@ export function createBatchRepository(db: DatabaseSync): BatchRepository {
        AND NOT EXISTS (SELECT 1 FROM batch_items WHERE job_id = ? AND status IN ('pending', 'running'))
      RETURNING id`,
   );
+  const failExhausted = db.prepare(
+    "UPDATE batch_items SET status = 'failed', error = ? WHERE status = 'running' AND attempts >= ?",
+  );
   const resetRunning = db.prepare("UPDATE batch_items SET status = 'pending' WHERE status = 'running'");
   const selectFinished = db.prepare(
     "SELECT position, label, markdown FROM batch_items WHERE job_id = ? AND status = 'done' ORDER BY position",
@@ -224,7 +230,12 @@ export function createBatchRepository(db: DatabaseSync): BatchRepository {
         return requeued;
       });
     },
-    resetRunningItems: () => Number(resetRunning.run().changes),
+    resetRunningItems(maxAttempts, interruptedMessage) {
+      return withTransaction(db, () => {
+        const failed = Number(failExhausted.run(interruptedMessage, maxAttempts).changes);
+        return failed + Number(resetRunning.run().changes);
+      });
+    },
     markFinishedIfDone(jobId, now) {
       if (!markFinished.get(now.toISOString(), jobId, jobId)) return null;
       const row = selectJob.get(jobId);

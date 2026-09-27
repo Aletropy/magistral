@@ -1,5 +1,5 @@
-import { HTTP_BAD_REQUEST, HTTP_PAYLOAD_TOO_LARGE, HTTP_UNSUPPORTED_MEDIA_TYPE } from "./api";
-import { HttpError } from "./HttpError";
+import { AppError } from "@/lib/errors/AppError";
+import { HTTP_BAD_REQUEST, HTTP_PAYLOAD_TOO_LARGE, HTTP_UNSUPPORTED_MEDIA_TYPE } from "@/lib/http/status";
 
 export const BODY_TOO_LARGE_MESSAGE = "A requisição é grande demais.";
 export const INVALID_BODY_MESSAGE = "Corpo da requisição inválido.";
@@ -15,7 +15,7 @@ function contentType(request: Request): string {
 /** The request body, refusing to buffer more than `maxBytes` whatever Content-Length claims. */
 export async function readBodyBytes(request: Request, maxBytes: number): Promise<Uint8Array<ArrayBuffer>> {
   const declared = Number(request.headers.get("content-length"));
-  if (Number.isFinite(declared) && declared > maxBytes) throw new HttpError(HTTP_PAYLOAD_TOO_LARGE, BODY_TOO_LARGE_MESSAGE);
+  if (Number.isFinite(declared) && declared > maxBytes) throw new AppError(HTTP_PAYLOAD_TOO_LARGE, BODY_TOO_LARGE_MESSAGE);
   if (!request.body) return new Uint8Array();
   const reader = request.body.getReader();
   const chunks: Uint8Array[] = [];
@@ -26,7 +26,7 @@ export async function readBodyBytes(request: Request, maxBytes: number): Promise
     total += value.byteLength;
     if (total > maxBytes) {
       await reader.cancel();
-      throw new HttpError(HTTP_PAYLOAD_TOO_LARGE, BODY_TOO_LARGE_MESSAGE);
+      throw new AppError(HTTP_PAYLOAD_TOO_LARGE, BODY_TOO_LARGE_MESSAGE);
     }
     chunks.push(value);
   }
@@ -44,22 +44,22 @@ export async function readBodyBytes(request: Request, maxBytes: number): Promise
  * so this also keeps other sites from posting data with the user's cookie.
  */
 export async function readJsonBody(request: Request, maxBytes: number): Promise<unknown> {
-  if (contentType(request) !== JSON_CONTENT_TYPE) throw new HttpError(HTTP_UNSUPPORTED_MEDIA_TYPE, JSON_REQUIRED_MESSAGE);
+  if (contentType(request) !== JSON_CONTENT_TYPE) throw new AppError(HTTP_UNSUPPORTED_MEDIA_TYPE, JSON_REQUIRED_MESSAGE);
   const bytes = await readBodyBytes(request, maxBytes);
   try {
     return JSON.parse(new TextDecoder().decode(bytes)) as unknown;
   } catch {
-    throw new HttpError(HTTP_BAD_REQUEST, INVALID_BODY_MESSAGE);
+    throw new AppError(HTTP_BAD_REQUEST, INVALID_BODY_MESSAGE);
   }
 }
 
 export async function readFormBody(request: Request, maxBytes: number): Promise<FormData> {
   const type = request.headers.get("content-type") ?? "";
-  if (contentType(request) !== MULTIPART_CONTENT_TYPE) throw new HttpError(HTTP_UNSUPPORTED_MEDIA_TYPE, FORM_REQUIRED_MESSAGE);
+  if (contentType(request) !== MULTIPART_CONTENT_TYPE) throw new AppError(HTTP_UNSUPPORTED_MEDIA_TYPE, FORM_REQUIRED_MESSAGE);
   const bytes = await readBodyBytes(request, maxBytes);
   try {
     return await new Response(bytes, { headers: { "content-type": type } }).formData();
   } catch {
-    throw new HttpError(HTTP_BAD_REQUEST, FORM_REQUIRED_MESSAGE);
+    throw new AppError(HTTP_BAD_REQUEST, FORM_REQUIRED_MESSAGE);
   }
 }

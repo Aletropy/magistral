@@ -1,6 +1,6 @@
 import { updateUser } from "@/lib/auth/accounts";
 import { userUpdateSchema } from "@/lib/auth/schema";
-import type { UserResponseBody } from "@/lib/http/api";
+import type { UserResponseBody } from "@/lib/http/contracts";
 import { defineRoute } from "@/lib/http/route";
 
 /** Renames, changes the role, disables or enables an account, or resets its password. */

@@ -1,7 +1,9 @@
 import { getChatRepository } from "@/lib/chat/getChatRepository";
 import { CONVERSATION_NOT_FOUND_MESSAGE } from "@/lib/chat/messages";
-import { HTTP_ACCEPTED, HTTP_NOT_FOUND, errorResponse, type TaskCreatedResponseBody } from "@/lib/http/api";
+import type { TaskCreatedResponseBody } from "@/lib/http/contracts";
+import { errorResponse } from "@/lib/http/responses";
 import { defineRoute } from "@/lib/http/route";
+import { HTTP_ACCEPTED, HTTP_NOT_FOUND } from "@/lib/http/status";
 import { draftSuggestionPayloadSchema, suggestDraftTask } from "@/lib/minuta/suggestDraftTask";
 import { enqueueTask } from "@/lib/tasks/getTaskWorker";
 

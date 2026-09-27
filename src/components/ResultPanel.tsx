@@ -1,14 +1,14 @@
 "use client";
 
 import { useMemo } from "react";
-import { DownloadButtons } from "@/components/DownloadButtons";
 import { ConsultedSources } from "@/components/ConsultedSources";
+import { DownloadButtons } from "@/components/DownloadButtons";
 import { ForbiddenTermsWarning } from "@/components/ForbiddenTermsWarning";
+import { MinutaPreview } from "@/components/MinutaPreview";
 import { RedlinePanel } from "@/components/RedlinePanel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { WarningCallout } from "@/components/ui/WarningCallout";
-import { MinutaPreview } from "@/components/MinutaPreview";
-import type { MinutaResponseBody } from "@/lib/http/api";
+import type { MinutaResponseBody } from "@/lib/http/contracts";
 import { parseMarkdown } from "@/lib/markdown/parseMarkdown";
 
 interface ResultPanelProps {

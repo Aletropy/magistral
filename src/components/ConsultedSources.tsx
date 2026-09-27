@@ -1,4 +1,4 @@
-import type { ConsultedSource } from "@/lib/http/api";
+import type { ConsultedSource } from "@/lib/minuta/types";
 
 interface ConsultedSourcesProps {
   sources: ConsultedSource[];

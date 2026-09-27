@@ -1,5 +1,7 @@
-import { HTTP_NOT_FOUND, errorResponse, type PlaygroundResponseBody } from "@/lib/http/api";
+import type { PlaygroundResponseBody } from "@/lib/http/contracts";
+import { errorResponse } from "@/lib/http/responses";
 import { defineRoute } from "@/lib/http/route";
+import { HTTP_NOT_FOUND } from "@/lib/http/status";
 import { getMinutaGenerator } from "@/lib/llm/getMinutaGenerator";
 import { findNegativeConstraintViolations } from "@/lib/personas/findNegativeConstraintViolations";
 import { getPersonaRepository } from "@/lib/personas/getPersonaRepository";

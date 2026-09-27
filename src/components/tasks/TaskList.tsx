@@ -1,19 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { useActivity } from "@/components/activity/ActivityProvider";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { useLiveRefresh } from "@/hooks/useLiveRefresh";
 import { TASK_POLL_INTERVAL_MS } from "@/hooks/useTask";
-import {
-  NETWORK_ERROR_MESSAGE,
-  TASKS_ENDPOINT,
-  readErrorMessage,
-  taskCancelEndpoint,
-  taskRetryEndpoint,
-  type TasksResponseBody,
-} from "@/lib/http/api";
+import { NETWORK_ERROR_MESSAGE, readErrorMessage } from "@/lib/http/client";
+import type { TasksResponseBody } from "@/lib/http/contracts";
+import { TASKS_ENDPOINT, taskCancelEndpoint, taskRetryEndpoint } from "@/lib/http/endpoints";
 import { TASK_KIND_LABELS, isTaskActive, type TaskSummary } from "@/lib/tasks/types";
 import { formatDateTime } from "@/lib/usage/format";
 import { TaskProgressBar } from "./TaskProgressBar";
@@ -37,11 +33,7 @@ export function TaskList({ initialTasks }: { initialTasks: TaskSummary[] }) {
     }
   }, []);
 
-  useEffect(() => {
-    if (!active) return;
-    const timer = setInterval(() => void refresh(), TASK_POLL_INTERVAL_MS);
-    return () => clearInterval(timer);
-  }, [active, refresh]);
+  useLiveRefresh(refresh, active, TASK_POLL_INTERVAL_MS);
 
   async function act(url: string) {
     setError(null);

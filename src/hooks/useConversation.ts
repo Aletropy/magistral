@@ -1,21 +1,14 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { useActivity } from "@/components/activity/ActivityProvider";
 import type { ChatConversation } from "@/lib/chat/types";
-import {
-  NETWORK_ERROR_MESSAGE,
-  conversationEndpoint,
-  conversationMessagesEndpoint,
-  postJson,
-  readErrorMessage,
-  replyRetryEndpoint,
-  sendJson,
-  taskCancelEndpoint,
-  type ConversationResponseBody,
-} from "@/lib/http/api";
+import { NETWORK_ERROR_MESSAGE, postJson, readErrorMessage, sendJson } from "@/lib/http/client";
+import type { ConversationResponseBody } from "@/lib/http/contracts";
+import { conversationEndpoint, conversationMessagesEndpoint, replyRetryEndpoint, taskCancelEndpoint } from "@/lib/http/endpoints";
+import { useLiveRefresh } from "./useLiveRefresh";
 
-/** How often a conversation waiting for a reply is refreshed. */
+/** How often a conversation waiting for a reply is refreshed while the event stream is down. */
 export const CONVERSATION_POLL_INTERVAL_MS = 2000;
 
 const SEND_FAILED = "Não foi possível enviar a mensagem. Tente novamente.";
@@ -41,11 +34,7 @@ export function useConversation(initial: ChatConversation) {
     }
   }, [id, refreshActivity]);
 
-  useEffect(() => {
-    if (!isReplying) return;
-    const timer = setInterval(() => void refresh(), CONVERSATION_POLL_INTERVAL_MS);
-    return () => clearInterval(timer);
-  }, [isReplying, refresh]);
+  useLiveRefresh(refresh, isReplying, CONVERSATION_POLL_INTERVAL_MS);
 
   /** Runs a request that changes the conversation, then reloads it; resolves to whether it worked. */
   const act = useCallback(

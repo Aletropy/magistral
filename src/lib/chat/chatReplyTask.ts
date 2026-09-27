@@ -2,7 +2,7 @@ import "server-only";
 import { z } from "zod";
 import { getChatGenerator } from "@/lib/llm/getChatGenerator";
 import { getEmbedder } from "@/lib/llm/getEmbedder";
-import { MinutaGenerationError } from "@/lib/llm/errors";
+import { LlmOutputError } from "@/lib/llm/errors";
 import { getMinutaRepository } from "@/lib/minutas/getMinutaRepository";
 import { getLibraryRepository } from "@/lib/rag/getLibraryRepository";
 import { selectLibraryContext, type ContextSource } from "@/lib/rag/selectContext";
@@ -76,7 +76,7 @@ export const chatReplyTask: TaskHandler<ChatReplyPayload, ChatReplyResult> = {
     );
     const { text } = await getChatGenerator("chat")(prompt, { signal });
     const answer = normalizeCitations(text.trim());
-    if (!answer) throw new MinutaGenerationError("empty");
+    if (!answer) throw new LlmOutputError("empty");
 
     const consulted = sources.map(({ ref, title, label }) => ({ ref, title, label }));
     return commit(() => {

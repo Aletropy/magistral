@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { AppError } from "@/lib/errors/AppError";
 import { configuredHosts, isAllowedHost } from "./allowedHosts";
-import { HttpError } from "./HttpError";
 import { readBodyBytes, readJsonBody } from "./readBody";
 import { isSameOriginRequest } from "./sameOrigin";
 
@@ -39,7 +39,7 @@ describe("request bodies", () => {
     await expect(readJsonBody(post({ "content-type": "application/json" }, '{"a":1}'), 100)).resolves.toEqual({ a: 1 });
     await expect(readJsonBody(post({ "content-type": "text/plain" }, "{}"), 100)).rejects.toMatchObject({ status: 415 });
     await expect(readJsonBody(post({ "content-type": "application/json" }, "{"), 100)).rejects.toMatchObject({ status: 400 });
-    await expect(readBodyBytes(post({}, "x".repeat(101)), 100)).rejects.toBeInstanceOf(HttpError);
+    await expect(readBodyBytes(post({}, "x".repeat(101)), 100)).rejects.toBeInstanceOf(AppError);
     await expect(readBodyBytes(post({ "content-length": "999999" }, "x"), 100)).rejects.toMatchObject({ status: 413 });
   });
 });

@@ -1,7 +1,7 @@
 import { extractText } from "@/lib/documents/extractText";
 import { MAX_SINGLE_UPLOAD_REQUEST_BYTES } from "@/lib/documents/formats";
 import { readUploadedDocument } from "@/lib/documents/readUpload";
-import type { ExtractTextResponseBody } from "@/lib/http/api";
+import type { ExtractTextResponseBody } from "@/lib/http/contracts";
 import { defineRoute } from "@/lib/http/route";
 
 /** Returns the plain text of an uploaded PDF or DOCX, e.g. the original a minuta is compared against. */

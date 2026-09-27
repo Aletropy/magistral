@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback } from "react";
-import { STYLE_CAPTURE_ENDPOINT, UPLOAD_FILE_FIELD } from "@/lib/http/api";
+import { STYLE_CAPTURE_ENDPOINT, UPLOAD_FILE_FIELD } from "@/lib/http/endpoints";
 import { styleCaptureResultSchema } from "@/lib/style/styleCaptureResult";
 import type { TaskDetail } from "@/lib/tasks/types";
 import { useBackgroundTask } from "./useBackgroundTask";

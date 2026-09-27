@@ -7,7 +7,7 @@ import { FormField } from "@/components/ui/FormField";
 import { Input } from "@/components/ui/input";
 import { useJsonSubmit } from "@/hooks/useJsonSubmit";
 import { MAX_PASSWORD_CHARS, passwordChangeSchema } from "@/lib/auth/schema";
-import { PASSWORD_ENDPOINT } from "@/lib/http/api";
+import { PASSWORD_ENDPOINT } from "@/lib/http/endpoints";
 import { collectFieldErrors } from "@/lib/validation/collectFieldErrors";
 
 const CHANGE_FAILED = "Não foi possível trocar a senha. Tente novamente.";

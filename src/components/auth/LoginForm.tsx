@@ -6,8 +6,8 @@ import { FormField } from "@/components/ui/FormField";
 import { Input } from "@/components/ui/input";
 import { useJsonSubmit } from "@/hooks/useJsonSubmit";
 import { MAX_PASSWORD_CHARS, MAX_USERNAME_CHARS } from "@/lib/auth/schema";
+import { LOGIN_ENDPOINT } from "@/lib/http/endpoints";
 import { HOME_PATH } from "@/lib/minutas/paths";
-import { LOGIN_ENDPOINT } from "@/lib/http/api";
 
 const LOGIN_FAILED = "Não foi possível entrar. Tente novamente.";
 

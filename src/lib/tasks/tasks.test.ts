@@ -5,6 +5,7 @@ import { insertTestUser } from "@/lib/auth/testHelpers";
 import { IN_MEMORY_DATABASE, openDatabase } from "@/lib/db/openDatabase";
 import { createNotificationRepository, type NotificationRepository } from "@/lib/notifications/repository";
 import { retryDelayMs } from "@/lib/queue/retryPolicy";
+import { createSlotPool } from "@/lib/queue/slotPool";
 import { TaskCanceledError, TaskInputError } from "./errors";
 import type { AnyTaskHandler, TaskHandler } from "./handler";
 import { INTERRUPTED_TASK_MESSAGE, createTaskRepository, type TaskRepository } from "./repository";
@@ -377,5 +378,29 @@ describe("task success notifications", () => {
     await worker.tick();
     expect(tasks.get(id, owner)!.status).toBe("succeeded");
     expect(notifications.listRecent(owner, 1)).toMatchObject([{ level: "success", title: "Concluída: Tarefa Ana", taskId: id }]);
+  });
+});
+
+describe("shared LLM slots", () => {
+  it("claims llm tasks only into slots the pool grants and frees them when tasks end", async () => {
+    const db = openTestDatabase();
+    const tasks = createTaskRepository(db);
+    const slots = createSlotPool(2);
+    const worker = createTaskWorker({
+      tasks,
+      handlers: [handler("minuta.draft", "llm", async () => ({ greeting: "ok" }))],
+      isRetryable: () => false,
+      describeError: () => "erro",
+      notify: () => {},
+      sharedSlots: { llm: slots },
+      now: () => START,
+    });
+    ["a", "b", "c"].forEach((name) => enqueue(tasks, name));
+    slots.tryAcquire(1); // a batch item holds one slot
+
+    expect(worker.fill()).toBe(1);
+    await worker.drain();
+    expect(slots.available()).toBe(1);
+    expect(tasks.countDue("llm", START)).toBe(2);
   });
 });

@@ -1,7 +1,8 @@
 import { MAX_SINGLE_UPLOAD_REQUEST_BYTES } from "@/lib/documents/formats";
 import { readUploadedDocument } from "@/lib/documents/readUpload";
-import { HTTP_ACCEPTED, type TaskCreatedResponseBody } from "@/lib/http/api";
+import type { TaskCreatedResponseBody } from "@/lib/http/contracts";
 import { defineRoute } from "@/lib/http/route";
+import { HTTP_ACCEPTED } from "@/lib/http/status";
 import { readStyleDocument } from "@/lib/style/captureStyle";
 import { captureStyleTask } from "@/lib/style/captureStyleTask";
 import { enqueueTask } from "@/lib/tasks/getTaskWorker";

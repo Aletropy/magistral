@@ -1,5 +1,7 @@
-import { HTTP_NOT_FOUND, errorResponse, type TaskResponseBody } from "@/lib/http/api";
+import type { TaskResponseBody } from "@/lib/http/contracts";
+import { errorResponse } from "@/lib/http/responses";
 import { defineRoute } from "@/lib/http/route";
+import { HTTP_NOT_FOUND } from "@/lib/http/status";
 import { getTaskRepository } from "@/lib/tasks/getTaskRepository";
 import { TASK_NOT_FOUND_MESSAGE } from "@/lib/tasks/messages";
 

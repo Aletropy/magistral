@@ -6,12 +6,12 @@ import { LoadExamplesButton } from "@/components/LoadExamplesButton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { getClauseRepository } from "@/lib/clauses/getClauseRepository";
-import { NEW_CLAUSE_PATH, clauseEditPath } from "@/lib/clauses/paths";
-import { DEMO_CLAUSES_ENDPOINT } from "@/lib/http/api";
-import { DOCUMENT_TYPE_LABELS } from "@/lib/minuta/documentTypes";
 import { requireUser } from "@/lib/auth/dal";
 import { isAdmin } from "@/lib/auth/types";
+import { getClauseRepository } from "@/lib/clauses/getClauseRepository";
+import { NEW_CLAUSE_PATH, clauseEditPath } from "@/lib/clauses/paths";
+import { DEMO_CLAUSES_ENDPOINT } from "@/lib/http/endpoints";
+import { DOCUMENT_TYPE_LABELS } from "@/lib/minuta/documentTypes";
 
 export const metadata: Metadata = { title: "Cláusulas aprovadas" };
 

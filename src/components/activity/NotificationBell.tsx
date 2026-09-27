@@ -7,13 +7,9 @@ import { TaskProgressBar } from "@/components/tasks/TaskProgressBar";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { BATCHES_PATH } from "@/lib/batch/paths";
-import {
-  NOTIFICATIONS_ENDPOINT,
-  NOTIFICATIONS_READ_ENDPOINT,
-  postJson,
-  taskCancelEndpoint,
-  type NotificationsResponseBody,
-} from "@/lib/http/api";
+import { postJson } from "@/lib/http/client";
+import type { NotificationsResponseBody } from "@/lib/http/contracts";
+import { NOTIFICATIONS_ENDPOINT, NOTIFICATIONS_READ_ENDPOINT, taskCancelEndpoint } from "@/lib/http/endpoints";
 import type { MarkReadRequest } from "@/lib/notifications/schema";
 import type { AppNotification } from "@/lib/notifications/types";
 import { TASKS_PATH } from "@/lib/tasks/paths";

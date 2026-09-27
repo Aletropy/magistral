@@ -1,10 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { isJobActive, type BatchJobDetail } from "@/lib/batch/types";
-import { HTTP_NOT_FOUND, batchEndpoint, type BatchResponseBody } from "@/lib/http/api";
+import type { BatchResponseBody } from "@/lib/http/contracts";
+import { batchEndpoint } from "@/lib/http/endpoints";
+import { HTTP_NOT_FOUND } from "@/lib/http/status";
+import { useLiveRefresh } from "./useLiveRefresh";
 
-/** How often an active batch is refreshed. */
+/** How often an active batch is refreshed while the event stream is down. */
 export const BATCH_POLL_INTERVAL_MS = 3000;
 
 /** Polls the job while it still has pending or running items; stops once everything finished. */
@@ -31,11 +34,7 @@ export function useBatchProgress(initial: BatchJobDetail) {
     }
   }, [initial.id]);
 
-  useEffect(() => {
-    if (!active) return;
-    const timer = setInterval(() => void refresh(), BATCH_POLL_INTERVAL_MS);
-    return () => clearInterval(timer);
-  }, [active, refresh]);
+  useLiveRefresh(refresh, active, BATCH_POLL_INTERVAL_MS);
 
   return { job, active, isStale, isDeleted, refresh };
 }

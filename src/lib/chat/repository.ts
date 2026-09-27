@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import type { DatabaseSync } from "node:sqlite";
 import { z } from "zod";
 import { withTransaction } from "@/lib/db/transaction";
-import type { ConsultedSource } from "@/lib/http/api";
+import type { ConsultedSource } from "@/lib/minuta/types";
 import { ChatBusyError } from "./errors";
 import {
   CHAT_MESSAGE_STATUSES,

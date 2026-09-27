@@ -1,5 +1,6 @@
-import { HTTP_NOT_FOUND, HTTP_NO_CONTENT, errorResponse } from "@/lib/http/api";
+import { errorResponse } from "@/lib/http/responses";
 import { defineRoute } from "@/lib/http/route";
+import { HTTP_NOT_FOUND, HTTP_NO_CONTENT } from "@/lib/http/status";
 import { getLibraryRepository } from "@/lib/rag/getLibraryRepository";
 
 const SOURCE_NOT_FOUND_MESSAGE = "Documento não encontrado na biblioteca.";

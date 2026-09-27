@@ -1,5 +1,6 @@
-import { HTTP_ACCEPTED, type TaskCreatedResponseBody } from "@/lib/http/api";
+import type { TaskCreatedResponseBody } from "@/lib/http/contracts";
 import { defineRoute } from "@/lib/http/route";
+import { HTTP_ACCEPTED } from "@/lib/http/status";
 import { librarySyncTask } from "@/lib/rag/libraryTasks";
 import { enqueueTask } from "@/lib/tasks/getTaskWorker";
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { PERSONAS_ENDPOINT, personaEndpoint } from "@/lib/http/api";
+import { PERSONAS_ENDPOINT, personaEndpoint } from "@/lib/http/endpoints";
 import type { PersonaInput } from "@/lib/personas/schema";
 import { useResourceMutations } from "./useResourceMutations";
 

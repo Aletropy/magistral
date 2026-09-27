@@ -2,8 +2,9 @@ import { batchZipName, buildBatchZip } from "@/lib/batch/buildZip";
 import { getBatchRepository } from "@/lib/batch/getBatchRepository";
 import { BATCH_NOT_FOUND_MESSAGE, NOTHING_TO_DOWNLOAD_MESSAGE } from "@/lib/batch/messages";
 import { EXPORT_FORMATS, type ExportFormat } from "@/lib/export/formats";
-import { HTTP_BAD_REQUEST, HTTP_NOT_FOUND, errorResponse } from "@/lib/http/api";
+import { errorResponse } from "@/lib/http/responses";
 import { defineRoute } from "@/lib/http/route";
+import { HTTP_BAD_REQUEST, HTTP_NOT_FOUND } from "@/lib/http/status";
 
 const ZIP_MIME_TYPE = "application/zip";
 

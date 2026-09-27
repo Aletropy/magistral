@@ -1,12 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import {
-  MINUTA_ENDPOINT,
-  minutaEndpoint,
-  postJson,
-  type MinutaResponseBody,
-} from "@/lib/http/api";
+import { postJson } from "@/lib/http/client";
+import type { MinutaResponseBody } from "@/lib/http/contracts";
+import { MINUTA_ENDPOINT, minutaEndpoint } from "@/lib/http/endpoints";
 import { draftTaskResultSchema } from "@/lib/minuta/draftTaskResult";
 import type { MinutaRequest } from "@/lib/minuta/schema";
 import type { TaskDetail } from "@/lib/tasks/types";
