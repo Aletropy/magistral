@@ -30,8 +30,13 @@ uso). Para uma demonstração confiável, **compre créditos no OpenRouter** (US
 modelos gratuitos e permitem modelos pagos) ou use `LLM_PROVIDER=gemini` / `anthropic` com a chave
 correspondente.
 
-**Privacidade.** Por padrão o Magistral só envia texto a modelos que garantem retenção zero
-(`zdr`). Se o modelo escolhido não tiver esse tipo de rota, a IA responde com erro; isso é proposital.
+**Privacidade e modo demonstração.** Por padrão o Magistral só envia texto a provedores que garantem
+retenção zero (`zdr`) e não treinam com os dados; a maioria dos modelos gratuitos não tem essa garantia, e por
+isso costuma falhar. Para uma demonstração rápida, ligue o **modo demonstração**
+(`OPENROUTER_ALLOW_DATA_COLLECTION=true`, passo 6): os modelos gratuitos passam a responder, mas os provedores
+**podem guardar e usar os textos** para treinar modelos. Nesse modo use **apenas dados fictícios**. O
+Magistral avisa isso num quadro amarelo na página inicial e em Privacidade. Na versão final, desligue-o e use
+um modelo/provedor pago.
 
 ## 1. Criar o nome no DuckDNS
 
@@ -147,6 +152,9 @@ LLM_PROVIDER=openrouter
 OPENROUTER_API_KEY=sk-or-...            # sua chave
 # Opcional: modelos separados por vírgula. Vazio usa o padrão gratuito.
 OPENROUTER_MODELS=
+# MODO DEMONSTRAÇÃO (só dados fictícios!): "true" libera provedores gratuitos que podem guardar/treinar
+# com os textos. Para uso real, deixe vazio e use um modelo pago.
+OPENROUTER_ALLOW_DATA_COLLECTION=true
 
 # Só se for usar o atualizador do DuckDNS (passo 7):
 DUCKDNS_SUBDOMAIN=magistral-demo        # só o nome, sem .duckdns.org
@@ -278,7 +286,7 @@ Para uma proteção maior, ative os snapshots do disco (EBS) da instância.
 | `app` reinicia sem parar | Falta variável obrigatória | `docker compose logs app` mostra o que falta |
 | "Host não permitido" / 421 | `MAGISTRAL_PUBLIC_URL` diferente do endereço usado | Corrija no `.env.production` e reinicie: `docker compose up -d` |
 | A IA responde "Muitas solicitações" | Modelo gratuito sobrecarregado ou cota diária acabou | Compre créditos no OpenRouter ou troque o provedor/modelo |
-| A IA responde que nenhum modelo garante retenção zero | O modelo não tem rota `zdr` | Use outro modelo, ou (sabendo o que significa) `OPENROUTER_ALLOW_DATA_COLLECTION=true` |
+| A IA responde que nenhum modelo garante retenção zero | O modelo não tem rota `zdr` | Na demonstração, `OPENROUTER_ALLOW_DATA_COLLECTION=true` (dados fictícios); na versão final, um modelo/provedor pago com retenção zero |
 | Construção da imagem morre por falta de memória | Máquina de 2 GB sem troca | Crie o swap do passo 4 |
 | Integrações mostra "chave de segurança mudou" | `MAGISTRAL_SECRET_KEY` foi alterada | Volte a chave anterior ou conecte de novo |
 | Indexar a biblioteca demora na primeira vez | Baixando o modelo de busca | Aguarde; ele fica guardado no volume |
