@@ -40,7 +40,8 @@ um modelo/provedor pago.
 
 ## 1. Criar o nome no DuckDNS
 
-1. Entre em <https://www.duckdns.org> e faça login.
+1. Entre em <https://www.duckdns.org> e faça login. Todo endereço do DuckDNS termina em **`.duckdns.org`**
+   (não `.gov` nem `.com`).
 2. Em **domains**, digite um nome (ex.: `magistral-demo`) e clique em **add domain**. Seu endereço será
    `magistral-demo.duckdns.org`.
 3. Anote o **token** que aparece no topo da página (é uma chave secreta: não a publique).
@@ -141,7 +142,7 @@ Preencha (troque `magistral-demo` pelo seu nome):
 
 ```ini
 MAGISTRAL_DOMAIN=magistral-demo.duckdns.org
-MAGISTRAL_PUBLIC_URL=https://magistral-demo.duckdns.org
+MAGISTRAL_PUBLIC_URL=https://magistral-demo.duckdns.org   # https://, não http://
 MAGISTRAL_RELEASE_CHANNEL=teste
 
 MAGISTRAL_SECRET_KEY=<o valor gerado pelo openssl>
@@ -164,6 +165,17 @@ DUCKDNS_TOKEN=<token do passo 1>
 
 Para usar outro provedor, mude `LLM_PROVIDER` para `gemini` (com `GEMINI_API_KEY`) ou `anthropic` (com
 `ANTHROPIC_API_KEY`).
+
+**Importante: faça o Compose enxergar o arquivo.** O Compose só lê o `.env` sozinho; o `.env.production` só
+vale quando você passa `--env-file`. Sem isso, qualquer comando `docker compose ...` (`logs`, `restart`,
+`ps`, `down`) falha com *"required variable MAGISTRAL_DOMAIN is missing a value"*. Para não precisar repetir a
+opção, crie um atalho uma única vez:
+
+```bash
+ln -s .env.production .env
+```
+
+Os exemplos abaixo continuam válidos com ou sem o atalho.
 
 O servidor confere estas variáveis ao iniciar e **não sobe** se faltar alguma coisa importante
 (`MAGISTRAL_PUBLIC_URL`, `MAGISTRAL_SECRET_KEY` com 32 caracteres ou mais, a chave do provedor). A mensagem
@@ -284,6 +296,7 @@ Para uma proteção maior, ative os snapshots do disco (EBS) da instância.
 | --- | --- | --- |
 | O navegador não abre o site | DuckDNS aponta para outro IP, ou a porta 443 está fechada | `nslookup` do domínio; revise o grupo de segurança |
 | Aviso de certificado inválido / Caddy sem certificado | Porta 80 fechada ou domínio ainda não aponta para a máquina | `docker compose logs caddy`; abra a 80 e espere o DNS; o Caddy tenta de novo sozinho |
+| `required variable MAGISTRAL_DOMAIN is missing a value` (mesmo com a variável no `.env.production`) | O comando rodou sem `--env-file .env.production` | `ln -s .env.production .env` (passo 6) ou acrescente `--env-file .env.production` ao comando |
 | `app` reinicia sem parar | Falta variável obrigatória | `docker compose logs app` mostra o que falta |
 | "Host não permitido" / 421 | `MAGISTRAL_PUBLIC_URL` diferente do endereço usado | Corrija no `.env.production` e reinicie: `docker compose up -d` |
 | A IA responde "Muitas solicitações" | Modelo gratuito sobrecarregado ou cota diária acabou | Compre créditos no OpenRouter ou troque o provedor/modelo |
