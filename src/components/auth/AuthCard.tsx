@@ -1,4 +1,6 @@
+import Link from "next/link";
 import type { ReactNode } from "react";
+import { PRIVACY_PATH } from "@/lib/auth/paths";
 
 /** The centered panel of the sign-in and first-setup pages, which have no navigation. */
 export function AuthCard({ title, description, children }: { title: string; description: ReactNode; children: ReactNode }) {
@@ -11,6 +13,9 @@ export function AuthCard({ title, description, children }: { title: string; desc
           <div className="text-sm text-muted-foreground">{description}</div>
         </div>
         {children}
+        <Link href={PRIVACY_PATH} className="text-center text-xs text-muted-foreground hover:text-primary hover:underline">
+          Privacidade dos dados
+        </Link>
       </div>
     </main>
   );

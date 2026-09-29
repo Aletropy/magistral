@@ -5,10 +5,13 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { NotificationBell } from "@/components/activity/NotificationBell";
+import { FeedbackButton } from "@/components/feedback/FeedbackButton";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { UserMenu } from "@/components/UserMenu";
 import type { CurrentUser } from "@/lib/auth/types";
+import { formatVersion, type ReleaseInfo } from "@/lib/config/release";
 import { HOME_PATH } from "@/lib/minutas/paths";
 import { SidebarNav } from "./SidebarNav";
 
@@ -19,7 +22,13 @@ const DRAWER_ID = "menu-principal";
  * The signed-in frame: a grouped sidebar on wide screens, a drawer on phones and tablets, and a top bar
  * with notifications, theme and the user's menu.
  */
-export function AppShell({ user, children }: { user: CurrentUser; children: ReactNode }) {
+interface AppShellProps {
+  user: CurrentUser;
+  release: ReleaseInfo;
+  children: ReactNode;
+}
+
+export function AppShell({ user, release, children }: AppShellProps) {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const pathname = usePathname();
   const drawerRef = useRef<HTMLDivElement>(null);
@@ -111,10 +120,16 @@ export function AppShell({ user, children }: { user: CurrentUser; children: Reac
           <Link href={HOME_PATH} className="font-semibold tracking-tight lg:hidden">
             Magistral
           </Link>
+          {release.isTestRelease && (
+            <Badge variant="outline" className="border-warning-border bg-warning text-warning-foreground">
+              Versão de teste
+            </Badge>
+          )}
           <div className="ml-auto flex items-center gap-1">
+            <FeedbackButton />
             <NotificationBell />
             <ThemeToggle />
-            <UserMenu user={user} />
+            <UserMenu user={user} version={formatVersion(release)} />
           </div>
         </header>
         <div id={MAIN_CONTENT_ID} className="flex flex-1 flex-col" tabIndex={-1}>

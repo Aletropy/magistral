@@ -106,3 +106,9 @@ export function minutaEndpoint(id: string): string {
 export const EVENTS_ENDPOINT = "/api/events";
 /** The event name the stream sends. */
 export const ACTIVITY_EVENT_NAME = "activity";
+
+export const FEEDBACK_ENDPOINT = "/api/feedback";
+
+export function feedbackEndpoint(id: number): string {
+  return `${FEEDBACK_ENDPOINT}/${id}`;
+}

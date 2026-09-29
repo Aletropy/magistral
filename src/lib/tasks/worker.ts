@@ -1,5 +1,6 @@
 import { runAsUser } from "@/lib/auth/actor";
 import { AppError } from "@/lib/errors/AppError";
+import { logEvent } from "@/lib/log";
 import type { NewNotification, NotificationDraft } from "@/lib/notifications/types";
 import { retryDelayMs } from "@/lib/queue/retryPolicy";
 import type { SlotPool } from "@/lib/queue/slotPool";
@@ -77,7 +78,7 @@ export function createTaskWorker(options: TaskWorkerOptions): TaskWorker {
     try {
       notify(notification);
     } catch (error) {
-      console.error("[tasks] failed to record a notification", error);
+      logEvent("error", "task.notification_failed", {}, error);
     }
   }
 
@@ -85,7 +86,7 @@ export function createTaskWorker(options: TaskWorkerOptions): TaskWorker {
     try {
       cleanup();
     } catch (error) {
-      console.error("[tasks] cleanup hook failed", error);
+      logEvent("error", "task.cleanup_failed", {}, error);
     }
   }
 
@@ -95,7 +96,7 @@ export function createTaskWorker(options: TaskWorkerOptions): TaskWorker {
     try {
       draft = handler.describeSuccess(result, task);
     } catch (error) {
-      console.error(`[tasks] ${task.kind} succeeded but its notification failed`, error);
+      logEvent("error", "task.describe_success_failed", { taskId: task.id, kind: task.kind }, error);
       draft = { level: "success", title: `Concluída: ${task.title}`, body: "", href: null };
     }
     safeNotify({ ...draft, ownerId: task.ownerId, taskId: task.id });
@@ -159,9 +160,10 @@ export function createTaskWorker(options: TaskWorkerOptions): TaskWorker {
       const message = expected ? error.message : describeError(error);
       if (!expected && isRetryable(error) && task.attempts < maxAttempts) {
         tasks.retry(task.id, message, new Date(now().getTime() + retryDelayMs(task.attempts)));
+        logEvent("warn", "task.retry_scheduled", { taskId: task.id, kind: task.kind, attempt: task.attempts, message });
         return;
       }
-      if (!expected) console.error(`[tasks] ${task.kind} failed`, error);
+      if (!expected) logEvent("error", "task.failed", { taskId: task.id, kind: task.kind, attempt: task.attempts }, error);
       failPermanently(task, message, handler, payload);
     }
   }
@@ -172,7 +174,7 @@ export function createTaskWorker(options: TaskWorkerOptions): TaskWorker {
     lane.add(task.id);
     onActivity(task.ownerId);
     const done = execute(task, controller.signal)
-      .catch((error: unknown) => console.error("[tasks] unexpected worker failure", error))
+      .catch((error: unknown) => logEvent("error", "task.worker_failure", { taskId: task.id }, error))
       .finally(() => {
         running.delete(task.id);
         lane.delete(task.id);
@@ -223,7 +225,7 @@ export function createTaskWorker(options: TaskWorkerOptions): TaskWorker {
       try {
         fill();
       } catch (error) {
-        console.error("[tasks] failed to claim tasks", error);
+        logEvent("error", "task.claim_failed", {}, error);
       }
       await idle();
     }

@@ -1,3 +1,6 @@
+import type { EnvVars } from "@/lib/config/envVars";
+import { PUBLIC_URL_ENV_VAR, resolvePublicUrl } from "@/lib/config/publicUrl";
+
 /**
  * Which Host headers the server answers. A DNS-rebinding page reaches the server under the attacker's
  * own hostname, so only names the office really uses are accepted: localhost, IP addresses, mDNS
@@ -30,4 +33,11 @@ export function isAllowedHost(host: string | null, extraHosts: readonly string[]
   if (name === LOCALHOST || IPV4.test(name) || name.includes(":")) return true;
   if (LOCAL_SUFFIXES.some((suffix) => name.endsWith(suffix))) return true;
   return extraHosts.includes(name);
+}
+
+/** Every extra hostname the server answers: MAGISTRAL_ALLOWED_HOSTS plus the host of MAGISTRAL_PUBLIC_URL. */
+export function allowedHostsFromEnv(env: EnvVars = process.env): string[] {
+  const publicUrl = resolvePublicUrl(env[PUBLIC_URL_ENV_VAR]);
+  const extra = configuredHosts(env[ALLOWED_HOSTS_ENV_VAR]);
+  return publicUrl ? [...extra, hostnameOf(new URL(publicUrl).host)] : extra;
 }

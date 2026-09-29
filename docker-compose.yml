@@ -1,0 +1,50 @@
+# Magistral behind Caddy (automatic HTTPS). Copy .env.production.example to .env.production, fill it in,
+# then: docker compose --env-file .env.production up -d --build. See docs/deploy.md.
+services:
+  app:
+    build:
+      context: .
+      args:
+        MAGISTRAL_COMMIT: ${MAGISTRAL_COMMIT:-}
+    env_file: .env.production
+    # Named volumes keep the ownership the image gives these folders (the app runs as a non-root user).
+    volumes:
+      - magistral_data:/app/data
+      - magistral_backups:/app/backups
+    restart: unless-stopped
+    # Reached only through Caddy; not published on the host.
+    expose:
+      - "3000"
+
+  caddy:
+    image: caddy:2
+    depends_on:
+      - app
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      MAGISTRAL_DOMAIN: "${MAGISTRAL_DOMAIN:?Defina MAGISTRAL_DOMAIN em .env.production, por exemplo magistral.duckdns.org}"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    restart: unless-stopped
+
+  # Optional: keeps the DuckDNS name pointing at this machine's public IP.
+  # Start with: docker compose --profile duckdns up -d
+  duckdns:
+    image: lscr.io/linuxserver/duckdns:latest
+    profiles: ["duckdns"]
+    environment:
+      SUBDOMAINS: ${DUCKDNS_SUBDOMAIN:-}
+      TOKEN: ${DUCKDNS_TOKEN:-}
+      TZ: America/Sao_Paulo
+    restart: unless-stopped
+
+volumes:
+  magistral_data:
+  magistral_backups:
+  caddy_data:
+  caddy_config:

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { AppError } from "@/lib/errors/AppError";
-import { configuredHosts, isAllowedHost } from "./allowedHosts";
+import { allowedHostsFromEnv, configuredHosts, isAllowedHost } from "./allowedHosts";
 import { readBodyBytes, readJsonBody } from "./readBody";
 import { isSameOriginRequest } from "./sameOrigin";
 
@@ -41,5 +41,14 @@ describe("request bodies", () => {
     await expect(readJsonBody(post({ "content-type": "application/json" }, "{"), 100)).rejects.toMatchObject({ status: 400 });
     await expect(readBodyBytes(post({}, "x".repeat(101)), 100)).rejects.toBeInstanceOf(AppError);
     await expect(readBodyBytes(post({ "content-length": "999999" }, "x"), 100)).rejects.toMatchObject({ status: 413 });
+  });
+});
+
+describe("allowedHostsFromEnv", () => {
+  it("adds the public URL's host to the configured ones", () => {
+    expect(
+      allowedHostsFromEnv({ MAGISTRAL_ALLOWED_HOSTS: "escritorio.lan", MAGISTRAL_PUBLIC_URL: "https://Magistral.duckdns.org" }),
+    ).toEqual(["escritorio.lan", "magistral.duckdns.org"]);
+    expect(allowedHostsFromEnv({})).toEqual([]);
   });
 });

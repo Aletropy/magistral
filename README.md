@@ -84,6 +84,12 @@ Outros comandos: `pnpm test` (testes), `pnpm lint`, `pnpm typecheck`.
 7. **Lotes** → "Novo lote": baixe a planilha de exemplo, envie-a, use `{{nome}}`, `{{cpf}}` e `{{valor}}` no modelo e inicie. As minutas ficam prontas em segundo plano; baixe o ZIP.
 8. **Uso**: todas as chamadas, com os modelos usados e custo zero nos modelos gratuitos e locais.
 
+## Publicar (versão de teste)
+
+O app roda num contêiner Docker atrás do Caddy, que cuida do HTTPS: `docker compose --env-file
+.env.production up -d --build`. O passo a passo (AWS, DuckDNS, cópias de segurança, atualização) está em
+[docs/deploy.md](docs/deploy.md). `pnpm verify` roda lint, tipos, testes e build antes de publicar.
+
 ## Onde ficam os dados
 
 Tudo em `data/` (só a conta que roda o servidor consegue ler o banco), que não vai para o git:

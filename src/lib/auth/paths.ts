@@ -2,6 +2,8 @@ export const LOGIN_PATH = "/entrar";
 export const SETUP_PATH = "/configurar";
 export const TEAM_PATH = "/equipe";
 export const ACCOUNT_PATH = "/conta";
+/** Public: where the office's data goes, linked from sign-in and setup. */
+export const PRIVACY_PATH = "/privacidade";
 /** Query parameter of the login page: where to go after signing in. */
 export const NEXT_PATH_PARAM = "proximo";
 

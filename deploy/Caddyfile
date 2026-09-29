@@ -1,0 +1,17 @@
+# Caddy gets and renews the HTTPS certificate for MAGISTRAL_DOMAIN by itself (ports 80 and 443 must be
+# open). It passes X-Forwarded-Proto, so the app marks session cookies Secure.
+{$MAGISTRAL_DOMAIN} {
+	encode zstd gzip
+	# Uploads to the library can reach ~200 MB (20 files of 10 MB).
+	request_body {
+		max_size 210MB
+	}
+	reverse_proxy app:3000 {
+		# Server-sent events (/api/events) must reach the browser as they happen.
+		flush_interval -1
+	}
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		-Server
+	}
+}

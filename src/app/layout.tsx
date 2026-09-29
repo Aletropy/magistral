@@ -6,6 +6,7 @@ import { AppShell } from "@/components/shell/AppShell";
 import { Toaster } from "@/components/ui/sonner";
 import { getCurrentUser } from "@/lib/auth/dal";
 import { toCurrentUser } from "@/lib/auth/types";
+import { getReleaseInfo } from "@/lib/config/release";
 import { NONCE_HEADER } from "@/lib/http/contentSecurityPolicy";
 import { THEME_INIT_SCRIPT } from "@/lib/theme/theme";
 import "./globals.css";
@@ -34,7 +35,9 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       <body className="flex min-h-full flex-col">
         {user ? (
           <ActivityProvider>
-            <AppShell user={toCurrentUser(user)}>{children}</AppShell>
+            <AppShell user={toCurrentUser(user)} release={getReleaseInfo()}>
+              {children}
+            </AppShell>
           </ActivityProvider>
         ) : (
           // The sign-in and setup pages: no navigation, and nothing to poll.

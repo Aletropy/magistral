@@ -1,3 +1,4 @@
+import { logEvent } from "@/lib/log";
 import { retryDelayMs } from "@/lib/queue/retryPolicy";
 import { createSlotPool, type SlotPool } from "@/lib/queue/slotPool";
 import type { BatchRepository } from "./repository";
@@ -91,7 +92,7 @@ export function createBatchWorker(options: BatchWorkerOptions): BatchWorker {
     try {
       onJobFinished?.(job);
     } catch (error) {
-      console.error("[batch] job-finished hook failed", error);
+      logEvent("error", "batch.job_finished_hook_failed", { jobId: job.id }, error);
     }
   }
 
@@ -122,7 +123,7 @@ export function createBatchWorker(options: BatchWorkerOptions): BatchWorker {
       try {
         if ((await tick()) === 0) await idle();
       } catch (error) {
-        console.error("[batch] worker iteration failed", error);
+        logEvent("error", "batch.iteration_failed", {}, error);
         await idle();
       }
     }

@@ -1,14 +1,22 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { LOGIN_PATH, SETUP_PATH, loginPath } from "@/lib/auth/paths";
+import { LOGIN_PATH, PRIVACY_PATH, SETUP_PATH, loginPath } from "@/lib/auth/paths";
 import { SESSION_COOKIE_NAME } from "@/lib/auth/config";
-import { ALLOWED_HOSTS_ENV_VAR, configuredHosts, isAllowedHost } from "@/lib/http/allowedHosts";
+import { allowedHostsFromEnv, isAllowedHost } from "@/lib/http/allowedHosts";
 import { NONCE_HEADER, contentSecurityPolicy } from "@/lib/http/contentSecurityPolicy";
 
 const HTTP_UNAUTHORIZED = 401;
 const HTTP_MISDIRECTED_REQUEST = 421;
 const API_PREFIX = "/api/";
 /** Reachable without a session: the sign-in and first-setup pages and the endpoints they call. */
-const PUBLIC_PATHS = new Set([LOGIN_PATH, SETUP_PATH, "/api/auth/login", "/api/auth/logout", "/api/auth/setup"]);
+const PUBLIC_PATHS = new Set([
+  LOGIN_PATH,
+  SETUP_PATH,
+  PRIVACY_PATH,
+  "/api/auth/login",
+  "/api/auth/logout",
+  "/api/auth/setup",
+  "/api/health",
+]);
 const NOT_SIGNED_IN_BODY = { error: "Sua sessão expirou. Entre novamente para continuar." };
 
 /**
@@ -17,7 +25,7 @@ const NOT_SIGNED_IN_BODY = { error: "Sua sessão expirou. Entre novamente para c
  * per-request CSP nonce.
  */
 export function proxy(request: NextRequest): NextResponse {
-  if (!isAllowedHost(request.headers.get("host"), configuredHosts(process.env[ALLOWED_HOSTS_ENV_VAR]))) {
+  if (!isAllowedHost(request.headers.get("host"), allowedHostsFromEnv())) {
     return new NextResponse("Endereço não reconhecido por este servidor.", { status: HTTP_MISDIRECTED_REQUEST });
   }
 

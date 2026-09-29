@@ -5,14 +5,14 @@ import Link from "next/link";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { ACCOUNT_PATH, LOGIN_PATH } from "@/lib/auth/paths";
+import { ACCOUNT_PATH, LOGIN_PATH, PRIVACY_PATH } from "@/lib/auth/paths";
 import { USER_ROLE_LABELS, type CurrentUser } from "@/lib/auth/types";
 import { removeLocalValues } from "@/lib/browser/localValue";
 import { LOGOUT_ENDPOINT } from "@/lib/http/endpoints";
 import { MINUTA_DRAFT_STORAGE_PREFIX } from "@/lib/minuta/storedDraft";
 
 /** Who is signed in, a link to their account and signing out (which also clears private drafts here). */
-export function UserMenu({ user }: { user: CurrentUser }) {
+export function UserMenu({ user, version }: { user: CurrentUser; version: string }) {
   const [isSigningOut, setIsSigningOut] = useState(false);
 
   async function signOut() {
@@ -43,11 +43,15 @@ export function UserMenu({ user }: { user: CurrentUser }) {
           <Button asChild variant="ghost" size="sm" className="justify-start">
             <Link href={ACCOUNT_PATH}>Minha conta</Link>
           </Button>
+          <Button asChild variant="ghost" size="sm" className="justify-start">
+            <Link href={PRIVACY_PATH}>Privacidade dos dados</Link>
+          </Button>
           <Button variant="ghost" size="sm" className="justify-start" disabled={isSigningOut} onClick={() => void signOut()}>
             <LogOut aria-hidden />
             {isSigningOut ? "Saindo…" : "Sair"}
           </Button>
         </div>
+        <p className="border-t pt-2 text-xs text-muted-foreground">Magistral {version}</p>
       </PopoverContent>
     </Popover>
   );

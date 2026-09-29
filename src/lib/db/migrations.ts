@@ -339,6 +339,21 @@ function addRecordOwners(db: DatabaseSync): void {
   `);
 }
 
+/** What testers report from any page; admins read and resolve it at /feedback. */
+function createFeedbackTable(db: DatabaseSync): void {
+  db.exec(`
+    CREATE TABLE feedback (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+      page TEXT NOT NULL,
+      message TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+      resolved_at TEXT
+    );
+    CREATE INDEX feedback_open ON feedback (resolved_at, created_at);
+  `);
+}
+
 /** Ordered schema changes. Append new migrations; never edit or reorder existing ones. */
 export const MIGRATIONS: readonly Migration[] = [
   createPersonaTables,
@@ -355,6 +370,7 @@ export const MIGRATIONS: readonly Migration[] = [
   reconcileLegacyChat,
   createAuthTables,
   addRecordOwners,
+  createFeedbackTable,
 ];
 
 function readSchemaVersion(db: DatabaseSync): number {
