@@ -13,6 +13,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { LOADING_LABEL, useIsHydrated } from "@/hooks/useIsHydrated";
 import { useJsonSubmit } from "@/hooks/useJsonSubmit";
 import { newPasswordSchema } from "@/lib/auth/schema";
 import { userEndpoint } from "@/lib/http/endpoints";
@@ -22,6 +23,7 @@ const RESET_FAILED = "Não foi possível redefinir a senha. Tente novamente.";
 /** Sets a new password for someone who forgot theirs; their open sessions end. */
 export function ResetPasswordButton({ userId, name }: { userId: string; name: string }) {
   const { isPending, error, setError, submit } = useJsonSubmit();
+  const isHydrated = useIsHydrated();
   const [isOpen, setIsOpen] = useState(false);
   const [password, setPassword] = useState("");
   const [confirmation, setConfirmation] = useState("");
@@ -52,7 +54,7 @@ export function ResetPasswordButton({ userId, name }: { userId: string; name: st
         </Button>
       </AlertDialogTrigger>
       <AlertDialogContent>
-        <form className="flex flex-col gap-4" noValidate onSubmit={handleSubmit}>
+        <form method="post" className="flex flex-col gap-4" noValidate onSubmit={handleSubmit}>
           <AlertDialogHeader>
             <AlertDialogTitle>Redefinir a senha de {name}</AlertDialogTitle>
             <AlertDialogDescription>
@@ -75,8 +77,8 @@ export function ResetPasswordButton({ userId, name }: { userId: string; name: st
           )}
           <AlertDialogFooter>
             <AlertDialogCancel type="button">Cancelar</AlertDialogCancel>
-            <Button type="submit" disabled={isPending}>
-              {isPending ? "Salvando…" : "Redefinir"}
+            <Button type="submit" disabled={isPending || !isHydrated}>
+              {!isHydrated ? LOADING_LABEL : isPending ? "Salvando…" : "Redefinir"}
             </Button>
           </AlertDialogFooter>
         </form>

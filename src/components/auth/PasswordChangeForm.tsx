@@ -5,6 +5,7 @@ import { PASSWORDS_DIFFER_MESSAGE, PasswordFields } from "@/components/auth/Pass
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/FormField";
 import { Input } from "@/components/ui/input";
+import { LOADING_LABEL, useIsHydrated } from "@/hooks/useIsHydrated";
 import { useJsonSubmit } from "@/hooks/useJsonSubmit";
 import { MAX_PASSWORD_CHARS, passwordChangeSchema } from "@/lib/auth/schema";
 import { PASSWORD_ENDPOINT } from "@/lib/http/endpoints";
@@ -15,6 +16,7 @@ const CHANGE_FAILED = "Não foi possível trocar a senha. Tente novamente.";
 /** Changes the signed-in user's password; other browsers where they were signed in are signed out. */
 export function PasswordChangeForm() {
   const { isPending, error, submit } = useJsonSubmit();
+  const isHydrated = useIsHydrated();
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmation, setConfirmation] = useState("");
@@ -38,7 +40,7 @@ export function PasswordChangeForm() {
   }
 
   return (
-    <form className="flex max-w-md flex-col gap-4" noValidate onSubmit={handleSubmit}>
+    <form method="post" className="flex max-w-md flex-col gap-4" noValidate onSubmit={handleSubmit}>
       <FormField label="Senha atual" htmlFor="current-password" error={errors.currentPassword}>
         <Input
           id="current-password"
@@ -70,8 +72,8 @@ export function PasswordChangeForm() {
           Senha alterada. As sessões em outros navegadores foram encerradas.
         </p>
       )}
-      <Button type="submit" className="self-start" disabled={isPending}>
-        {isPending ? "Salvando…" : "Trocar senha"}
+      <Button type="submit" className="self-start" disabled={isPending || !isHydrated}>
+        {!isHydrated ? LOADING_LABEL : isPending ? "Salvando…" : "Trocar senha"}
       </Button>
     </form>
   );

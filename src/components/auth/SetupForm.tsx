@@ -5,6 +5,7 @@ import { PASSWORDS_DIFFER_MESSAGE, PasswordFields } from "@/components/auth/Pass
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/FormField";
 import { Input } from "@/components/ui/input";
+import { LOADING_LABEL, useIsHydrated } from "@/hooks/useIsHydrated";
 import { useJsonSubmit } from "@/hooks/useJsonSubmit";
 import { MAX_DISPLAY_NAME_CHARS, MAX_USERNAME_CHARS, setupSchema, type SetupInput } from "@/lib/auth/schema";
 import { SETUP_ENDPOINT } from "@/lib/http/endpoints";
@@ -17,6 +18,7 @@ const EMPTY: SetupInput = { setupToken: "", displayName: "", username: "", passw
 /** Creates the office's first admin with the code from the server log, then opens the app signed in. */
 export function SetupForm() {
   const { isPending, error, submit } = useJsonSubmit();
+  const isHydrated = useIsHydrated();
   const [values, setValues] = useState(EMPTY);
   const [confirmation, setConfirmation] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -36,7 +38,7 @@ export function SetupForm() {
   }
 
   return (
-    <form className="flex flex-col gap-4" noValidate onSubmit={handleSubmit}>
+    <form method="post" className="flex flex-col gap-4" noValidate onSubmit={handleSubmit}>
       <FormField
         label="Código de configuração"
         htmlFor="setupToken"
@@ -90,8 +92,8 @@ export function SetupForm() {
           {error}
         </p>
       )}
-      <Button type="submit" size="lg" disabled={isPending}>
-        {isPending ? "Criando…" : "Criar administrador e entrar"}
+      <Button type="submit" size="lg" disabled={isPending || !isHydrated}>
+        {!isHydrated ? LOADING_LABEL : isPending ? "Criando…" : "Criar administrador e entrar"}
       </Button>
     </form>
   );

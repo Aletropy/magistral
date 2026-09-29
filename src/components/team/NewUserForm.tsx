@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/FormField";
 import { Input } from "@/components/ui/input";
 import { NATIVE_SELECT_CLASS } from "@/components/ui/nativeSelect";
+import { LOADING_LABEL, useIsHydrated } from "@/hooks/useIsHydrated";
 import { useJsonSubmit } from "@/hooks/useJsonSubmit";
 import { MAX_DISPLAY_NAME_CHARS, MAX_USERNAME_CHARS, newUserSchema, type NewUserInput } from "@/lib/auth/schema";
 import { USER_ROLES, USER_ROLE_LABELS, type UserRole } from "@/lib/auth/types";
@@ -20,6 +21,7 @@ const EMPTY: NewUserInput = { displayName: "", username: "", password: "", role:
 export function NewUserForm() {
   const router = useRouter();
   const { isPending, error, submit } = useJsonSubmit();
+  const isHydrated = useIsHydrated();
   const [values, setValues] = useState(EMPTY);
   const [confirmation, setConfirmation] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -46,7 +48,7 @@ export function NewUserForm() {
   }
 
   return (
-    <form className="flex flex-col gap-4 rounded-lg border bg-card p-4 sm:p-6" noValidate onSubmit={handleSubmit}>
+    <form method="post" className="flex flex-col gap-4 rounded-lg border bg-card p-4 sm:p-6" noValidate onSubmit={handleSubmit}>
       <h2 className="text-lg font-semibold">Cadastrar pessoa</h2>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <FormField label="Nome" htmlFor="new-user-name" error={errors.displayName}>
@@ -106,8 +108,8 @@ export function NewUserForm() {
           {created} cadastrado. Informe a senha inicial pessoalmente; ela pode ser trocada em Minha conta.
         </p>
       )}
-      <Button type="submit" className="self-start" disabled={isPending}>
-        {isPending ? "Cadastrando…" : "Cadastrar"}
+      <Button type="submit" className="self-start" disabled={isPending || !isHydrated}>
+        {!isHydrated ? LOADING_LABEL : isPending ? "Cadastrando…" : "Cadastrar"}
       </Button>
     </form>
   );

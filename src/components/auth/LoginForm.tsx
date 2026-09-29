@@ -4,6 +4,7 @@ import { useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/FormField";
 import { Input } from "@/components/ui/input";
+import { LOADING_LABEL, useIsHydrated } from "@/hooks/useIsHydrated";
 import { useJsonSubmit } from "@/hooks/useJsonSubmit";
 import { MAX_PASSWORD_CHARS, MAX_USERNAME_CHARS } from "@/lib/auth/schema";
 import { LOGIN_ENDPOINT } from "@/lib/http/endpoints";
@@ -14,6 +15,7 @@ const LOGIN_FAILED = "Não foi possível entrar. Tente novamente.";
 /** Signs in and reloads the app at `nextPath`, so every server component sees the new session. */
 export function LoginForm({ nextPath }: { nextPath: string | null }) {
   const { isPending, error, submit } = useJsonSubmit();
+  const isHydrated = useIsHydrated();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
 
@@ -25,7 +27,7 @@ export function LoginForm({ nextPath }: { nextPath: string | null }) {
   }
 
   return (
-    <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
+    <form method="post" className="flex flex-col gap-4" onSubmit={handleSubmit}>
       <FormField label="Nome de acesso" htmlFor="username">
         <Input
           id="username"
@@ -55,8 +57,8 @@ export function LoginForm({ nextPath }: { nextPath: string | null }) {
           {error}
         </p>
       )}
-      <Button type="submit" size="lg" disabled={isPending}>
-        {isPending ? "Entrando…" : "Entrar"}
+      <Button type="submit" size="lg" disabled={isPending || !isHydrated}>
+        {!isHydrated ? LOADING_LABEL : isPending ? "Entrando…" : "Entrar"}
       </Button>
     </form>
   );
