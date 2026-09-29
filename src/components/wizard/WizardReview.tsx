@@ -13,6 +13,8 @@ interface WizardReviewProps {
   personas: PersonaSummary[];
   clauses: ClauseOption[];
   librarySourceCount: number;
+  /** Steps the wizard showed; the review only lists those. */
+  visibleSteps: readonly WizardStepId[];
   onEdit: (step: WizardStepId) => void;
 }
 
@@ -31,7 +33,8 @@ function Group({ title, step, onEdit, children }: { title: string; step: WizardS
 }
 
 /** Everything the wizard collected, grouped by step, each with a way back to change it. */
-export function WizardReview({ values, personas, clauses, librarySourceCount, onEdit }: WizardReviewProps) {
+export function WizardReview({ values, personas, clauses, librarySourceCount, visibleSteps, onEdit }: WizardReviewProps) {
+  const shows = (step: WizardStepId) => visibleSteps.includes(step);
   const type =
     values.documentType === OTHER_DOCUMENT_TYPE_ID
       ? values.customDocumentType || "Outro (não descrito)"
@@ -42,11 +45,11 @@ export function WizardReview({ values, personas, clauses, librarySourceCount, on
 
   return (
     <div className="flex flex-col gap-3">
-      <Group title="Ponto de partida" step="inicio" onEdit={onEdit}>
-        {values.baseDocument ? `Documento base: ${values.baseDocument.name || "enviado"}` : "Do zero"}
-      </Group>
       <Group title="Tipo de documento" step="tipo" onEdit={onEdit}>
         {type}
+      </Group>
+      <Group title="Ponto de partida" step="inicio" onEdit={onEdit}>
+        {values.baseDocument ? `Modelo: ${values.baseDocument.name || "documento enviado"}` : "Do zero"}
       </Group>
       <Group title="Partes" step="partes" onEdit={onEdit}>
         <ul className="flex flex-col gap-0.5">
@@ -58,23 +61,34 @@ export function WizardReview({ values, personas, clauses, librarySourceCount, on
           ))}
         </ul>
       </Group>
-      <Group title="Cláusulas" step="clausulas" onEdit={onEdit}>
-        {approved.length === 0 && !values.clauses && "Somente as cláusulas usuais do tipo de documento."}
-        {approved.length > 0 && (
-          <ol className="list-decimal pl-5">
-            {approved.map((clause) => (
-              <li key={clause.id}>{clause.title}</li>
-            ))}
-          </ol>
+      <Group title="Condições" step="condicoes" onEdit={onEdit}>
+        {values.clauses ? (
+          <p className="whitespace-pre-line">{values.clauses}</p>
+        ) : (
+          "Nenhuma informada: a IA usa as condições usuais do tipo de documento."
         )}
-        {values.clauses && <p className="mt-1 whitespace-pre-line">{values.clauses}</p>}
       </Group>
+      {shows("clausulas") && (
+        <Group title="Cláusulas aprovadas" step="clausulas" onEdit={onEdit}>
+          {approved.length === 0 ? (
+            "Nenhuma escolhida."
+          ) : (
+            <ol className="list-decimal pl-5">
+              {approved.map((clause) => (
+                <li key={clause.id}>{clause.title}</li>
+              ))}
+            </ol>
+          )}
+        </Group>
+      )}
       <Group title="Persona" step="persona" onEdit={onEdit}>
         {persona ? `${persona.name} — ${persona.description}` : "Nenhuma selecionada"}
       </Group>
-      <Group title="Fundamentação" step="fundamentacao" onEdit={onEdit}>
-        {usesLibrary ? "Com a biblioteca jurídica" : "Sem a biblioteca jurídica"}
-      </Group>
+      {shows("fundamentacao") && (
+        <Group title="Fundamentação" step="fundamentacao" onEdit={onEdit}>
+          {usesLibrary ? "Com a biblioteca jurídica" : "Sem a biblioteca jurídica"}
+        </Group>
+      )}
     </div>
   );
 }

@@ -15,7 +15,14 @@ const VALUES: MinutaFormValues = {
 describe("stored minuta drafts", () => {
   it("round-trips a half-filled form, filling the missing base document", () => {
     const draft = parseStoredDraft(serializeDraft(VALUES, new Date("2026-09-23T12:00:00Z")));
-    expect(draft).toEqual({ savedAt: "2026-09-23T12:00:00.000Z", values: { ...VALUES, baseDocument: null } });
+    expect(draft).toEqual({ savedAt: "2026-09-23T12:00:00.000Z", values: { ...VALUES, baseDocument: null }, conditions: null });
+  });
+
+  it("keeps the wizard's answers, and loads drafts saved before they existed", () => {
+    const conditions = { answers: { multa: "10%" }, extra: "" };
+    expect(parseStoredDraft(serializeDraft(VALUES, new Date(), conditions))?.conditions).toEqual(conditions);
+    const legacy = JSON.stringify({ savedAt: "2026-09-01T00:00:00.000Z", values: { ...VALUES, baseDocument: null } });
+    expect(parseStoredDraft(legacy)?.conditions).toBeNull();
   });
 
   it("ignores missing, corrupt or outdated drafts", () => {

@@ -1,7 +1,7 @@
 import { ACCOUNT_PATH, TEAM_PATH } from "@/lib/auth/paths";
 import { BATCHES_PATH, NEW_BATCH_PATH } from "@/lib/batch/paths";
 import { CLAUSES_PATH } from "@/lib/clauses/paths";
-import { HISTORY_PATH, HOME_PATH, NEW_MINUTA_PATH } from "@/lib/minutas/paths";
+import { HISTORY_PATH, HOME_PATH, NEW_MINUTA_ADVANCED_PATH, NEW_MINUTA_PATH } from "@/lib/minutas/paths";
 import { PERSONAS_PATH, STYLE_CAPTURE_PATH } from "@/lib/personas/paths";
 import { LIBRARY_PATH } from "@/lib/rag/paths";
 import { TASKS_PATH } from "@/lib/tasks/paths";
@@ -26,13 +26,12 @@ export const APP_GUIDE: readonly GuideEntry[] = [
     feature: "Nova minuta — passo a passo",
     path: NEW_MINUTA_PATH,
     howTo:
-      "Opção “Passo a passo”: ponto de partida (do zero ou a partir de um documento base), tipo de documento, partes, cláusulas, persona, fundamentação e revisão. Cada etapa tem um guia ao lado. O rascunho fica salvo no navegador.",
+      "Uma página própria, em tela cheia, com uma pergunta por vez: tipo de documento, modelo (opcional), partes (a qualificação só aparece se a pessoa pedir), condições essenciais do tipo (ex.: aluguel, prazo, reajuste e garantia numa locação), cláusulas aprovadas (só se houver para o tipo), tom, biblioteca (só se houver documentos) e revisão. O rascunho fica salvo no navegador. Quando a minuta fica pronta, ela abre na página de revisão.",
   },
   {
-    feature: "Nova minuta — todos os campos",
-    path: NEW_MINUTA_PATH,
-    howTo:
-      "Opção “Todos os campos”: as mesmas seções numa página só, com um resumo ao lado, para quem já sabe o que quer. Quando a minuta fica pronta, ela abre direto na página de revisão.",
+    feature: "Nova minuta — modo avançado",
+    path: NEW_MINUTA_ADVANCED_PATH,
+    howTo: "Todos os campos numa página só, com um resumo ao lado, para quem já sabe o que pedir. Usa o mesmo rascunho do passo a passo.",
   },
   {
     feature: "Documento base",

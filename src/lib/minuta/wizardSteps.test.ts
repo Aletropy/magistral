@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { MinutaFormValues } from "./schema";
-import { WIZARD_STEPS, firstInvalidStep, stepIndex, validateStep } from "./wizardSteps";
+import { WIZARD_STEPS, firstInvalidStep, relevantSteps, stepIndex, validateStep } from "./wizardSteps";
 
 const BLANK: MinutaFormValues = {
   documentType: "outro",
@@ -39,6 +39,21 @@ describe("wizard steps", () => {
     };
     expect(firstInvalidStep(complete)).toBeNull();
     expect(validateStep(step("revisao"), complete)).toEqual({});
+  });
+
+  it("shows the approved-clauses and library steps only when the office has something for them", () => {
+    const ids = (context: { applicableClauseCount: number; librarySourceCount: number }) =>
+      relevantSteps(context).map((wizardStep) => wizardStep.id);
+    expect(ids({ applicableClauseCount: 0, librarySourceCount: 0 })).toEqual([
+      "tipo",
+      "inicio",
+      "partes",
+      "condicoes",
+      "persona",
+      "revisao",
+    ]);
+    expect(ids({ applicableClauseCount: 2, librarySourceCount: 1 })).toContain("clausulas");
+    expect(ids({ applicableClauseCount: 2, librarySourceCount: 1 })).toContain("fundamentacao");
   });
 
   it("has a guide for every step", () => {

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { DOCUMENT_TYPE_IDS } from "./documentTypes";
+import type { WizardConditions } from "./conditions";
 import type { MinutaFormValues } from "./schema";
 
 /**
@@ -24,11 +25,22 @@ const storedValuesSchema = z.object({
   baseDocument: z.object({ name: z.string(), text: z.string() }).nullable(),
 });
 
-const storedDraftSchema = z.object({ savedAt: z.string(), values: storedValuesSchema });
+/** The wizard's answers; drafts saved before the conditions step (or by the full form) have none. */
+const storedConditionsSchema = z.object({ answers: z.record(z.string(), z.string()), extra: z.string() });
+
+const storedDraftSchema = z.object({
+  savedAt: z.string(),
+  values: storedValuesSchema,
+  conditions: storedConditionsSchema.nullable().default(null),
+});
 export type StoredDraft = z.infer<typeof storedDraftSchema>;
 
-export function serializeDraft(values: MinutaFormValues, savedAt: Date): string {
-  return JSON.stringify({ savedAt: savedAt.toISOString(), values: { ...values, baseDocument: values.baseDocument ?? null } });
+export function serializeDraft(values: MinutaFormValues, savedAt: Date, conditions: WizardConditions | null = null): string {
+  return JSON.stringify({
+    savedAt: savedAt.toISOString(),
+    values: { ...values, baseDocument: values.baseDocument ?? null },
+    conditions,
+  });
 }
 
 /** The saved draft, or null when there is none or it no longer fits the form (e.g. after an update). */

@@ -1,32 +1,35 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
+import { Page } from "@/components/layout/Page";
 import { MinutaStudio } from "@/components/MinutaStudio";
 import { requireUser } from "@/lib/auth/dal";
 import { loadMinutaFormOptions } from "@/lib/minuta/loadMinutaFormOptions";
 import { loadStudioState } from "@/lib/minuta/loadStudioState";
 import { minutaPath } from "@/lib/minutas/paths";
 
-export const metadata: Metadata = { title: "Nova minuta" };
+export const metadata: Metadata = { title: "Nova minuta — todos os campos" };
 
-/** The guided wizard, on its own focused page (the app shell drops the sidebar here). */
-export default async function NewMinutaPage({ searchParams }: PageProps<"/minutas/nova">) {
+/** The advanced mode: every field on one page, sharing the unsent draft with the wizard. */
+export default async function NewMinutaAdvancedPage({ searchParams }: PageProps<"/minutas/nova/completo">) {
   await connection();
   const user = await requireUser();
   const state = loadStudioState(await searchParams, user.id);
-  // A draft that already finished opens its review page.
   if (state.kind === "finished") redirect(minutaPath(state.minutaId));
 
   return (
-    <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-4 px-4 py-6 sm:py-10">
-      <h1 className="sr-only">Nova minuta</h1>
+    <Page
+      title="Nova minuta"
+      width="wide"
+      description="Todos os campos numa página, para quem já sabe o que pedir. O rascunho é o mesmo do passo a passo."
+    >
       <MinutaStudio
         userId={user.id}
-        layout="steps"
+        layout="all"
         {...loadMinutaFormOptions()}
         initialTask={state.initialTask}
         initialSuggestion={state.initialSuggestion}
       />
-    </main>
+    </Page>
   );
 }

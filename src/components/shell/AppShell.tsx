@@ -12,11 +12,13 @@ import { Button } from "@/components/ui/button";
 import { UserMenu } from "@/components/UserMenu";
 import type { CurrentUser } from "@/lib/auth/types";
 import { formatVersion, type ReleaseInfo } from "@/lib/config/release";
-import { HOME_PATH } from "@/lib/minutas/paths";
+import { HOME_PATH, NEW_MINUTA_PATH } from "@/lib/minutas/paths";
+import { FocusShell, MAIN_CONTENT_ID } from "./FocusShell";
 import { SidebarNav } from "./SidebarNav";
 
-const MAIN_CONTENT_ID = "conteudo";
 const DRAWER_ID = "menu-principal";
+/** Pages shown full screen, with the label of their way out. */
+const FOCUS_PAGES: ReadonlyMap<string, string> = new Map([[NEW_MINUTA_PATH, "Sair do assistente"]]);
 
 /**
  * The signed-in frame: a grouped sidebar on wide screens, a drawer on phones and tablets, and a top bar
@@ -57,6 +59,9 @@ export function AppShell({ user, release, children }: AppShellProps) {
   function handleDrawerKeyDown(event: KeyboardEvent<HTMLDivElement>) {
     if (event.key === "Escape") closeDrawer();
   }
+
+  const focusExitLabel = FOCUS_PAGES.get(pathname);
+  if (focusExitLabel) return <FocusShell exitLabel={focusExitLabel}>{children}</FocusShell>;
 
   return (
     <div className="flex min-h-full flex-1">

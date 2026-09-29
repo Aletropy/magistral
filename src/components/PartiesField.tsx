@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { FormField, errorIdFor } from "@/components/ui/FormField";
 import { Input } from "@/components/ui/input";
@@ -19,23 +20,32 @@ interface PartiesFieldProps {
   errors: Record<string, string>;
   disabled: boolean;
   onChange: (parties: Party[]) => void;
+  /**
+   * The wizard's variant: no legend (the step title says it), and each party's qualification appears
+   * only when asked for, or when it already has a value or an error.
+   */
+  compact?: boolean;
 }
 
-export function PartiesField({ parties, errors, disabled, onChange }: PartiesFieldProps) {
+export function PartiesField({ parties, errors, disabled, onChange, compact = false }: PartiesFieldProps) {
+  const [openQualifications, setOpenQualifications] = useState<ReadonlySet<number>>(new Set());
   function updateParty(index: number, changes: Partial<Party>) {
     onChange(parties.map((party, i) => (i === index ? { ...party, ...changes } : party)));
   }
 
   function removeParty(index: number) {
     onChange(parties.filter((_, i) => i !== index));
+    setOpenQualifications(new Set());
   }
 
   return (
     <fieldset className="flex flex-col gap-3" disabled={disabled}>
-      <legend className="mb-1 text-sm font-medium">Partes envolvidas</legend>
+      <legend className={compact ? "sr-only" : "mb-1 text-sm font-medium"}>Partes envolvidas</legend>
       {parties.map((party, index) => {
         const fieldId = (field: keyof Party) => `party-${index}-${field}`;
         const errorFor = (field: keyof Party) => errors[`parties.${index}.${field}`];
+        const showsQualification =
+          !compact || openQualifications.has(index) || party.qualification !== "" || Boolean(errorFor("qualification"));
 
         return (
           <div key={index} className="flex flex-col gap-3 rounded-lg border bg-card p-3">
@@ -73,21 +83,31 @@ export function PartiesField({ parties, errors, disabled, onChange }: PartiesFie
                 />
               </FormField>
             </div>
-            <FormField
-              label="Qualificação (opcional)"
-              htmlFor={fieldId("qualification")}
-              error={errorFor("qualification")}
-              hint="CPF/CNPJ, endereço, representante legal…"
-            >
-              <Textarea
-                id={fieldId("qualification")}
-                rows={QUALIFICATION_ROWS}
-                maxLength={MAX_PARTY_QUALIFICATION_CHARS}
-                value={party.qualification}
-                aria-invalid={Boolean(errorFor("qualification"))}
-                onChange={(event) => updateParty(index, { qualification: event.target.value })}
-              />
-            </FormField>
+            {showsQualification ? (
+              <FormField
+                label="Qualificação (opcional)"
+                htmlFor={fieldId("qualification")}
+                error={errorFor("qualification")}
+                hint="CPF/CNPJ, endereço, representante legal…"
+              >
+                <Textarea
+                  id={fieldId("qualification")}
+                  rows={QUALIFICATION_ROWS}
+                  maxLength={MAX_PARTY_QUALIFICATION_CHARS}
+                  value={party.qualification}
+                  aria-invalid={Boolean(errorFor("qualification"))}
+                  onChange={(event) => updateParty(index, { qualification: event.target.value })}
+                />
+              </FormField>
+            ) : (
+              <button
+                type="button"
+                className="self-start text-xs font-medium text-primary hover:underline"
+                onClick={() => setOpenQualifications((open) => new Set(open).add(index))}
+              >
+                + Adicionar qualificação (CPF/CNPJ, endereço)
+              </button>
+            )}
           </div>
         );
       })}

@@ -51,24 +51,25 @@ export function MinutaStepFields({
       return (
         <PartiesField parties={values.parties} errors={errors} disabled={disabled} onChange={(parties) => onChange({ parties })} />
       );
+    case "condicoes":
+      return (
+        <ClausesTextField
+          value={values.clauses}
+          error={errors.clauses}
+          disabled={disabled}
+          onChange={(clauses) => onChange({ clauses })}
+        />
+      );
     case "clausulas":
       return (
-        <div className="flex flex-col gap-6">
-          <ApprovedClausesField
-            clauses={clauses}
-            documentType={values.documentType}
-            value={values.approvedClauseIds}
-            error={errors.approvedClauseIds}
-            disabled={disabled}
-            onChange={(approvedClauseIds) => onChange({ approvedClauseIds })}
-          />
-          <ClausesTextField
-            value={values.clauses}
-            error={errors.clauses}
-            disabled={disabled}
-            onChange={(clauses) => onChange({ clauses })}
-          />
-        </div>
+        <ApprovedClausesField
+          clauses={clauses}
+          documentType={values.documentType}
+          value={values.approvedClauseIds}
+          error={errors.approvedClauseIds}
+          disabled={disabled}
+          onChange={(approvedClauseIds) => onChange({ approvedClauseIds })}
+        />
       );
     case "persona":
       return (
