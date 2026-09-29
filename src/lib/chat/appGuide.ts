@@ -20,7 +20,7 @@ export const APP_GUIDE: readonly GuideEntry[] = [
     feature: "Início",
     path: HOME_PATH,
     howTo:
-      "O painel com as minutas e conversas recentes, o que está rodando agora e o acervo do escritório. O menu lateral agrupa Criar (Nova minuta, Advogado IA, Lotes), Acervo (Histórico, Personas, Cláusulas, Biblioteca) e Sistema (Tarefas; Uso e Equipe para administradores).",
+      "O painel com a caixa “Como posso ajudar?” (a conversa continua no Advogado IA ao lado da página), as minutas e conversas recentes, o que está rodando agora e o acervo do escritório. O menu lateral agrupa Criar (Nova minuta, Advogado IA, Lotes), Acervo (Histórico, Personas, Cláusulas, Biblioteca) e Sistema (Tarefas; Uso e Equipe para administradores).",
   },
   {
     feature: "Nova minuta — passo a passo",
@@ -96,7 +96,7 @@ export const APP_GUIDE: readonly GuideEntry[] = [
     feature: "Advogado IA",
     path: ASSISTANT_PATH,
     howTo:
-      "Este assistente. As conversas ficam salvas. Ele consulta sozinho personas, cláusulas, histórico, tarefas e a biblioteca, preenche o passo a passo de uma nova minuta e mostra botões para abrir páginas. Gerar uma minuta, alterar uma minuta salva, criar uma cláusula ou ajustar uma persona aparecem como um cartão que o usuário confirma ou recusa; nada disso acontece sem a confirmação. O botão “Criar minuta a partir desta conversa” também abre o passo a passo preenchido.",
+      "Este assistente. Abre ao lado de qualquer página pelo botão “Advogado IA” no topo ou Ctrl+K (no passo a passo, “Pedir ajuda”), continua a última conversa e sabe o que está aberto (a minuta, a persona, a cláusula, o lote ou a etapa do passo a passo). As conversas ficam salvas e abrem em tela cheia em Advogado IA. Ele consulta sozinho personas, cláusulas, histórico, tarefas e a biblioteca, preenche o passo a passo de uma nova minuta e mostra botões para abrir páginas. Gerar uma minuta, alterar uma minuta salva, criar uma cláusula ou ajustar uma persona aparecem como um cartão que o usuário confirma ou recusa; nada disso acontece sem a confirmação. O botão “Criar minuta a partir desta conversa” também abre o passo a passo preenchido.",
   },
 ];
 

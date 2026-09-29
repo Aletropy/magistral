@@ -30,6 +30,12 @@ describe("buildChatSystemPrompt", () => {
     expect(buildChatSystemPrompt({ ...CONTEXT, library: "off" })).not.toContain("buscar_biblioteca");
   });
 
+  it("tells where the user is only when the panel sent a page", () => {
+    const prompt = buildChatSystemPrompt({ ...CONTEXT, pageContext: "O usuário está na página “Histórico”." });
+    expect(prompt).toContain("<contexto_da_pagina>\nO usuário está na página “Histórico”.\n</contexto_da_pagina>");
+    expect(buildChatSystemPrompt(CONTEXT)).not.toContain("## Onde o usuário está");
+  });
+
   it("carries the minuta under discussion in its own block", () => {
     const prompt = buildChatSystemPrompt({ ...CONTEXT, minuta: { title: 'NDA "Beta"', markdown: "# NDA" } });
     expect(prompt).toContain(`<minuta titulo="NDA 'Beta'">\n# NDA\n</minuta>`);

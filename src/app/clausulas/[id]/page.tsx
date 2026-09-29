@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
+import { AssistantContext } from "@/components/assistant/AssistantContext";
 import { ClauseEditor } from "@/components/ClauseEditor";
 import { Page } from "@/components/layout/Page";
 import { getClauseRepository } from "@/lib/clauses/getClauseRepository";
@@ -27,6 +28,7 @@ export default async function EditClausePage({ params }: PageProps<"/clausulas/[
       title={<>Editar “{title}”</>}
       width="default"
     >
+      <AssistantContext kind="clausula" id={id} />
       <ClauseEditor clauseId={id} initialValues={{ title, category, documentTypes, body }} />
     </Page>
   );

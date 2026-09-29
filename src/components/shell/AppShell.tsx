@@ -5,6 +5,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { NotificationBell } from "@/components/activity/NotificationBell";
+import { AssistantButton } from "@/components/assistant/AssistantButton";
+import { AssistantPanel } from "@/components/assistant/AssistantPanel";
+import { AssistantProvider } from "@/components/assistant/AssistantProvider";
 import { FeedbackButton } from "@/components/feedback/FeedbackButton";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Badge } from "@/components/ui/badge";
@@ -31,6 +34,17 @@ interface AppShellProps {
 }
 
 export function AppShell({ user, release, children }: AppShellProps) {
+  return (
+    <AssistantProvider userId={user.id}>
+      <ShellFrame user={user} release={release}>
+        {children}
+      </ShellFrame>
+      <AssistantPanel />
+    </AssistantProvider>
+  );
+}
+
+function ShellFrame({ user, release, children }: AppShellProps) {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const pathname = usePathname();
   const drawerRef = useRef<HTMLDivElement>(null);
@@ -131,6 +145,7 @@ export function AppShell({ user, release, children }: AppShellProps) {
             </Badge>
           )}
           <div className="ml-auto flex items-center gap-1">
+            <AssistantButton />
             <FeedbackButton />
             <NotificationBell />
             <ThemeToggle />

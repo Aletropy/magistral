@@ -16,7 +16,13 @@ export const POST = defineRoute(
     const conversation = chats.get(id, user.id);
     if (!conversation) return errorResponse(HTTP_NOT_FOUND, CONVERSATION_NOT_FOUND_MESSAGE);
     const { replyId } = chats.addExchange(id, body.message);
-    const taskId = startReply(chats, { ownerId: user.id, conversationId: id, replyId, title: conversation.title });
+    const taskId = startReply(chats, {
+      ownerId: user.id,
+      conversationId: id,
+      replyId,
+      title: conversation.title,
+      context: body.context,
+    });
     return Response.json({ taskId } satisfies TaskCreatedResponseBody, { status: HTTP_ACCEPTED });
   },
 );

@@ -1,7 +1,8 @@
-import { FilePlus2, Layers, MessagesSquare } from "lucide-react";
+import { FilePlus2, Layers } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
+import { AssistantHero } from "@/components/assistant/AssistantHero";
 import { ActiveWorkCard } from "@/components/dashboard/ActiveWorkCard";
 import { DashboardCard } from "@/components/dashboard/DashboardCard";
 import { DataPrivacyNotice } from "@/components/DataPrivacyNotice";
@@ -54,18 +55,13 @@ export default async function DashboardPage({ searchParams }: PageProps<"/">) {
   return (
     <Page
       title={`Olá, ${firstName(user.displayName)}`}
-      description="Comece uma minuta, continue uma conversa ou acompanhe o que está rodando."
+      description="Peça ao Advogado IA, comece uma minuta ou acompanhe o que está rodando."
       width="wide"
       actions={
         <>
           <Button asChild variant="outline">
             <Link href={NEW_BATCH_PATH}>
               <Layers aria-hidden /> Novo lote
-            </Link>
-          </Button>
-          <Button asChild variant="outline">
-            <Link href={ASSISTANT_PATH}>
-              <MessagesSquare aria-hidden /> Advogado IA
             </Link>
           </Button>
           <Button asChild size="lg">
@@ -78,6 +74,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/">) {
     >
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <div className="flex flex-col gap-4 lg:col-span-2">
+          <AssistantHero />
           <DashboardCard title="Minutas recentes" href={HISTORY_PATH} linkLabel="Ver histórico">
             {minutas.length === 0 ? (
               <p className="text-sm text-muted-foreground">

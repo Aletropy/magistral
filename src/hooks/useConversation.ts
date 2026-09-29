@@ -12,7 +12,9 @@ import {
   replyRetryEndpoint,
   taskCancelEndpoint,
 } from "@/lib/http/endpoints";
+import type { PageContextInput } from "@/lib/assistant/pageContext";
 import type { StepDecision } from "@/lib/assistant/stepDecisions";
+import type { ChatMessageInput } from "@/lib/chat/schema";
 import { useLiveRefresh } from "./useLiveRefresh";
 
 /** How often a conversation waiting for a reply is refreshed while the event stream is down. */
@@ -23,7 +25,12 @@ const UPDATE_FAILED = "Não foi possível atualizar a conversa. Tente novamente.
 const DECISION_FAILED = "Não foi possível registrar sua decisão. Tente novamente.";
 
 /** One conversation with the Advogado IA: follows pending replies and sends, retries and cancels them. */
-export function useConversation(initial: ChatConversation) {
+export interface ConversationOptions {
+  /** The page a message is sent from, read at send time (the assistant panel). */
+  getContext?: () => PageContextInput | null;
+}
+
+export function useConversation(initial: ChatConversation, { getContext }: ConversationOptions = {}) {
   const { refresh: refreshActivity } = useActivity();
   const [conversation, setConversation] = useState(initial);
   const [error, setError] = useState<string | null>(null);
@@ -69,12 +76,13 @@ export function useConversation(initial: ChatConversation) {
     async (message: string) => {
       setIsSending(true);
       try {
-        return await act(() => postJson(conversationMessagesEndpoint(id), { message }), SEND_FAILED);
+        const body: ChatMessageInput = { message, context: getContext?.() ?? null };
+        return await act(() => postJson(conversationMessagesEndpoint(id), body), SEND_FAILED);
       } finally {
         setIsSending(false);
       }
     },
-    [act, id],
+    [act, id, getContext],
   );
 
   const retry = useCallback(

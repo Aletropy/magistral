@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
+import { AssistantContext } from "@/components/assistant/AssistantContext";
 import { Page } from "@/components/layout/Page";
 import { PersonaEditor } from "@/components/PersonaEditor";
 import { Button } from "@/components/ui/button";
@@ -36,6 +37,7 @@ export default async function EditPersonaPage({ params }: PageProps<"/personas/[
         </>
       }
     >
+      <AssistantContext kind="persona" id={id} />
       <PersonaEditor personaId={id} initialValues={toPersonaInput(persona)} />
     </Page>
   );

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
+import { AssistantContext } from "@/components/assistant/AssistantContext";
 import { BatchProgress } from "@/components/BatchProgress";
 import { Page } from "@/components/layout/Page";
 import { requireUser } from "@/lib/auth/dal";
@@ -23,6 +24,7 @@ export default async function BatchPage({ params }: PageProps<"/lotes/[id]">) {
       title={<>{job.name}</>}
       width="wide"
     >
+      <AssistantContext kind="lote" id={job.id} />
       <BatchProgress initialJob={job} />
     </Page>
   );

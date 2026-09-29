@@ -3,15 +3,9 @@
 import { Scale } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { useActivity } from "@/components/activity/ActivityProvider";
+import { useStartConversation } from "@/hooks/useStartConversation";
 import { conversationPath } from "@/lib/chat/paths";
-import type { NewConversationInput } from "@/lib/chat/schema";
-import { NETWORK_ERROR_MESSAGE, postJson, readErrorMessage } from "@/lib/http/client";
-import type { ConversationCreatedResponseBody } from "@/lib/http/contracts";
-import { CONVERSATIONS_ENDPOINT } from "@/lib/http/endpoints";
 import { ChatComposer } from "./ChatComposer";
-
-const START_FAILED = "Não foi possível iniciar a conversa. Tente novamente.";
 
 const SUGGESTIONS = [
   "Como gero um acordo de confidencialidade passo a passo?",
@@ -23,33 +17,9 @@ const SUGGESTIONS = [
 /** The assistant's start page: what it can do, example questions and the first message. */
 export function NewConversation({ librarySourceCount }: { librarySourceCount: number }) {
   const router = useRouter();
-  const { refresh: refreshActivity } = useActivity();
   const [text, setText] = useState("");
   const [useLibrary, setUseLibrary] = useState(librarySourceCount > 0);
-  const [isSending, setIsSending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  async function start(message: string) {
-    setIsSending(true);
-    setError(null);
-    try {
-      const body: NewConversationInput = { message, useLibrary };
-      const response = await postJson(CONVERSATIONS_ENDPOINT, body);
-      if (!response.ok) {
-        setError(await readErrorMessage(response, START_FAILED));
-        return false;
-      }
-      const { conversationId } = (await response.json()) as ConversationCreatedResponseBody;
-      refreshActivity();
-      router.push(conversationPath(conversationId));
-      return true;
-    } catch {
-      setError(NETWORK_ERROR_MESSAGE);
-      return false;
-    } finally {
-      setIsSending(false);
-    }
-  }
+  const { start, isSending, error } = useStartConversation((id) => router.push(conversationPath(id)));
 
   return (
     <div className="flex flex-col gap-6">
@@ -59,7 +29,8 @@ export function NewConversation({ librarySourceCount }: { librarySourceCount: nu
         </span>
         <h2 className="text-xl font-semibold tracking-tight">Como posso ajudar?</h2>
         <ul className="flex list-disc flex-col gap-1 pl-5 text-sm text-muted-foreground">
-          <li>Planejar uma minuta com você e abrir o passo a passo já preenchido.</li>
+          <li>Planejar uma minuta com você, preencher o passo a passo ou gerá-la quando você confirmar.</li>
+          <li>Ler e ajustar minutas do seu histórico, sempre mostrando as mudanças antes de salvar.</li>
           <li>Explicar como usar o Magistral: personas, cláusulas, biblioteca, lotes.</li>
           <li>Ler as leis da sua biblioteca e responder citando as fontes.</li>
         </ul>
@@ -83,7 +54,7 @@ export function NewConversation({ librarySourceCount }: { librarySourceCount: nu
         isSending={isSending}
         value={text}
         onValueChange={setText}
-        onSend={start}
+        onSend={(message) => start({ message, useLibrary })}
         footer={
           <label className="flex items-center gap-2">
             <input

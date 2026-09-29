@@ -10,12 +10,14 @@ import { Input } from "@/components/ui/input";
 import { useBackgroundTask } from "@/hooks/useBackgroundTask";
 import { useConversation } from "@/hooks/useConversation";
 import { MAX_CHAT_TITLE_CHARS } from "@/lib/chat/schema";
+import type { PageContextInput } from "@/lib/assistant/pageContext";
 import type { ChatConversation } from "@/lib/chat/types";
 import { postJson } from "@/lib/http/client";
 import { DRAFT_SUGGESTIONS_ENDPOINT } from "@/lib/http/endpoints";
 import { draftSuggestionResultSchema } from "@/lib/minuta/draftSuggestion";
 import { draftSuggestionPath } from "@/lib/minuta/paths";
 import { minutaPath } from "@/lib/minutas/paths";
+import { cn } from "@/lib/utils";
 import { ChatComposer } from "./ChatComposer";
 import { ChatMessageView } from "./ChatMessageView";
 import { DeleteConversationButton } from "./DeleteConversationButton";
@@ -71,10 +73,18 @@ function TitleEditor({ title, onSave }: { title: string; onSave: (title: string)
   );
 }
 
+interface ChatThreadProps {
+  initial: ChatConversation;
+  /** The panel's layout: no header (the panel has its own), messages and composer only. */
+  compact?: boolean;
+  /** The page each message is sent from, when the thread is in the panel. */
+  getContext?: () => PageContextInput | null;
+}
+
 /** A conversation with the Advogado IA: its messages, the composer and the hand-off to the minuta wizard. */
-export function ChatThread({ initial }: { initial: ChatConversation }) {
+export function ChatThread({ initial, compact = false, getContext }: ChatThreadProps) {
   const router = useRouter();
-  const { conversation, error, isSending, send, retry, cancel, update, decide } = useConversation(initial);
+  const { conversation, error, isSending, send, retry, cancel, update, decide } = useConversation(initial, { getContext });
   // The wizard opens with the result, so the chat's own URL doesn't need to remember the task.
   const handOff = useBackgroundTask(draftSuggestionResultSchema, null, { queryParam: null });
   const endRef = useRef<HTMLDivElement>(null);
@@ -98,37 +108,39 @@ export function ChatThread({ initial }: { initial: ChatConversation }) {
 
   return (
     <div className="flex min-w-0 flex-col gap-4">
-      <header className="flex flex-col gap-3 border-b pb-4">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="flex min-w-0 flex-col gap-1">
-            <TitleEditor title={conversation.title} onSave={(title) => update({ title })} />
-            {conversation.minutaId && (
-              <p className="text-sm text-muted-foreground">
-                Sobre a minuta{" "}
-                <Link href={minutaPath(conversation.minutaId)} className="text-primary hover:underline">
-                  {conversation.minutaTitle ?? "do histórico"}
-                </Link>
-              </p>
-            )}
+      {!compact && (
+        <header className="flex flex-col gap-3 border-b pb-4">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="flex min-w-0 flex-col gap-1">
+              <TitleEditor title={conversation.title} onSave={(title) => update({ title })} />
+              {conversation.minutaId && (
+                <p className="text-sm text-muted-foreground">
+                  Sobre a minuta{" "}
+                  <Link href={minutaPath(conversation.minutaId)} className="text-primary hover:underline">
+                    {conversation.minutaTitle ?? "do histórico"}
+                  </Link>
+                </p>
+              )}
+            </div>
+            <div className="flex flex-wrap items-start gap-2">
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                disabled={!hasAnswers || handOff.isBusy}
+                title={hasAnswers ? undefined : "Converse um pouco antes: a minuta sai do que foi combinado."}
+                onClick={createMinuta}
+              >
+                <FileSignature aria-hidden />
+                {handOff.isBusy ? "Preparando a minuta…" : "Criar minuta a partir desta conversa"}
+              </Button>
+              <DeleteConversationButton id={conversation.id} title={conversation.title} />
+            </div>
           </div>
-          <div className="flex flex-wrap items-start gap-2">
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              disabled={!hasAnswers || handOff.isBusy}
-              title={hasAnswers ? undefined : "Converse um pouco antes: a minuta sai do que foi combinado."}
-              onClick={createMinuta}
-            >
-              <FileSignature aria-hidden />
-              {handOff.isBusy ? "Preparando a minuta…" : "Criar minuta a partir desta conversa"}
-            </Button>
-            <DeleteConversationButton id={conversation.id} title={conversation.title} />
-          </div>
-        </div>
-        {handOff.startError && <p className="text-sm text-destructive">{handOff.startError}</p>}
-        <FollowedTaskStatus background={handOff} runningTitle="Lendo a conversa para preencher a minuta" />
-      </header>
+          {handOff.startError && <p className="text-sm text-destructive">{handOff.startError}</p>}
+          <FollowedTaskStatus background={handOff} runningTitle="Lendo a conversa para preencher a minuta" />
+        </header>
+      )}
 
       <div className="flex flex-col gap-4" aria-live="polite">
         {conversation.messages.map((message) => (
@@ -150,7 +162,7 @@ export function ChatThread({ initial }: { initial: ChatConversation }) {
         </p>
       )}
 
-      <div className="sticky bottom-0 bg-background pt-2 pb-4">
+      <div className={cn("sticky bottom-0 bg-background pt-2", compact ? "pb-3" : "pb-4")}>
         <ChatComposer
           disabled={conversation.isReplying}
           isSending={isSending}

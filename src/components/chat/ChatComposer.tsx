@@ -1,7 +1,7 @@
 "use client";
 
 import { SendHorizontal } from "lucide-react";
-import { useState, type FormEvent, type KeyboardEvent, type ReactNode } from "react";
+import { useId, useState, type FormEvent, type KeyboardEvent, type ReactNode, type Ref } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { MAX_CHAT_MESSAGE_CHARS } from "@/lib/chat/schema";
@@ -20,6 +20,8 @@ interface ChatComposerProps {
   /** Text to start from, e.g. a suggested question. */
   value?: string;
   onValueChange?: (value: string) => void;
+  /** Lets the panel focus the box when it opens. */
+  textareaRef?: Ref<HTMLTextAreaElement>;
 }
 
 /** The message box: Enter sends, Shift+Enter breaks the line. */
@@ -31,7 +33,9 @@ export function ChatComposer({
   footer,
   value,
   onValueChange,
+  textareaRef,
 }: ChatComposerProps) {
+  const textareaId = useId();
   const [ownText, setOwnText] = useState("");
   const text = value ?? ownText;
   const setText = onValueChange ?? setOwnText;
@@ -56,11 +60,12 @@ export function ChatComposer({
 
   return (
     <form className="flex flex-col gap-2 rounded-lg border bg-card p-3" onSubmit={handleSubmit}>
-      <label htmlFor="chat-message" className="sr-only">
+      <label htmlFor={textareaId} className="sr-only">
         Mensagem
       </label>
       <Textarea
-        id="chat-message"
+        id={textareaId}
+        ref={textareaRef}
         rows={COMPOSER_ROWS}
         maxLength={MAX_CHAT_MESSAGE_CHARS}
         placeholder={disabled ? "Aguarde a resposta para enviar outra mensagem…" : placeholder}

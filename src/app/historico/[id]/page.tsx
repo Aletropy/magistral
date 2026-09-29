@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
+import { AssistantContext } from "@/components/assistant/AssistantContext";
 import { DiscussMinutaButton } from "@/components/chat/DiscussMinutaButton";
 import { DeleteMinutaButton } from "@/components/DeleteMinutaButton";
 import { Page } from "@/components/layout/Page";
@@ -47,6 +48,7 @@ export default async function SavedMinutaPage({ params }: PageProps<"/historico/
         </>
       }
     >
+      <AssistantContext kind="minuta" id={minuta.id} />
       <SavedMinutaView initial={{ ...minuta.result, id: minuta.id }} />
     </Page>
   );

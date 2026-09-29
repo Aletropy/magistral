@@ -1,6 +1,11 @@
 import "server-only";
 import { z } from "zod";
 import { createCitationRegistry } from "@/lib/assistant/citations";
+import { describePageContext } from "@/lib/assistant/describePageContext";
+import { pageContextSchema } from "@/lib/assistant/pageContext";
+import { getBatchRepository } from "@/lib/batch/getBatchRepository";
+import { getClauseRepository } from "@/lib/clauses/getClauseRepository";
+import { getPersonaRepository } from "@/lib/personas/getPersonaRepository";
 import { getAssistantTools } from "@/lib/assistant/getAssistantTools";
 import { runAgent } from "@/lib/assistant/runAgent";
 import { getToolChatGenerator } from "@/lib/llm/getToolChatGenerator";
@@ -21,7 +26,12 @@ export const CHAT_MINUTA_MAX_CHARS = 60_000;
 const THINKING_LABEL = "Pensando na resposta";
 const REPLY_NOT_PENDING_MESSAGE = "Esta resposta não está mais aguardando.";
 
-const chatReplyPayloadSchema = z.object({ conversationId: z.string(), replyId: z.number() });
+const chatReplyPayloadSchema = z.object({
+  conversationId: z.string(),
+  replyId: z.number(),
+  /** Absent in replies queued before the panel existed. */
+  context: pageContextSchema.nullable().default(null),
+});
 type ChatReplyPayload = z.infer<typeof chatReplyPayloadSchema>;
 
 const chatReplyResultSchema = z.object({
@@ -59,11 +69,19 @@ export const chatReplyTask: TaskHandler<ChatReplyPayload, ChatReplyResult> = {
     const saved = conversation.minutaId ? getMinutaRepository().get(conversation.minutaId, ownerId) : null;
     const minuta = saved ? { title: saved.title, markdown: saved.result.markdown.slice(0, CHAT_MINUTA_MAX_CHARS) } : null;
     const citations = createCitationRegistry();
+    const pageContext = payload.context
+      ? describePageContext(payload.context, ownerId, {
+          minutas: getMinutaRepository(),
+          personas: getPersonaRepository(),
+          clauses: getClauseRepository(),
+          batches: getBatchRepository(),
+        })
+      : null;
 
     reportProgress(0, null, THINKING_LABEL);
     const result = await runAgent({
       generator: getToolChatGenerator("chat"),
-      system: buildChatSystemPrompt({ appData: loadAppData(), library, minuta }),
+      system: buildChatSystemPrompt({ appData: loadAppData(), library, minuta, pageContext }),
       history: toAgentHistory(history),
       tools: getAssistantTools({ searchLibrary: library === "on" }),
       temperature: CHAT_TEMPERATURE,

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { PANEL_CONVERSATION_STORAGE_PREFIX } from "@/lib/assistant/panelStorage";
 import { ACCOUNT_PATH, LOGIN_PATH, PRIVACY_PATH } from "@/lib/auth/paths";
 import { USER_ROLE_LABELS, type CurrentUser } from "@/lib/auth/types";
 import { removeLocalValues } from "@/lib/browser/localValue";
@@ -21,6 +22,7 @@ export function UserMenu({ user, version }: { user: CurrentUser; version: string
       await fetch(LOGOUT_ENDPOINT, { method: "POST" });
     } finally {
       removeLocalValues(MINUTA_DRAFT_STORAGE_PREFIX);
+      removeLocalValues(PANEL_CONVERSATION_STORAGE_PREFIX);
       window.location.assign(LOGIN_PATH);
     }
   }

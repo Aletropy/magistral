@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { pageContextSchema } from "@/lib/assistant/pageContext";
 
 export const MAX_CHAT_MESSAGE_CHARS = 8000;
 export const MAX_CHAT_TITLE_CHARS = 120;
@@ -10,14 +11,18 @@ const messageSchema = z
   .min(1, { error: "Escreva uma mensagem." })
   .max(MAX_CHAT_MESSAGE_CHARS, { error: `Use no máximo ${MAX_CHAT_MESSAGE_CHARS} caracteres.` });
 
-export const chatMessageInputSchema = z.object({ message: messageSchema });
-export type ChatMessageInput = z.infer<typeof chatMessageInputSchema>;
+/** Sent from the panel: the page the question was asked on. */
+const contextField = pageContextSchema.nullable().default(null);
+
+export const chatMessageInputSchema = z.object({ message: messageSchema, context: contextField });
+export type ChatMessageInput = z.input<typeof chatMessageInputSchema>;
 
 export const newConversationSchema = z.object({
   message: messageSchema,
   /** Starts a conversation about a saved minuta. */
   minutaId: z.string().max(MAX_ID_CHARS).nullable().default(null),
   useLibrary: z.boolean().default(true),
+  context: contextField,
 });
 export type NewConversationInput = z.input<typeof newConversationSchema>;
 

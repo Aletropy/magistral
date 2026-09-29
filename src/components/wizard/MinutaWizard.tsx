@@ -3,6 +3,7 @@
 import { FilePlus2, FileText, Lightbulb } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { ApprovedClausesField } from "@/components/ApprovedClausesField";
+import { AssistantContext } from "@/components/assistant/AssistantContext";
 import { LibraryToggle } from "@/components/LibraryToggle";
 import { BaseDocumentField } from "@/components/minuta/BaseDocumentField";
 import { ConditionsField } from "@/components/minuta/ConditionsField";
@@ -14,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { LOADING_LABEL, useIsHydrated } from "@/hooks/useIsHydrated";
 import { clauseAppliesTo, type ClauseOption } from "@/lib/clauses/types";
 import { applyPresetRoles, type WizardConditions } from "@/lib/minuta/conditions";
-import type { DocumentTypeId } from "@/lib/minuta/documentTypes";
+import { DOCUMENT_TYPE_LABELS, OTHER_DOCUMENT_TYPE_ID, type DocumentTypeId } from "@/lib/minuta/documentTypes";
 import { minutaRequestSchema, type MinutaFormValues, type MinutaRequest } from "@/lib/minuta/schema";
 import { firstInvalidStep, relevantSteps, validateStep, type WizardStepId } from "@/lib/minuta/wizardSteps";
 import type { PersonaSummary } from "@/lib/personas/types";
@@ -40,6 +41,15 @@ interface MinutaWizardProps {
   /** What the AI asked to double-check after filling the form. */
   reviewNotes: string[];
   onSubmit: (request: MinutaRequest) => void;
+}
+
+/** What the assistant is told about the wizard: the step on screen and the document chosen so far. */
+function wizardContextDetail(stepTitle: string, values: MinutaFormValues): string {
+  const type = values.documentType === OTHER_DOCUMENT_TYPE_ID ? values.customDocumentType : DOCUMENT_TYPE_LABELS[values.documentType];
+  const parties = values.parties.map((party) => party.name.trim()).filter(Boolean);
+  return [`Etapa atual: ${stepTitle}.`, type && `Documento: ${type}.`, parties.length > 0 && `Partes: ${parties.join(", ")}.`]
+    .filter(Boolean)
+    .join(" ");
 }
 
 function StartChoice({
@@ -175,6 +185,7 @@ export function MinutaWizard({
       noValidate
       onSubmit={handleSubmit}
     >
+      <AssistantContext kind="nova_minuta" detail={wizardContextDetail(step.title, values)} />
       <WizardStepper
         steps={steps}
         current={current}

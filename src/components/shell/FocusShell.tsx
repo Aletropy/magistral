@@ -3,6 +3,7 @@
 import { X } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { AssistantButton } from "@/components/assistant/AssistantButton";
 import { FeedbackButton } from "@/components/feedback/FeedbackButton";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
@@ -33,6 +34,7 @@ export function FocusShell({ exitLabel, children }: { exitLabel: string; childre
           Magistral
         </Link>
         <div className="ml-auto flex items-center gap-1">
+          <AssistantButton label="Pedir ajuda" />
           <FeedbackButton />
           <ThemeToggle />
           <Button asChild variant="ghost" size="sm">
