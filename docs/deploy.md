@@ -150,8 +150,9 @@ MAGISTRAL_SETUP_TOKEN=
 
 LLM_PROVIDER=openrouter
 OPENROUTER_API_KEY=sk-or-...            # sua chave
-# Opcional: modelos separados por vírgula. Vazio usa o padrão gratuito.
-OPENROUTER_MODELS=
+# Modelos separados por vírgula, tentados em ordem. Sugestão para a demonstração (gratuitos, com chamada de
+# ferramentas; o primeiro respondeu melhor nos testes, mas a disponibilidade dos gratuitos muda):
+OPENROUTER_MODELS=nvidia/nemotron-3-super-120b-a12b:free,qwen/qwen3.8-27b:free,google/gemma-4-31b-it:free
 # MODO DEMONSTRAÇÃO (só dados fictícios!): "true" libera provedores gratuitos que podem guardar/treinar
 # com os textos. Para uso real, deixe vazio e use um modelo pago.
 OPENROUTER_ALLOW_DATA_COLLECTION=true
