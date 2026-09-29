@@ -24,7 +24,7 @@ function Sources({ message }: { message: ChatMessage }) {
   if (message.sources.length === 0) return null;
   return (
     <details className="mt-2 text-xs">
-      <summary className="cursor-pointer text-muted-foreground">Fontes da biblioteca ({message.sources.length})</summary>
+      <summary className="cursor-pointer text-muted-foreground">Fontes consultadas ({message.sources.length})</summary>
       <ol className="mt-1 flex flex-col gap-0.5 pl-1">
         {message.sources.map((source) => (
           <li key={source.ref}>

@@ -45,6 +45,16 @@ export default async function PrivacyPage() {
         </p>
       </Section>
 
+      <Section title="Jurisprudências.ai">
+        <p>
+          Se um administrador conectar a conta do escritório na Jurisprudências.ai, o Advogado IA pode pesquisar
+          decisões de tribunais. Nesse caso, só saem do servidor os termos de pesquisa, o tribunal e números de
+          processo que o Advogado IA escolheu; o texto das minutas e dos documentos não é enviado. A pesquisa usa a
+          conta do escritório, e o serviço registra esse uso conforme a política dele. O administrador pode
+          desconectar a qualquer momento em Integrações.
+        </p>
+      </Section>
+
       <Section title="Por quanto tempo">
         <ul className="list-disc pl-5">
           <li>Minutas e conversas ficam até você excluí-las.</li>

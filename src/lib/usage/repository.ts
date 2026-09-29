@@ -65,7 +65,7 @@ export interface UsageRepository {
   groupedTotals(grouping: UsageGrouping, sinceDays: number): UsageGroup[];
   recent(limit: number): LlmCall[];
   /** Calls to a provider since a moment, e.g. to see how much of a daily quota is left. */
-  countCallsSince(provider: UsageProvider, since: Date): number;
+  countCallsSince(provider: UsageProvider, since: Date, model?: string): number;
   /** Mean latency of successful calls of these operations in the last days, or null without data. */
   averageLatencyMs(operations: readonly LlmOperation[], sinceDays: number): number | null;
 }
@@ -95,6 +95,10 @@ export function createUsageRepository(db: DatabaseSync): UsageRepository {
   const selectTotals = db.prepare(`SELECT ${TOTALS_COLUMNS} FROM llm_calls WHERE ${SINCE_FILTER}`);
   const selectRecent = db.prepare("SELECT * FROM llm_calls ORDER BY id DESC LIMIT ?");
   const countSince = db.prepare("SELECT COUNT(*) AS count FROM llm_calls WHERE provider = ? AND created_at >= ?");
+  // Calls the service answered; a refused one (e.g. past the daily limit) doesn't use the allowance.
+  const countModelSince = db.prepare(
+    "SELECT COUNT(*) AS count FROM llm_calls WHERE provider = ? AND created_at >= ? AND model = ? AND status = 'ok'",
+  );
 
   return {
     record(call, userId) {
@@ -125,8 +129,14 @@ export function createUsageRepository(db: DatabaseSync): UsageRepository {
       return rows.map((row) => ({ key: totalsRowSchema.parse(row).key ?? "", ...toTotals(row) }));
     },
 
-    countCallsSince: (provider, since) =>
-      z.object({ count: z.number() }).parse(countSince.get(provider, since.toISOString())).count,
+    countCallsSince: (provider, since, model) =>
+      z
+        .object({ count: z.number() })
+        .parse(
+          model === undefined
+            ? countSince.get(provider, since.toISOString())
+            : countModelSince.get(provider, since.toISOString(), model),
+        ).count,
     averageLatencyMs(operations, sinceDays) {
       const placeholders = operations.map(() => "?").join(", ");
       const row = db

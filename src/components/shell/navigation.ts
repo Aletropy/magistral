@@ -8,6 +8,7 @@ import {
   ListChecks,
   ListTodo,
   MessageSquareWarning,
+  Plug,
   MessagesSquare,
   Scale,
   UserRoundPen,
@@ -19,6 +20,7 @@ import { BATCHES_PATH } from "@/lib/batch/paths";
 import { ASSISTANT_PATH } from "@/lib/chat/paths";
 import { CLAUSES_PATH } from "@/lib/clauses/paths";
 import { FEEDBACK_PATH } from "@/lib/feedback/paths";
+import { INTEGRATIONS_PATH } from "@/lib/integrations/paths";
 import { HISTORY_PATH, HOME_PATH, NEW_MINUTA_PATH } from "@/lib/minutas/paths";
 import { PERSONAS_PATH } from "@/lib/personas/paths";
 import { LIBRARY_PATH } from "@/lib/rag/paths";
@@ -64,6 +66,7 @@ export const NAV_GROUPS: readonly NavGroup[] = [
       { href: TASKS_PATH, label: "Tarefas", icon: ListTodo },
       { href: USAGE_PATH, label: "Uso", icon: ChartColumn, adminOnly: true },
       { href: TEAM_PATH, label: "Equipe", icon: Users, adminOnly: true },
+      { href: INTEGRATIONS_PATH, label: "Integrações", icon: Plug, adminOnly: true },
       { href: FEEDBACK_PATH, label: "Feedback", icon: MessageSquareWarning, adminOnly: true },
     ],
   },

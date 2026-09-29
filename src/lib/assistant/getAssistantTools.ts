@@ -1,5 +1,6 @@
 import "server-only";
 import { getClauseRepository } from "@/lib/clauses/getClauseRepository";
+import { callJurisprudencias } from "@/lib/integrations/jurisprudencias/client";
 import { getEmbedder } from "@/lib/llm/getEmbedder";
 import { loadDraftInputs } from "@/lib/minuta/draftMinuta";
 import { draftMinutaTask, draftTaskTitle } from "@/lib/minuta/draftMinutaTask";
@@ -13,6 +14,7 @@ import { createAdjustPersonaTool } from "./tools/adjustPersona";
 import { createCreateClauseTool } from "./tools/createClause";
 import { createEditMinutaTool } from "./tools/editMinuta";
 import { createGenerateMinutaTool } from "./tools/generateMinuta";
+import { createJurisprudenciaTools } from "./tools/jurisprudencia";
 import { createListClausesTool } from "./tools/listClauses";
 import { createListPersonasTool } from "./tools/listPersonas";
 import { createListTasksTool } from "./tools/listTasks";
@@ -23,6 +25,11 @@ import { createSearchHistoryTool } from "./tools/searchHistory";
 import { createSearchLibraryTool } from "./tools/searchLibrary";
 
 const LIBRARY_TOOL_NAME = "buscar_biblioteca";
+const JURISPRUDENCIA_TOOL_NAMES: ReadonlySet<string> = new Set([
+  "pesquisar_jurisprudencia",
+  "consultar_decisao",
+  "listar_tribunais",
+]);
 
 function catalog(): SuggestionCatalog {
   return {
@@ -61,12 +68,24 @@ function allTools(): AssistantTool[] {
     createEditMinutaTool({ minutas }),
     createCreateClauseTool({ clauses }),
     createAdjustPersonaTool({ personas }),
+    ...createJurisprudenciaTools({ call: callJurisprudencias }),
   ];
 }
 
-/** The tools offered in a reply; the library search only when the conversation uses a non-empty library. */
-export function getAssistantTools({ searchLibrary }: { searchLibrary: boolean }): AssistantTool[] {
-  return allTools().filter((tool) => searchLibrary || tool.name !== LIBRARY_TOOL_NAME);
+interface ToolAvailability {
+  /** The conversation uses a non-empty library. */
+  searchLibrary: boolean;
+  /** The office's Jurisprudências.ai account is connected. */
+  jurisprudencia: boolean;
+}
+
+/** The tools offered in a reply: the library and jurisprudence searches only when they can work. */
+export function getAssistantTools({ searchLibrary, jurisprudencia }: ToolAvailability): AssistantTool[] {
+  return allTools().filter((tool) => {
+    if (tool.name === LIBRARY_TOOL_NAME) return searchLibrary;
+    if (JURISPRUDENCIA_TOOL_NAMES.has(tool.name)) return jurisprudencia;
+    return true;
+  });
 }
 
 /** The action a waiting step names, to run it once the user confirms. */

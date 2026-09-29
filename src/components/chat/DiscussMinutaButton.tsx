@@ -1,50 +1,47 @@
 "use client";
 
-import { MessagesSquare } from "lucide-react";
+import { MessagesSquare, Scale } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { useActivity } from "@/components/activity/ActivityProvider";
 import { Button } from "@/components/ui/button";
+import { useStartConversation } from "@/hooks/useStartConversation";
 import { conversationPath } from "@/lib/chat/paths";
-import type { NewConversationInput } from "@/lib/chat/schema";
-import { NETWORK_ERROR_MESSAGE, postJson, readErrorMessage } from "@/lib/http/client";
-import type { ConversationCreatedResponseBody } from "@/lib/http/contracts";
-import { CONVERSATIONS_ENDPOINT } from "@/lib/http/endpoints";
 
-const FIRST_QUESTION = "Revise esta minuta: aponte riscos, lacunas e cláusulas que poderiam ser melhoradas.";
-const START_FAILED = "Não foi possível abrir a conversa. Tente novamente.";
+const REVIEW_QUESTION = "Revise esta minuta: aponte riscos, lacunas e cláusulas que poderiam ser melhoradas.";
+const JURISPRUDENCE_QUESTION =
+  "Pesquise jurisprudência que sirva de fundamento para as cláusulas mais sensíveis desta minuta e cite as decisões encontradas.";
 
-/** Opens a conversation with the Advogado IA about a saved minuta, starting with a review request. */
-export function DiscussMinutaButton({ minutaId }: { minutaId: string }) {
+type Purpose = "review" | "jurisprudence";
+
+const PURPOSES: Record<Purpose, { question: string; label: string; pendingLabel: string; useLibrary: boolean }> = {
+  review: { question: REVIEW_QUESTION, label: "Conversar com o Advogado IA", pendingLabel: "Abrindo conversa…", useLibrary: true },
+  jurisprudence: {
+    question: JURISPRUDENCE_QUESTION,
+    label: "Pesquisar jurisprudência",
+    pendingLabel: "Abrindo conversa…",
+    useLibrary: false,
+  },
+};
+
+/**
+ * Opens a conversation with the Advogado IA about a saved minuta, starting with a review request (or, when
+ * the office's Jurisprudências.ai account is connected, a jurisprudence search for the minuta).
+ */
+export function DiscussMinutaButton({ minutaId, purpose = "review" }: { minutaId: string; purpose?: Purpose }) {
   const router = useRouter();
-  const { refresh: refreshActivity } = useActivity();
-  const [isStarting, setIsStarting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  async function start() {
-    setIsStarting(true);
-    setError(null);
-    try {
-      const body: NewConversationInput = { message: FIRST_QUESTION, minutaId, useLibrary: true };
-      const response = await postJson(CONVERSATIONS_ENDPOINT, body);
-      if (!response.ok) {
-        setError(await readErrorMessage(response, START_FAILED));
-        return;
-      }
-      const { conversationId } = (await response.json()) as ConversationCreatedResponseBody;
-      refreshActivity();
-      router.push(conversationPath(conversationId));
-    } catch {
-      setError(NETWORK_ERROR_MESSAGE);
-    } finally {
-      setIsStarting(false);
-    }
-  }
+  const { start, isSending, error } = useStartConversation((id) => router.push(conversationPath(id)));
+  const { question, label, pendingLabel, useLibrary } = PURPOSES[purpose];
+  const Icon = purpose === "review" ? MessagesSquare : Scale;
 
   return (
     <div className="flex flex-col items-end gap-1">
-      <Button type="button" variant="outline" size="sm" disabled={isStarting} onClick={() => void start()}>
-        <MessagesSquare aria-hidden /> {isStarting ? "Abrindo conversa…" : "Conversar com o Advogado IA"}
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        disabled={isSending}
+        onClick={() => void start({ message: question, minutaId, useLibrary })}
+      >
+        <Icon aria-hidden /> {isSending ? pendingLabel : label}
       </Button>
       {error && <p className="text-xs text-destructive">{error}</p>}
     </div>

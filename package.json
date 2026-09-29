@@ -19,6 +19,7 @@
     "@dnd-kit/utilities": "^3.2.2",
     "@google/genai": "^2.24.0",
     "@huggingface/transformers": "^4.3.0",
+    "@modelcontextprotocol/sdk": "^1.30.1",
     "class-variance-authority": "^0.7.1",
     "cn": "^0.4.0",
     "dejavu-fonts-ttf": "2.37.3",

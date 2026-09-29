@@ -4,14 +4,14 @@ import type { ChatMessage } from "./types";
 
 /** About 15k tokens of history: enough context for a long consultation, well within every model's window. */
 export const CHAT_HISTORY_MAX_CHARS = 60_000;
-const CITATION = /\[(F\d+)\]/g;
+const CITATION = /\[([FJ]\d+)\]/g;
 /** Models sometimes cite with other brackets (【F1】, ［F1］) or a space inside ([ F1 ]). */
-const LOOSE_CITATION = /[\[【［]\s*(F\d+)\s*[\]】］]/g;
+const LOOSE_CITATION = /[\[【［]\s*([FJ]\d+)\s*[\]】］]/g;
 const TURN_SEPARATOR = "\n\n";
 
 const TRANSCRIPT_SPEAKERS: Record<ChatMessage["role"], string> = { user: "Usuário", assistant: "Advogado IA" };
 
-/** Rewrites every citation variant as [F1], the form the sources list and later turns rely on. */
+/** Rewrites every citation variant as [F1] or [J1], the form the sources list and later turns rely on. */
 export function normalizeCitations(answer: string): string {
   return answer.replace(LOOSE_CITATION, "[$1]");
 }

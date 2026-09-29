@@ -47,6 +47,9 @@ export function personaEndpoint(id: string): string {
   return `${PERSONAS_ENDPOINT}/${encodeURIComponent(id)}`;
 }
 
+export const JURISPRUDENCIAS_INTEGRATION_ENDPOINT = "/api/integrations/jurisprudencias";
+export const JURISPRUDENCIAS_CONNECT_ENDPOINT = `${JURISPRUDENCIAS_INTEGRATION_ENDPOINT}/connect`;
+
 export const CONVERSATIONS_ENDPOINT = "/api/chat/conversations";
 
 export function conversationEndpoint(id: string): string {

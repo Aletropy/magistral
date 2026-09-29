@@ -3,6 +3,7 @@ import { z } from "zod";
 import { createCitationRegistry } from "@/lib/assistant/citations";
 import { describePageContext } from "@/lib/assistant/describePageContext";
 import { pageContextSchema } from "@/lib/assistant/pageContext";
+import { isJurisprudenciasConnected } from "@/lib/integrations/jurisprudencias/connection";
 import { getBatchRepository } from "@/lib/batch/getBatchRepository";
 import { getClauseRepository } from "@/lib/clauses/getClauseRepository";
 import { getPersonaRepository } from "@/lib/personas/getPersonaRepository";
@@ -69,6 +70,7 @@ export const chatReplyTask: TaskHandler<ChatReplyPayload, ChatReplyResult> = {
     const saved = conversation.minutaId ? getMinutaRepository().get(conversation.minutaId, ownerId) : null;
     const minuta = saved ? { title: saved.title, markdown: saved.result.markdown.slice(0, CHAT_MINUTA_MAX_CHARS) } : null;
     const citations = createCitationRegistry();
+    const jurisprudencia = isJurisprudenciasConnected();
     const pageContext = payload.context
       ? describePageContext(payload.context, ownerId, {
           minutas: getMinutaRepository(),
@@ -81,9 +83,9 @@ export const chatReplyTask: TaskHandler<ChatReplyPayload, ChatReplyResult> = {
     reportProgress(0, null, THINKING_LABEL);
     const result = await runAgent({
       generator: getToolChatGenerator("chat"),
-      system: buildChatSystemPrompt({ appData: loadAppData(), library, minuta, pageContext }),
+      system: buildChatSystemPrompt({ appData: loadAppData(), library, jurisprudencia, minuta, pageContext }),
       history: toAgentHistory(history),
-      tools: getAssistantTools({ searchLibrary: library === "on" }),
+      tools: getAssistantTools({ searchLibrary: library === "on", jurisprudencia }),
       temperature: CHAT_TEMPERATURE,
       context: { ownerId, conversationId: conversation.id, signal, citations },
       onProgress: (label) => reportProgress(0, null, label),

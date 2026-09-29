@@ -379,6 +379,27 @@ function createChatToolStepsTable(db: DatabaseSync): void {
   `);
 }
 
+/**
+ * Outside services the office connected (one row per provider). `client_information`, `tokens` and
+ * `code_verifier` hold sealed values (AES-256-GCM, see lib/security/secretBox.ts), never plain text.
+ */
+function createIntegrationsTable(db: DatabaseSync): void {
+  db.exec(`
+    CREATE TABLE integrations (
+      provider TEXT PRIMARY KEY,
+      redirect_uri TEXT,
+      client_information TEXT,
+      tokens TEXT,
+      code_verifier TEXT,
+      oauth_state TEXT,
+      connected_by TEXT REFERENCES users(id) ON DELETE SET NULL,
+      connected_at TEXT,
+      last_error TEXT,
+      updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+    );
+  `);
+}
+
 /** Ordered schema changes. Append new migrations; never edit or reorder existing ones. */
 export const MIGRATIONS: readonly Migration[] = [
   createPersonaTables,
@@ -397,6 +418,7 @@ export const MIGRATIONS: readonly Migration[] = [
   addRecordOwners,
   createFeedbackTable,
   createChatToolStepsTable,
+  createIntegrationsTable,
 ];
 
 function readSchemaVersion(db: DatabaseSync): number {

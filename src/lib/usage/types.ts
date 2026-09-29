@@ -1,7 +1,7 @@
 import { LLM_PROVIDERS } from "@/lib/llm/providers";
 
-/** Who served a call: a drafting provider, or the local embedding model. */
-export const USAGE_PROVIDERS = [...LLM_PROVIDERS, "local"] as const;
+/** Who served a call: a drafting provider, the local embedding model, or an outside service the assistant uses. */
+export const USAGE_PROVIDERS = [...LLM_PROVIDERS, "local", "jurisprudencias"] as const;
 export type UsageProvider = (typeof USAGE_PROVIDERS)[number];
 
 export const LLM_OPERATIONS = [
@@ -12,6 +12,7 @@ export const LLM_OPERATIONS = [
   "embedding",
   "minuta_extract",
   "chat",
+  "jurisprudencia",
 ] as const;
 export type LlmOperation = (typeof LLM_OPERATIONS)[number];
 
@@ -23,6 +24,7 @@ export const LLM_OPERATION_LABELS: Record<LlmOperation, string> = {
   embedding: "Indexação da biblioteca",
   minuta_extract: "Preenchimento automático",
   chat: "Advogado IA",
+  jurisprudencia: "Pesquisa de jurisprudência",
 };
 
 /** "ok", a generation failure reason, or why the call never produced a response. */

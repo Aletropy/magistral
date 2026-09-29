@@ -14,6 +14,11 @@ export interface DemoLoadedResponseBody {
   added: number;
 }
 
+export interface AuthorizationStartedResponseBody {
+  /** The outside service's page where the admin authorizes the connection. */
+  authorizationUrl: string;
+}
+
 export interface ConversationsResponseBody {
   conversations: ChatConversationSummary[];
 }

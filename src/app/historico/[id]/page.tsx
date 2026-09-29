@@ -8,6 +8,7 @@ import { DeleteMinutaButton } from "@/components/DeleteMinutaButton";
 import { Page } from "@/components/layout/Page";
 import { SavedMinutaView } from "@/components/SavedMinutaView";
 import { requireUser } from "@/lib/auth/dal";
+import { isJurisprudenciasConnected } from "@/lib/integrations/jurisprudencias/connection";
 import { getMinutaRepository } from "@/lib/minutas/getMinutaRepository";
 import { HISTORY_PATH } from "@/lib/minutas/paths";
 import { formatDateTime } from "@/lib/usage/format";
@@ -43,6 +44,7 @@ export default async function SavedMinutaPage({ params }: PageProps<"/historico/
       }
       actions={
         <>
+          {isJurisprudenciasConnected() && <DiscussMinutaButton minutaId={minuta.id} purpose="jurisprudence" />}
           <DiscussMinutaButton minutaId={minuta.id} />
           <DeleteMinutaButton id={minuta.id} title={minuta.title} leavePage />
         </>

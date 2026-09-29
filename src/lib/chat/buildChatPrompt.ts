@@ -19,6 +19,8 @@ export interface ChatPromptContext {
   appData: AppData;
   /** Whether the conversation asked for the library, and whether it has documents to search. */
   library: "on" | "off" | "empty";
+  /** The office's Jurisprudências.ai account is connected, so the jurisprudence tools are offered. */
+  jurisprudencia: boolean;
   /** The saved minuta the conversation is about. */
   minuta: { title: string; markdown: string } | null;
   /** What the user has open when asking from the panel, already described (describePageContext). */
@@ -53,6 +55,13 @@ const DRAFTING_RULES = [
   "Para mudar uma minuta salva, leia-a com ler_minuta e proponha as trocas com editar_minuta, copiando cada trecho exatamente como está.",
 ];
 
+const JURISPRUDENCIA_RULES = [
+  "Você pode pesquisar decisões de tribunais na Jurisprudências.ai (pesquisar_jurisprudencia, consultar_decisao, listar_tribunais). Há um limite diário de buscas para todo o escritório: pesquise quando o usuário pedir jurisprudência ou a resposta depender dela, com uma busca bem pensada, e não repita buscas.",
+  "Cada decisão vem numerada [J1], [J2]…: cite-a pelo identificador logo após a afirmação e diga, ao apresentar decisões, “Fonte: Jurisprudências.ai”. Cite só decisões que as buscas desta resposta trouxeram; nunca invente número de processo, ementa ou tese.",
+  "Resuma o que a decisão decidiu com as palavras dela; se os resultados não respondem à pergunta, diga isso.",
+  "Se o limite diário acabar ou a conta não estiver conectada, avise o usuário e continue sem jurisprudência.",
+];
+
 const LIBRARY_NOTES: Record<ChatPromptContext["library"], string> = {
   on: toBulletList([
     "Antes de afirmar o que diz uma norma, busque na biblioteca jurídica do usuário com buscar_biblioteca.",
@@ -79,7 +88,7 @@ function formatAppData({ personas, clauses, librarySources }: AppData): string {
 
 /** The Advogado IA's instructions: role, rules, the app guide, the user's data, and the sources for this turn. */
 export function buildChatSystemPrompt(context: ChatPromptContext): string {
-  const { appData, library, minuta, pageContext } = context;
+  const { appData, library, jurisprudencia, minuta, pageContext } = context;
   return [
     ROLE,
     `## Como responder\n${toBulletList(ANSWER_RULES)}`,
@@ -88,6 +97,7 @@ export function buildChatSystemPrompt(context: ChatPromptContext): string {
     `## Sobre o Magistral\n${formatAppGuide()}`,
     taggedBlock("dados_do_app", formatAppData(appData)),
     `## Biblioteca jurídica\n${LIBRARY_NOTES[library]}`,
+    jurisprudencia && `## Jurisprudência\n${toBulletList(JURISPRUDENCIA_RULES)}`,
     pageContext &&
       `## Onde o usuário está\nUse esta informação quando a pergunta se referir ao que está aberto (“esta minuta”, “este passo”); não a mencione sem necessidade.\n\n${taggedBlock("contexto_da_pagina", pageContext)}`,
     minuta &&

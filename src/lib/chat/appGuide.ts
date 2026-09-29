@@ -1,6 +1,7 @@
 import { ACCOUNT_PATH, TEAM_PATH } from "@/lib/auth/paths";
 import { BATCHES_PATH, NEW_BATCH_PATH } from "@/lib/batch/paths";
 import { CLAUSES_PATH } from "@/lib/clauses/paths";
+import { INTEGRATIONS_PATH } from "@/lib/integrations/paths";
 import { HISTORY_PATH, HOME_PATH, NEW_MINUTA_ADVANCED_PATH, NEW_MINUTA_PATH } from "@/lib/minutas/paths";
 import { PERSONAS_PATH, STYLE_CAPTURE_PATH } from "@/lib/personas/paths";
 import { LIBRARY_PATH } from "@/lib/rag/paths";
@@ -85,6 +86,12 @@ export const APP_GUIDE: readonly GuideEntry[] = [
     path: USAGE_PATH,
     howTo:
       "Só para administradores: consumo de IA por dia, operação, modelo e pessoa (chamadas, tokens, custo estimado e latência) e a política de privacidade dos dados em vigor.",
+  },
+  {
+    feature: "Integrações",
+    path: INTEGRATIONS_PATH,
+    howTo:
+      "Só para administradores. Conecta a conta do escritório na Jurisprudências.ai; com ela conectada, o Advogado IA pesquisa decisões de tribunais (STF, STJ, TST, TRFs, TRTs, TJs, CARF) quando a conversa pede e cita cada uma como [J1]. Há limite diário de buscas (plano gratuito: 5 buscas e 10 consultas de processo; assinatura: 500 buscas). Na página da minuta, o botão “Pesquisar jurisprudência” aparece quando a conta está conectada.",
   },
   {
     feature: "Equipe e conta",
