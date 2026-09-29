@@ -74,7 +74,7 @@ function TitleEditor({ title, onSave }: { title: string; onSave: (title: string)
 /** A conversation with the Advogado IA: its messages, the composer and the hand-off to the minuta wizard. */
 export function ChatThread({ initial }: { initial: ChatConversation }) {
   const router = useRouter();
-  const { conversation, error, isSending, send, retry, cancel, update } = useConversation(initial);
+  const { conversation, error, isSending, send, retry, cancel, update, decide } = useConversation(initial);
   // The wizard opens with the result, so the chat's own URL doesn't need to remember the task.
   const handOff = useBackgroundTask(draftSuggestionResultSchema, null, { queryParam: null });
   const endRef = useRef<HTMLDivElement>(null);
@@ -137,6 +137,8 @@ export function ChatThread({ initial }: { initial: ChatConversation }) {
             message={message}
             onRetry={(id) => void retry(id)}
             onCancel={(taskId) => void cancel(taskId)}
+            canDecide={!conversation.isReplying}
+            onDecide={decide}
           />
         ))}
         <div ref={endRef} />

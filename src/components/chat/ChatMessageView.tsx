@@ -3,9 +3,11 @@
 import { Check, Copy, Loader2, Scale } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import type { StepDecision } from "@/lib/assistant/stepDecisions";
 import type { ChatMessage } from "@/lib/chat/types";
 import { cn } from "@/lib/utils";
 import { ChatMarkdown } from "./ChatMarkdown";
+import { ToolSteps } from "./ToolSteps";
 
 const COPIED_FEEDBACK_MS = 2000;
 
@@ -13,6 +15,9 @@ interface ChatMessageViewProps {
   message: ChatMessage;
   onRetry: (messageId: number) => void;
   onCancel: (taskId: string) => void;
+  /** False while a reply is being written, so an action waits for it. */
+  canDecide: boolean;
+  onDecide: (stepId: number, decision: StepDecision) => Promise<boolean>;
 }
 
 function Sources({ message }: { message: ChatMessage }) {
@@ -53,7 +58,7 @@ function CopyButton({ text }: { text: string }) {
 }
 
 /** One message: the user's question on the right, the Advogado IA's answer (or its progress) on the left. */
-export function ChatMessageView({ message, onRetry, onCancel }: ChatMessageViewProps) {
+export function ChatMessageView({ message, onRetry, onCancel, canDecide, onDecide }: ChatMessageViewProps) {
   if (message.role === "user") {
     return (
       <div className="flex justify-end">
@@ -97,6 +102,7 @@ export function ChatMessageView({ message, onRetry, onCancel }: ChatMessageViewP
         {message.status === "done" && (
           <>
             <ChatMarkdown markdown={message.content} />
+            <ToolSteps steps={message.steps} canDecide={canDecide} onDecide={onDecide} />
             <Sources message={message} />
             <div className="mt-1 flex justify-end">
               <CopyButton text={message.content} />

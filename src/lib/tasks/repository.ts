@@ -8,6 +8,7 @@ import {
   TASK_LANES,
   TASK_STATUSES,
   type ClaimedTask,
+  type FinishedTask,
   type NewTask,
   type TaskDetail,
   type TaskFile,
@@ -66,6 +67,11 @@ export interface TaskListOptions {
 
 export interface TaskRepository {
   create(task: NewTask): string;
+  /**
+   * Records work that finished without being queued (e.g. a form the assistant filled in), so pages that
+   * restore a task's result (`?rascunho=`) open it like any other.
+   */
+  createFinished(task: FinishedTask, now: Date): string;
   /** Atomically marks up to `limit` due pending tasks of a lane as running and returns them, oldest first. */
   claim(lane: TaskLane, limit: number, now: Date): ClaimedTask[];
   /** How many pending tasks of a lane are due, so lower-priority work (batches) can wait for them. */
@@ -130,6 +136,10 @@ function toSummary(row: unknown): TaskSummary {
 export function createTaskRepository(db: DatabaseSync): TaskRepository {
   const insertTask = db.prepare(
     "INSERT INTO tasks (id, owner_id, kind, lane, title, payload) VALUES (?, ?, ?, ?, ?, ?)",
+  );
+  const insertFinished = db.prepare(
+    `INSERT INTO tasks (id, owner_id, kind, lane, title, status, payload, result, started_at, finished_at)
+     VALUES (?, ?, ?, ?, ?, 'succeeded', '{}', ?, ?, ?)`,
   );
   const insertFile = db.prepare("INSERT INTO task_files (task_id, position, name, bytes) VALUES (?, ?, ?, ?)");
   const claimDue = db.prepare(
@@ -205,6 +215,13 @@ export function createTaskRepository(db: DatabaseSync): TaskRepository {
         insertTask.run(id, ownerId, kind, lane, title, JSON.stringify(payload));
         files.forEach((file, index) => insertFile.run(id, index + 1, file.name, file.bytes));
       });
+      return id;
+    },
+
+    createFinished({ ownerId, kind, lane, title, result }, now) {
+      const id = randomUUID();
+      const at = now.toISOString();
+      insertFinished.run(id, ownerId, kind, lane, title, JSON.stringify(result ?? null), at, at);
       return id;
     },
 

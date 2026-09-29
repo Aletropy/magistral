@@ -32,6 +32,15 @@ export const chatCompletionSchema = z.object({
         message: z.object({
           content: z.string().nullable(),
           refusal: z.string().nullish(),
+          tool_calls: z
+            .array(
+              z.object({
+                id: z.string(),
+                type: z.literal("function"),
+                function: z.object({ name: z.string(), arguments: z.string() }),
+              }),
+            )
+            .nullish(),
         }),
       }),
     )
@@ -47,9 +56,20 @@ export const chatCompletionSchema = z.object({
 
 export type ChatCompletion = z.infer<typeof chatCompletionSchema>;
 
-export interface ChatMessage {
-  role: "system" | "user" | "assistant";
-  content: string;
+export interface OpenAiToolCall {
+  id: string;
+  type: "function";
+  function: { name: string; arguments: string };
+}
+
+export type ChatMessage =
+  | { role: "system" | "user"; content: string }
+  | { role: "assistant"; content: string | null; tool_calls?: OpenAiToolCall[] }
+  | { role: "tool"; tool_call_id: string; content: string };
+
+export interface OpenAiTool {
+  type: "function";
+  function: { name: string; description: string; parameters: Record<string, unknown> };
 }
 
 export interface ChatRequest {
@@ -58,6 +78,8 @@ export interface ChatRequest {
   messages: ChatMessage[];
   temperature: number;
   max_tokens: number;
+  tools?: OpenAiTool[];
+  tool_choice?: "auto" | "none";
   response_format?: {
     type: "json_schema";
     json_schema: { name: string; strict: boolean; schema: unknown };

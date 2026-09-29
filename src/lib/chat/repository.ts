@@ -4,6 +4,17 @@ import { z } from "zod";
 import { withTransaction } from "@/lib/db/transaction";
 import type { ConsultedSource } from "@/lib/minuta/types";
 import { ChatBusyError } from "./errors";
+import { STEP_DISMISSED_OUTPUT } from "./messages";
+import {
+  TOOL_KINDS,
+  TOOL_STEP_STATUSES,
+  toolCardSchema,
+  type ChatToolStep,
+  type NewToolStep,
+  type StoredToolStep,
+  type ToolCard,
+  type ToolStepStatus,
+} from "./toolSteps";
 import {
   CHAT_MESSAGE_STATUSES,
   CHAT_ROLES,
@@ -48,6 +59,51 @@ const messageRowSchema = z.object({
 
 const idRowSchema = z.object({ id: z.number() });
 
+const jsonText = z.string().transform((json) => JSON.parse(json) as unknown);
+
+const stepRowSchema = z.object({
+  id: z.number(),
+  message_id: z.number(),
+  tool: z.string(),
+  kind: z.enum(TOOL_KINDS),
+  input: jsonText,
+  summary: z.string(),
+  output: z.string().nullable(),
+  card: jsonText.pipe(toolCardSchema).nullable(),
+  status: z.enum(TOOL_STEP_STATUSES),
+  created_at: z.string(),
+});
+
+function toStoredStep(row: unknown): StoredToolStep {
+  const parsed = stepRowSchema.parse(row);
+  return {
+    id: parsed.id,
+    messageId: parsed.message_id,
+    tool: parsed.tool,
+    kind: parsed.kind,
+    input: parsed.input,
+    summary: parsed.summary,
+    status: parsed.status,
+    output: parsed.output,
+    card: parsed.card,
+    createdAt: parsed.created_at,
+  };
+}
+
+/** The step without its input, which never leaves the server. */
+function toStep(step: StoredToolStep): ChatToolStep {
+  const { id, tool, kind, summary, status, output, card, createdAt } = step;
+  return { id, tool, kind, summary, status, output, card, createdAt };
+}
+
+/** A decided action and what came of it. */
+export interface StepOutcome {
+  status: Extract<ToolStepStatus, "confirmed" | "rejected" | "failed">;
+  output: string;
+  /** Replaces the card shown while it waited, e.g. with a link to what the action created. */
+  card?: ToolCard | null;
+}
+
 export interface NewConversation {
   ownerId: string;
   title: string;
@@ -73,12 +129,28 @@ export interface ChatRepository {
    * reply of the conversation is pending, so questions are answered one at a time and in order.
    */
   addExchange(conversationId: string, content: string): ChatExchange;
+  /**
+   * Adds only a pending reply, for the assistant to carry on after the user confirmed or rejected an
+   * action. Throws ChatBusyError while another reply is pending.
+   */
+  addContinuation(conversationId: string): ChatExchange;
   attachTask(replyId: number, taskId: string): void;
-  /** Fills a pending reply; false when it is no longer pending (retried elsewhere, conversation deleted). */
-  completeReply(replyId: number, content: string, sources: ConsultedSource[]): boolean;
+  /**
+   * Fills a pending reply with its text, sources and tool steps; false when it is no longer pending
+   * (retried elsewhere, conversation deleted).
+   */
+  completeReply(replyId: number, content: string, sources: ConsultedSource[], steps?: NewToolStep[]): boolean;
   failReply(replyId: number, error: string): boolean;
   /** Puts a failed reply back to pending, e.g. before queueing it again. */
   retryReply(conversationId: string, replyId: number): boolean;
+  /** A step of the conversation, with its input; the caller has already checked the conversation's owner. */
+  getStep(conversationId: string, stepId: number): StoredToolStep | null;
+  /**
+   * Takes the decision on a waiting action, so it runs once even if confirmed twice at the same time;
+   * false when it was already decided.
+   */
+  claimStep(stepId: number, status: "confirmed" | "rejected"): boolean;
+  recordStepOutcome(stepId: number, outcome: StepOutcome): void;
 }
 
 function toMessage(row: unknown): ChatMessage {
@@ -90,6 +162,7 @@ function toMessage(row: unknown): ChatMessage {
     status: parsed.status,
     error: parsed.error,
     sources: parsed.sources,
+    steps: [],
     taskId: parsed.task_id,
     createdAt: parsed.created_at,
   };
@@ -130,6 +203,30 @@ export function createChatRepository(db: DatabaseSync): ChatRepository {
      FROM chat_conversations c WHERE c.id = ? AND c.owner_id = ?`,
   );
   const selectExists = db.prepare("SELECT 1 FROM chat_conversations WHERE id = ?");
+  const selectSteps = db.prepare(
+    `SELECT s.id, s.message_id, s.tool, s.kind, s.input, s.summary, s.output, s.card, s.status, s.created_at
+     FROM chat_tool_steps s JOIN chat_conversation_messages m ON m.id = s.message_id
+     WHERE m.conversation_id = ? ORDER BY s.message_id, s.position`,
+  );
+  const selectStep = db.prepare(
+    `SELECT s.id, s.message_id, s.tool, s.kind, s.input, s.summary, s.output, s.card, s.status, s.created_at
+     FROM chat_tool_steps s JOIN chat_conversation_messages m ON m.id = s.message_id
+     WHERE m.conversation_id = ? AND s.id = ?`,
+  );
+  const insertStep = db.prepare(
+    `INSERT INTO chat_tool_steps (message_id, position, tool, kind, input, summary, output, card, status)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+  );
+  const dismissWaitingSteps = db.prepare(
+    `UPDATE chat_tool_steps SET status = 'rejected', output = ?, decided_at = ${NOW}
+     WHERE status = 'awaiting_confirmation'
+       AND message_id IN (SELECT id FROM chat_conversation_messages WHERE conversation_id = ?)`,
+  );
+  const claimWaitingStep = db.prepare(
+    `UPDATE chat_tool_steps SET status = ?, decided_at = ${NOW} WHERE id = ? AND status = 'awaiting_confirmation'`,
+  );
+  const updateStepOutcome = db.prepare("UPDATE chat_tool_steps SET status = ?, output = ?, card = ? WHERE id = ?");
+  const updateStepOutcomeKeepingCard = db.prepare("UPDATE chat_tool_steps SET status = ?, output = ? WHERE id = ?");
   const selectMessages = db.prepare(
     `SELECT id, role, content, status, error, sources, task_id, created_at
      FROM chat_conversation_messages WHERE conversation_id = ? ORDER BY id`,
@@ -178,7 +275,7 @@ export function createChatRepository(db: DatabaseSync): ChatRepository {
       return {
         ...toSummary(row),
         minutaTitle: detailRowSchema.parse(row).minuta_title,
-        messages: selectMessages.all(id).map(toMessage),
+        messages: withSteps(selectMessages.all(id).map(toMessage), selectSteps.all(id).map(toStoredStep)),
       };
     },
 
@@ -190,7 +287,19 @@ export function createChatRepository(db: DatabaseSync): ChatRepository {
       return withTransaction(db, () => {
         if (!conversationExists(conversationId)) throw new Error(`Conversation ${conversationId} not found.`);
         if (selectPending.get(conversationId)) throw new ChatBusyError();
+        // A new question moves on from any action still waiting; the model is told it wasn't run.
+        dismissWaitingSteps.run(STEP_DISMISSED_OUTPUT, conversationId);
         insertMessage.run(conversationId, "user", content, "done");
+        const reply = idRowSchema.parse(insertMessage.get(conversationId, "assistant", "", "pending"));
+        touch.run(conversationId);
+        return { replyId: reply.id };
+      });
+    },
+
+    addContinuation(conversationId) {
+      return withTransaction(db, () => {
+        if (!conversationExists(conversationId)) throw new Error(`Conversation ${conversationId} not found.`);
+        if (selectPending.get(conversationId)) throw new ChatBusyError();
         const reply = idRowSchema.parse(insertMessage.get(conversationId, "assistant", "", "pending"));
         touch.run(conversationId);
         return { replyId: reply.id };
@@ -199,11 +308,26 @@ export function createChatRepository(db: DatabaseSync): ChatRepository {
 
     attachTask: (replyId, taskId) => void updateTask.run(taskId, replyId),
 
-    completeReply(replyId, content, sources) {
-      const row = complete.get(content, JSON.stringify(sources), replyId) as { conversation_id: string } | undefined;
-      if (!row) return false;
-      touch.run(row.conversation_id);
-      return true;
+    completeReply(replyId, content, sources, steps = []) {
+      return withTransaction(db, () => {
+        const row = complete.get(content, JSON.stringify(sources), replyId) as { conversation_id: string } | undefined;
+        if (!row) return false;
+        steps.forEach((step, index) =>
+          insertStep.run(
+            replyId,
+            index + 1,
+            step.tool,
+            step.kind,
+            JSON.stringify(step.input ?? null),
+            step.summary,
+            step.output,
+            step.card ? JSON.stringify(step.card) : null,
+            step.status,
+          ),
+        );
+        touch.run(row.conversation_id);
+        return true;
+      });
     },
 
     failReply: (replyId, error) => fail.run(error, replyId).changes > 0,
@@ -214,5 +338,22 @@ export function createChatRepository(db: DatabaseSync): ChatRepository {
         return retry.run(replyId, conversationId).changes > 0;
       });
     },
+
+    getStep(conversationId, stepId) {
+      const row = selectStep.get(conversationId, stepId);
+      return row ? toStoredStep(row) : null;
+    },
+
+    claimStep: (stepId, status) => claimWaitingStep.run(status, stepId).changes > 0,
+
+    recordStepOutcome(stepId, { status, output, card }) {
+      if (card === undefined) updateStepOutcomeKeepingCard.run(status, output, stepId);
+      else updateStepOutcome.run(status, output, card ? JSON.stringify(card) : null, stepId);
+    },
   };
+}
+
+function withSteps(messages: ChatMessage[], steps: StoredToolStep[]): ChatMessage[] {
+  const byMessage = Map.groupBy(steps, (step) => step.messageId);
+  return messages.map((message) => ({ ...message, steps: (byMessage.get(message.id) ?? []).map(toStep) }));
 }

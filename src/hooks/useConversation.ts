@@ -5,7 +5,14 @@ import { useActivity } from "@/components/activity/ActivityProvider";
 import type { ChatConversation } from "@/lib/chat/types";
 import { NETWORK_ERROR_MESSAGE, postJson, readErrorMessage, sendJson } from "@/lib/http/client";
 import type { ConversationResponseBody } from "@/lib/http/contracts";
-import { conversationEndpoint, conversationMessagesEndpoint, replyRetryEndpoint, taskCancelEndpoint } from "@/lib/http/endpoints";
+import {
+  conversationEndpoint,
+  conversationMessagesEndpoint,
+  conversationStepEndpoint,
+  replyRetryEndpoint,
+  taskCancelEndpoint,
+} from "@/lib/http/endpoints";
+import type { StepDecision } from "@/lib/assistant/stepDecisions";
 import { useLiveRefresh } from "./useLiveRefresh";
 
 /** How often a conversation waiting for a reply is refreshed while the event stream is down. */
@@ -13,6 +20,7 @@ export const CONVERSATION_POLL_INTERVAL_MS = 2000;
 
 const SEND_FAILED = "Não foi possível enviar a mensagem. Tente novamente.";
 const UPDATE_FAILED = "Não foi possível atualizar a conversa. Tente novamente.";
+const DECISION_FAILED = "Não foi possível registrar sua decisão. Tente novamente.";
 
 /** One conversation with the Advogado IA: follows pending replies and sends, retries and cancels them. */
 export function useConversation(initial: ChatConversation) {
@@ -85,5 +93,12 @@ export function useConversation(initial: ChatConversation) {
     [act, id],
   );
 
-  return { conversation, error, isSending, send, retry, cancel, update };
+  /** Confirms or rejects an action the assistant proposed; the assistant then replies with the outcome. */
+  const decide = useCallback(
+    (stepId: number, decision: StepDecision) =>
+      act(() => postJson(conversationStepEndpoint(id, stepId), { decision }), DECISION_FAILED),
+    [act, id],
+  );
+
+  return { conversation, error, isSending, send, retry, cancel, update, decide };
 }

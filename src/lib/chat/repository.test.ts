@@ -2,6 +2,8 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { insertTestUser } from "@/lib/auth/testHelpers";
 import { IN_MEMORY_DATABASE, openDatabase } from "@/lib/db/openDatabase";
 import { ChatBusyError } from "./errors";
+import { STEP_DISMISSED_OUTPUT } from "./messages";
+import type { NewToolStep } from "./toolSteps";
 import { createChatRepository, type ChatRepository } from "./repository";
 import { MAX_CHAT_TITLE_CHARS, titleFromMessage } from "./schema";
 
@@ -19,6 +21,61 @@ describe("createChatRepository", () => {
     other = insertTestUser(db, "bruno");
     chats = createChatRepository(db);
     id = chats.createConversation({ ownerId: owner, title: "Multa contratual", minutaId: null, useLibrary: true });
+  });
+
+  const READ_STEP = {
+    tool: "buscar_biblioteca",
+    kind: "read",
+    input: { consulta: "multa" },
+    summary: "Busquei “multa”",
+    status: "done",
+    output: null,
+    card: null,
+  } satisfies NewToolStep;
+  const ACTION_STEP = {
+    tool: "criar_clausula",
+    kind: "action",
+    input: { input: { titulo: "Multa" }, state: null },
+    summary: "Criar “Multa”",
+    status: "awaiting_confirmation",
+    output: null,
+    card: { type: "fields", title: "Multa", rows: [{ label: "Texto", value: "Dez por cento." }] },
+  } satisfies NewToolStep;
+
+  it("saves the reply's steps in order and keeps their input on the server", () => {
+    const { replyId } = chats.addExchange(id, "Crie a cláusula");
+    chats.completeReply(replyId, "Preparei.", [], [READ_STEP, ACTION_STEP]);
+
+    const [first, second] = chats.get(id, owner)!.messages[1].steps;
+    expect(first).toMatchObject({ tool: "buscar_biblioteca", kind: "read", status: "done", summary: "Busquei “multa”" });
+    expect(first).not.toHaveProperty("input");
+    expect(second).toMatchObject({ kind: "action", status: "awaiting_confirmation", card: ACTION_STEP.card });
+    expect(chats.getStep(id, second.id)).toMatchObject({ messageId: replyId, input: ACTION_STEP.input });
+    expect(chats.getStep("another-conversation", second.id)).toBeNull();
+  });
+
+  it("decides a waiting action once and records its outcome", () => {
+    const { replyId } = chats.addExchange(id, "Crie a cláusula");
+    chats.completeReply(replyId, "Preparei.", [], [ACTION_STEP]);
+    const stepId = chats.get(id, owner)!.messages[1].steps[0].id;
+
+    expect(chats.claimStep(stepId, "confirmed")).toBe(true);
+    expect(chats.claimStep(stepId, "rejected")).toBe(false);
+    chats.recordStepOutcome(stepId, { status: "confirmed", output: "Criada.", card: { type: "link", href: "/clausulas/1", label: "Abrir" } });
+    expect(chats.getStep(id, stepId)).toMatchObject({ status: "confirmed", output: "Criada.", card: { type: "link" } });
+
+    const { replyId: followUp } = chats.addContinuation(id);
+    expect(chats.get(id, owner)!.messages.at(-1)).toMatchObject({ id: followUp, role: "assistant", status: "pending" });
+    expect(() => chats.addContinuation(id)).toThrow(ChatBusyError);
+  });
+
+  it("dismisses a waiting action when the user moves on with a new question", () => {
+    const { replyId } = chats.addExchange(id, "Crie a cláusula");
+    chats.completeReply(replyId, "Preparei.", [], [ACTION_STEP]);
+    chats.addExchange(id, "Deixa para lá, outra pergunta");
+
+    const step = chats.get(id, owner)!.messages[1].steps[0];
+    expect(step).toMatchObject({ status: "rejected", output: STEP_DISMISSED_OUTPUT });
   });
 
   it("adds a question with a pending reply and fills it once, with its sources", () => {

@@ -1,4 +1,5 @@
 import type { ConsultedSource } from "@/lib/minuta/types";
+import type { ChatToolStep } from "./toolSteps";
 
 export const CHAT_ROLES = ["user", "assistant"] as const;
 export type ChatRole = (typeof CHAT_ROLES)[number];
@@ -15,6 +16,8 @@ export interface ChatMessage {
   error: string | null;
   /** Library excerpts the reply was given, in the order of its [F1], [F2]… citations. */
   sources: ConsultedSource[];
+  /** The tools the reply used and the action it proposed, in order. */
+  steps: ChatToolStep[];
   /** The background task writing a pending reply. */
   taskId: string | null;
   createdAt: string;

@@ -16,6 +16,10 @@ vi.mock("next/headers", () => ({
   }),
 }));
 
+/** The follow-up reply is queued, not written: no model runs in these tests. */
+const FOLLOW_UP_TASK_ID = "tarefa-de-continuacao";
+vi.mock("@/lib/chat/startReply", () => ({ startReply: vi.fn(() => FOLLOW_UP_TASK_ID) }));
+
 process.env.MAGISTRAL_DATA_DIR = mkdtempSync(path.join(tmpdir(), "magistral-rotas-"));
 
 const { getSessionRepository, getUserRepository } = await import("@/lib/auth/getAuthRepositories");
@@ -24,6 +28,9 @@ const { getMinutaRepository } = await import("@/lib/minutas/getMinutaRepository"
 const minutaRoute = await import("@/app/api/minutas/[id]/route");
 const personaRoute = await import("@/app/api/personas/[id]/route");
 const tasksRoute = await import("@/app/api/tasks/route");
+const stepRoute = await import("@/app/api/chat/conversations/[id]/steps/[stepId]/route");
+const { getChatRepository } = await import("@/lib/chat/getChatRepository");
+const { getClauseRepository } = await import("@/lib/clauses/getClauseRepository");
 
 const BASE = "http://localhost:3000";
 const HOUR_MS = 60 * 60 * 1000;
@@ -49,15 +56,26 @@ function as(token: string | null, pathname: string, method = "GET"): Request {
 
 const params = (id: string) => ({ params: Promise.resolve({ id }) });
 
+function postAs(token: string, pathname: string, body: unknown): Request {
+  cookieJar.set(SESSION_COOKIE_NAME, token);
+  return new Request(`${BASE}${pathname}`, {
+    method: "POST",
+    headers: { host: "localhost:3000", origin: BASE, "content-type": "application/json" },
+    body: JSON.stringify(body),
+  });
+}
+
 describe("API routes with accounts", () => {
   let ana: string;
   let bruno: string;
+  let anaId: string;
   let minutaId: string;
 
   beforeAll(() => {
     const users = getUserRepository();
     const admin = users.createFirstAdmin({ username: "ana", displayName: "Ana", passwordHash: "x" })!;
     const member = users.create({ username: "bruno", displayName: "Bruno", passwordHash: "x", role: "member" });
+    anaId = admin.id;
     ana = signIn(admin.id);
     bruno = signIn(member.id);
     minutaId = getMinutaRepository().create({
@@ -104,6 +122,39 @@ describe("API routes with accounts", () => {
   it("lists only the user's own tasks", async () => {
     const response = await tasksRoute.GET(as(bruno, "/api/tasks"), undefined);
     expect(await response.json()).toEqual({ tasks: [] });
+  });
+
+  it("runs a proposed action once, only for the conversation's owner, and queues the follow-up", async () => {
+    const chats = getChatRepository();
+    const conversationId = chats.createConversation({ ownerId: anaId, title: "Cláusulas", minutaId: null, useLibrary: false });
+    const { replyId } = chats.addExchange(conversationId, "Crie uma cláusula de multa");
+    const clause = { titulo: "Multa por atraso", categoria: "Multa", tiposDocumento: [], texto: "Multa de 2%." };
+    chats.completeReply(replyId, "Preparei a cláusula.", [], [
+      {
+        tool: "criar_clausula",
+        kind: "action",
+        input: { input: clause, state: null },
+        summary: "Criar a cláusula “Multa por atraso”",
+        status: "awaiting_confirmation",
+        output: null,
+        card: null,
+      },
+    ]);
+    const stepId = chats.get(conversationId, anaId)!.messages[1].steps[0].id;
+    const path = `/api/chat/conversations/${conversationId}/steps/${stepId}`;
+    const stepParams = { params: Promise.resolve({ id: conversationId, stepId: String(stepId) }) };
+
+    expect((await stepRoute.POST(postAs(bruno, path, { decision: "confirm" }), stepParams)).status).toBe(404);
+    expect(getClauseRepository().list().some((saved) => saved.title === clause.titulo)).toBe(false);
+
+    const confirmed = await stepRoute.POST(postAs(ana, path, { decision: "confirm" }), stepParams);
+    expect(confirmed.status).toBe(202);
+    expect(await confirmed.json()).toEqual({ taskId: FOLLOW_UP_TASK_ID });
+    expect(getClauseRepository().list().filter((saved) => saved.title === clause.titulo)).toHaveLength(1);
+    expect(chats.getStep(conversationId, stepId)).toMatchObject({ status: "confirmed", card: { type: "link" } });
+
+    expect((await stepRoute.POST(postAs(ana, path, { decision: "confirm" }), stepParams)).status).toBe(409);
+    expect(getClauseRepository().list().filter((saved) => saved.title === clause.titulo)).toHaveLength(1);
   });
 
   it("keeps deleting shared personas to admins", async () => {

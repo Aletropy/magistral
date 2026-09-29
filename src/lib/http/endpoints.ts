@@ -57,6 +57,11 @@ export function conversationMessagesEndpoint(id: string): string {
   return `${conversationEndpoint(id)}/messages`;
 }
 
+/** Where the user confirms or rejects an action the assistant proposed. */
+export function conversationStepEndpoint(conversationId: string, stepId: number): string {
+  return `${conversationEndpoint(conversationId)}/steps/${stepId}`;
+}
+
 export function replyRetryEndpoint(conversationId: string, messageId: number): string {
   return `${conversationMessagesEndpoint(conversationId)}/${messageId}/retry`;
 }

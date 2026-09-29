@@ -1,10 +1,22 @@
 import { describe, expect, it } from "vitest";
 import { buildTranscript, normalizeChatHistory, normalizeCitations, rewritePastCitations } from "./history";
+import type { ChatToolStep } from "./toolSteps";
 import type { ChatMessage } from "./types";
 
 let nextId = 1;
 function message(role: ChatMessage["role"], content: string, overrides: Partial<ChatMessage> = {}): ChatMessage {
-  return { id: nextId++, role, content, status: "done", error: null, sources: [], taskId: null, createdAt: "", ...overrides };
+  return {
+    id: nextId++,
+    role,
+    content,
+    status: "done",
+    error: null,
+    sources: [],
+    steps: [],
+    taskId: null,
+    createdAt: "",
+    ...overrides,
+  };
 }
 
 describe("normalizeCitations", () => {
@@ -30,6 +42,43 @@ describe("normalizeChatHistory", () => {
       message("assistant", "", { status: "pending" }),
     ]);
     expect(turns).toEqual([{ role: "user", content: "Primeira pergunta\n\nSegunda pergunta" }]);
+  });
+
+  it("replays past tool use as text and tells the model what the user decided on an action", () => {
+    const step = (overrides: Partial<ChatToolStep>): ChatToolStep => ({
+      id: 1,
+      tool: "buscar_biblioteca",
+      kind: "read",
+      summary: "Busquei “fiança”",
+      status: "done",
+      output: null,
+      card: null,
+      createdAt: "",
+      ...overrides,
+    });
+    const turns = normalizeChatHistory([
+      message("user", "Crie a cláusula de multa"),
+      message("assistant", "Preparei a cláusula.", {
+        steps: [
+          step({}),
+          step({ id: 2, tool: "criar_clausula", kind: "action", summary: "Criar “Multa”", status: "confirmed", output: "Cláusula criada." }),
+        ],
+      }),
+    ]);
+
+    expect(turns).toEqual([
+      { role: "user", content: "Crie a cláusula de multa" },
+      {
+        role: "assistant",
+        content:
+          "Preparei a cláusula.\n\n(Ferramentas usadas nesta resposta:\n- buscar_biblioteca: Busquei “fiança” (concluída)\n- criar_clausula: Criar “Multa” (confirmada))",
+      },
+      {
+        role: "user",
+        content:
+          "[Aviso automático do Magistral, não escrito pelo usuário] O usuário confirmou a ação “Criar “Multa””. Resultado: Cláusula criada.",
+      },
+    ]);
   });
 
   it("drops the oldest turns past the budget, still starting with a user turn", () => {

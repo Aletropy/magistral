@@ -96,7 +96,7 @@ export const APP_GUIDE: readonly GuideEntry[] = [
     feature: "Advogado IA",
     path: ASSISTANT_PATH,
     howTo:
-      "Este assistente. As conversas ficam salvas. O botão “Criar minuta a partir desta conversa” abre o passo a passo já preenchido com o que foi combinado.",
+      "Este assistente. As conversas ficam salvas. Ele consulta sozinho personas, cláusulas, histórico, tarefas e a biblioteca, preenche o passo a passo de uma nova minuta e mostra botões para abrir páginas. Gerar uma minuta, alterar uma minuta salva, criar uma cláusula ou ajustar uma persona aparecem como um cartão que o usuário confirma ou recusa; nada disso acontece sem a confirmação. O botão “Criar minuta a partir desta conversa” também abre o passo a passo preenchido.",
   },
 ];
 

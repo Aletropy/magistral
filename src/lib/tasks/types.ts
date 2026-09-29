@@ -102,6 +102,15 @@ export interface NewTask {
   files?: NewTaskFile[];
 }
 
+/** Work done without the queue, stored as a succeeded task with its result. */
+export interface FinishedTask {
+  ownerId: string;
+  kind: TaskKind;
+  lane: TaskLane;
+  title: string;
+  result: unknown;
+}
+
 const ACTIVE_STATUSES: ReadonlySet<TaskStatus> = new Set(["pending", "running"]);
 
 /** Whether a task can still change: queued, waiting for a retry, or running. */

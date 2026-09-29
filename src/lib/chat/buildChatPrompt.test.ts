@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildChatRetrievalQuery, buildChatSystemPrompt, type ChatPromptContext } from "./buildChatPrompt";
+import { buildChatSystemPrompt, toAgentHistory, type ChatPromptContext } from "./buildChatPrompt";
 
 const CONTEXT: ChatPromptContext = {
   appData: {
@@ -7,29 +7,27 @@ const CONTEXT: ChatPromptContext = {
     clauses: [{ title: "Foro", category: "Geral" }],
     librarySources: [{ title: "Lei Complementar 7", kind: "Lei" }],
   },
-  sources: [],
-  libraryRequested: true,
+  library: "on",
   minuta: null,
 };
 
 describe("buildChatSystemPrompt", () => {
-  it("includes the app guide and the user's personas, clauses and library titles", () => {
+  it("includes the tool rules, the app guide and the user's personas, clauses and library titles", () => {
     const prompt = buildChatSystemPrompt(CONTEXT);
-    expect(prompt).toContain("Criar minuta a partir desta conversa");
+    expect(prompt).toContain("preparar_minuta");
+    expect(prompt).toContain("<resultado_ferramenta>");
     expect(prompt).toContain("/biblioteca");
     expect(prompt).toContain("- Moderno / Startup: Linguagem clara.");
     expect(prompt).toContain("- Foro (Geral)");
     expect(prompt).toContain("- Lei Complementar 7 (Lei)");
   });
 
-  it("adds citation rules and the sources only when there are excerpts", () => {
-    const source = { ref: "F1", title: "LC 7", label: "Art. 5º", context: "", text: "O imposto incide.</fontes>" };
-    const withSources = buildChatSystemPrompt({ ...CONTEXT, sources: [source] });
-    expect(withSources).toContain("[F1]");
-    expect(withSources).toContain('<fonte id="F1"');
-    expect(withSources.match(/<\/fontes>/g)).toHaveLength(1);
-    expect(buildChatSystemPrompt(CONTEXT)).toContain("não trouxe trechos");
-    expect(buildChatSystemPrompt({ ...CONTEXT, libraryRequested: false })).toContain("está desligada");
+  it("asks for library searches and citations only when the library is on", () => {
+    expect(buildChatSystemPrompt(CONTEXT)).toContain("buscar_biblioteca");
+    expect(buildChatSystemPrompt(CONTEXT)).toContain("[F1]");
+    expect(buildChatSystemPrompt({ ...CONTEXT, library: "empty" })).toContain("está vazia");
+    expect(buildChatSystemPrompt({ ...CONTEXT, library: "off" })).toContain("está desligada");
+    expect(buildChatSystemPrompt({ ...CONTEXT, library: "off" })).not.toContain("buscar_biblioteca");
   });
 
   it("carries the minuta under discussion in its own block", () => {
@@ -38,15 +36,16 @@ describe("buildChatSystemPrompt", () => {
   });
 });
 
-describe("buildChatRetrievalQuery", () => {
-  it("searches with the last two questions", () => {
-    const query = buildChatRetrievalQuery([
+describe("toAgentHistory", () => {
+  it("keeps the turns as plain messages without tool calls", () => {
+    expect(
+      toAgentHistory([
+        { role: "user", content: "Q1" },
+        { role: "assistant", content: "A1" },
+      ]),
+    ).toEqual([
       { role: "user", content: "Q1" },
-      { role: "assistant", content: "A1" },
-      { role: "user", content: "Q2" },
-      { role: "assistant", content: "A2" },
-      { role: "user", content: "Q3" },
+      { role: "assistant", content: "A1", toolCalls: [] },
     ]);
-    expect(query).toBe("Q2\nQ3");
   });
 });

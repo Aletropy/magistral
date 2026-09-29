@@ -354,6 +354,31 @@ function createFeedbackTable(db: DatabaseSync): void {
   `);
 }
 
+/**
+ * What the Advogado IA did while writing a reply: each tool it used, and the action it proposed, which
+ * waits for the user's confirmation. `input` stays on the server; the rest is what the conversation shows.
+ */
+function createChatToolStepsTable(db: DatabaseSync): void {
+  db.exec(`
+    CREATE TABLE chat_tool_steps (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      message_id INTEGER NOT NULL REFERENCES chat_conversation_messages(id) ON DELETE CASCADE,
+      position INTEGER NOT NULL,
+      tool TEXT NOT NULL,
+      kind TEXT NOT NULL,
+      input TEXT NOT NULL,
+      summary TEXT NOT NULL,
+      output TEXT,
+      card TEXT,
+      status TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+      decided_at TEXT
+    );
+    CREATE INDEX chat_tool_steps_message ON chat_tool_steps (message_id, position);
+    CREATE INDEX chat_tool_steps_status ON chat_tool_steps (status);
+  `);
+}
+
 /** Ordered schema changes. Append new migrations; never edit or reorder existing ones. */
 export const MIGRATIONS: readonly Migration[] = [
   createPersonaTables,
@@ -371,6 +396,7 @@ export const MIGRATIONS: readonly Migration[] = [
   createAuthTables,
   addRecordOwners,
   createFeedbackTable,
+  createChatToolStepsTable,
 ];
 
 function readSchemaVersion(db: DatabaseSync): number {
