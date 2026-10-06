@@ -147,8 +147,6 @@ MAGISTRAL_RELEASE_CHANNEL=teste
 MAGISTRAL_SECRET_KEY=<o valor gerado pelo openssl>
 # Opcional: um código fixo para criar o primeiro administrador (senão ele aparece nos logs).
 MAGISTRAL_SETUP_TOKEN=
-# PIN de 4 dígitos que esconde a aba Sistema atrás de uma trava (vazio: sem trava).
-MAGISTRAL_SYSTEM_PIN=
 
 LLM_PROVIDER=openrouter
 OPENROUTER_API_KEY=sk-or-...            # sua chave

@@ -6,7 +6,6 @@ import { Page } from "@/components/layout/Page";
 import { Badge } from "@/components/ui/badge";
 import { WarningCallout } from "@/components/ui/WarningCallout";
 import { requireAdmin } from "@/lib/auth/dal";
-import { requireDevUnlock } from "@/lib/systemPin";
 import { AppError } from "@/lib/errors/AppError";
 import { startOfBrasiliaDay } from "@/lib/integrations/jurisprudencias/brasiliaDay";
 import {
@@ -40,7 +39,6 @@ function readStatus(): { status: ConnectionStatus | null; configurationError: st
 export default async function IntegrationsPage({ searchParams }: PageProps<"/integracoes">) {
   await connection();
   await requireAdmin();
-  await requireDevUnlock();
   const result = (await searchParams)[CONNECTION_RESULT_PARAM];
   const { status, configurationError } = readStatus();
   const usage = getUsageRepository();
@@ -66,9 +64,9 @@ export default async function IntegrationsPage({ searchParams }: PageProps<"/int
         </div>
 
         <p className="text-sm">
-          Com a conta do escritório conectada, o Advogado IA pesquisa jurisprudência quando a conversa pede e usa
-          as decisões para fundamentar a resposta, sem mostrar fontes. A conexão vale para toda a equipe; só
-          administradores a gerenciam.
+          Com a conta do escritório conectada, o Advogado IA pesquisa jurisprudência quando a conversa pede, cita cada
+          resultado como [J1], [J2]… e indica a fonte. A conexão vale para toda a equipe; só administradores a
+          gerenciam.
         </p>
 
         {result === CONNECTION_RESULTS.connected && status?.connected && (

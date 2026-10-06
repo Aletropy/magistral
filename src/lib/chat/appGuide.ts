@@ -21,7 +21,7 @@ export const APP_GUIDE: readonly GuideEntry[] = [
     feature: "Início",
     path: HOME_PATH,
     howTo:
-      "O painel com a caixa “Como posso ajudar?” (a conversa continua no Advogado IA ao lado da página), as minutas e conversas recentes, o que está rodando agora e o acervo do escritório. O menu lateral agrupa Criar (Nova minuta, Advogado IA, Lotes), Acervo (Histórico, Personas, Cláusulas, Biblioteca) e Sistema (Tarefas; Equipe para administradores; Desenvolvimento com Uso e Integrações). A aba Sistema e a área Desenvolvimento pedem um PIN cada vez que a página recarrega.",
+      "O painel com a caixa “Como posso ajudar?” (a conversa continua no Advogado IA ao lado da página), as minutas e conversas recentes, o que está rodando agora e o acervo do escritório. O menu lateral agrupa Criar (Nova minuta, Advogado IA, Lotes), Acervo (Histórico, Personas, Cláusulas, Biblioteca) e Sistema (Tarefas; Uso e Equipe para administradores).",
   },
   {
     feature: "Nova minuta — passo a passo",
@@ -91,7 +91,7 @@ export const APP_GUIDE: readonly GuideEntry[] = [
     feature: "Integrações",
     path: INTEGRATIONS_PATH,
     howTo:
-      "Só para administradores. Conecta a conta do escritório na Jurisprudências.ai; com ela conectada, o Advogado IA pesquisa decisões de tribunais (STF, STJ, TST, TRFs, TRTs, TJs, CARF) quando a conversa pede e usa o conteúdo para fundamentar a resposta, sem mostrar fontes. Há limite diário de buscas (plano gratuito: 5 buscas e 10 consultas de processo; assinatura: 500 buscas). Na página da minuta, o botão “Pesquisar jurisprudência” aparece quando a conta está conectada.",
+      "Só para administradores. Conecta a conta do escritório na Jurisprudências.ai; com ela conectada, o Advogado IA pesquisa decisões de tribunais (STF, STJ, TST, TRFs, TRTs, TJs, CARF) quando a conversa pede e cita cada uma como [J1]. Há limite diário de buscas (plano gratuito: 5 buscas e 10 consultas de processo; assinatura: 500 buscas). Na página da minuta, o botão “Pesquisar jurisprudência” aparece quando a conta está conectada.",
   },
   {
     feature: "Equipe e conta",

@@ -79,8 +79,6 @@ export function userEndpoint(id: string): string {
   return `${USERS_ENDPOINT}/${encodeURIComponent(id)}`;
 }
 
-export const SYSTEM_UNLOCK_ENDPOINT = "/api/system/unlock";
-
 export const TASKS_ENDPOINT = "/api/tasks";
 
 export function taskEndpoint(id: string): string {

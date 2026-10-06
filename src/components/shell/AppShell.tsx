@@ -30,17 +30,13 @@ const FOCUS_PAGES: ReadonlyMap<string, string> = new Map([[NEW_MINUTA_PATH, "Sai
 interface AppShellProps {
   user: CurrentUser;
   release: ReleaseInfo;
-  /** Hides the Sistema group behind the office PIN. */
-  systemLocked: boolean;
-  /** Hides Desenvolvimento (Uso, Integrações) behind its own PIN. */
-  devLocked: boolean;
   children: ReactNode;
 }
 
-export function AppShell({ user, release, systemLocked, devLocked, children }: AppShellProps) {
+export function AppShell({ user, release, children }: AppShellProps) {
   return (
     <AssistantProvider userId={user.id}>
-      <ShellFrame user={user} release={release} systemLocked={systemLocked} devLocked={devLocked}>
+      <ShellFrame user={user} release={release}>
         {children}
       </ShellFrame>
       <AssistantPanel />
@@ -48,7 +44,7 @@ export function AppShell({ user, release, systemLocked, devLocked, children }: A
   );
 }
 
-function ShellFrame({ user, release, systemLocked, devLocked, children }: AppShellProps) {
+function ShellFrame({ user, release, children }: AppShellProps) {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const pathname = usePathname();
   const drawerRef = useRef<HTMLDivElement>(null);
@@ -91,7 +87,7 @@ function ShellFrame({ user, release, systemLocked, devLocked, children }: AppShe
       </a>
 
       <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 overflow-y-auto border-r bg-sidebar lg:block">
-        <SidebarNav user={user} systemLocked={systemLocked} devLocked={devLocked} />
+        <SidebarNav user={user} />
       </aside>
 
       {isDrawerOpen && (
@@ -120,7 +116,7 @@ function ShellFrame({ user, release, systemLocked, devLocked, children }: AppShe
             >
               <X aria-hidden />
             </Button>
-            <SidebarNav user={user} systemLocked={systemLocked} devLocked={devLocked} onNavigate={closeDrawer} />
+            <SidebarNav user={user} onNavigate={closeDrawer} />
           </div>
         </div>
       )}

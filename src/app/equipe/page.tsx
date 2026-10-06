@@ -6,7 +6,6 @@ import { UserRowActions } from "@/components/team/UserRowActions";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { requireAdmin } from "@/lib/auth/dal";
-import { requireSystemUnlock } from "@/lib/systemPin";
 import { getUserRepository } from "@/lib/auth/getAuthRepositories";
 import { formatDateTime } from "@/lib/usage/format";
 
@@ -15,7 +14,6 @@ export const metadata: Metadata = { title: "Equipe" };
 export default async function TeamPage() {
   await connection();
   const admin = await requireAdmin();
-  await requireSystemUnlock();
   const users = getUserRepository().list();
 
   return (
