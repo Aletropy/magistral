@@ -268,8 +268,12 @@ describe("createTaskWorker", () => {
         "llm",
         ({ payload, signal, commit }) =>
           new Promise((resolve, reject) => {
-            signal.addEventListener("abort", () => reject(new DOMException("aborted", "AbortError")));
-            setTimeout(() => resolve(commit(() => ({ greeting: payload.name }))), 50);
+            // Cleared on abort: committing a canceled task throws TaskCanceledError from the timer.
+            const timer = setTimeout(() => resolve(commit(() => ({ greeting: payload.name }))), 50);
+            signal.addEventListener("abort", () => {
+              clearTimeout(timer);
+              reject(new DOMException("aborted", "AbortError"));
+            });
           }),
         { onCanceled: (payload: { name: string }) => canceled.push(payload.name) },
       ),
