@@ -3,7 +3,8 @@ import { getLoginThrottle } from "@/lib/auth/loginThrottle";
 import { AppError } from "@/lib/errors/AppError";
 import { defineRoute } from "@/lib/http/route";
 import { HTTP_FORBIDDEN, HTTP_NO_CONTENT, HTTP_TOO_MANY_REQUESTS } from "@/lib/http/status";
-import { PIN_BY_SCOPE, setPinUnlock, verifyPin, type PinScope } from "@/lib/systemPin";
+import { PIN_BY_SCOPE, setPinUnlock, verifyPin } from "@/lib/systemPin";
+import type { PinScope } from "@/lib/pinCookies";
 
 const UnlockBody = z.object({
   scope: z.enum(["sistema", "desenvolvimento"]),
