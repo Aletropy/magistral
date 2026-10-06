@@ -2,6 +2,8 @@ import { z } from "zod";
 import type { JurisprudenciasCaller } from "@/lib/integrations/jurisprudencias/caller";
 import {
   COURT_IDS,
+  JURISPRUDENCIAS_CREDIT,
+  JURISPRUDENCIAS_NAME,
   JURISPRUDENCIAS_TOOLS,
 } from "@/lib/integrations/jurisprudencias/config";
 import { defineReadTool, type ToolContext, type ToolOutcome } from "../tool";
@@ -21,8 +23,12 @@ const COURT_FIELDS = ["court", "tribunal", "court_abbreviation"];
 const DATE_FIELDS = ["publication_date", "trial_date", "data_publicacao", "date"];
 const LIST_FIELDS = ["decisions", "results", "items", "data"];
 
-const SILENT_USE_NOTE =
-  "Use estas decisões com as suas palavras para fundamentar a resposta. Nunca mostre identificadores [Jn] nem mencione a fonte ou o serviço de jurisprudência na resposta.";
+/**
+ * How the model should use the numbered decisions: each one gets a [Jn] that lands in the reply's
+ * "Fontes consultadas" list with the provider's credit, and the prose prefers natural references to
+ * scattered mid-sentence markers — without ever hiding where the decision came from.
+ */
+const CITATION_NOTE = `Cada decisão usada recebe um identificador ([J1], [J2]…) e entra na lista “Fontes consultadas” da resposta. Ao apresentar uma decisão, indique a fonte: ${JURISPRUDENCIAS_CREDIT}. Na prosa, prefira referir-se a elas de forma natural (“as decisões consultadas”, “a jurisprudência do STJ”) a espalhar marcadores no meio do texto. Não cite decisões fora desta lista e não invente ementas.`;
 
 const terms = z.array(z.string().trim().min(1).max(MAX_TERM_CHARS)).max(MAX_TERMS);
 const date = z.string().regex(DATE, DATE_HINT);
@@ -107,9 +113,8 @@ function decisionList(data: unknown): Json[] | null {
 }
 
 /**
- * Numbers what the service answered so the reply can tell decisions apart: each decision gets a [Jn]
- * while the answer is being written. References never reach the user; they only track which decision
- * is which inside one reply.
+ * Numbers what the service answered so the model can cite it: each decision gets a [Jn] when the answer
+ * is a JSON list; otherwise the whole answer is one reference described by `fallback`.
  */
 export function numberDecisions(text: string, citations: CitationRegistry, fallback: { title: string; label: string }): string {
   let data: unknown = null;
@@ -144,7 +149,7 @@ function annotate(list: Json[], citations: CitationRegistry): Json[] {
 
 function outcome(text: string, summary: string, card?: ToolOutcome["card"]): ToolOutcome {
   return {
-    output: `${SILENT_USE_NOTE}\n\n${text}`,
+    output: `${CITATION_NOTE}\n\n${text}`,
     summary,
     card: card ?? null,
     maxOutputChars: DECISIONS_RESULT_MAX_CHARS,
@@ -163,9 +168,9 @@ export function createJurisprudenciaTools({ call }: JurisprudenciaDeps) {
     defineReadTool({
       name: "pesquisar_jurisprudencia",
       description:
-        "Pesquisa decisões de um tribunal brasileiro no acervo de jurisprudência do escritório. Cada busca conta no limite diário do escritório (plano gratuito: 5 por dia), então pesquise só quando o usuário pedir ou a resposta depender de jurisprudência, escolha o tribunal certo e capriche nos termos. Devolve decisões com ementa para fundamentar a resposta com as suas palavras, sem citar fontes.",
+        "Pesquisa decisões de um tribunal brasileiro na Jurisprudências.ai. Cada busca conta no limite diário do escritório (plano gratuito: 5 por dia), então pesquise só quando o usuário pedir ou a resposta depender de jurisprudência, escolha o tribunal certo e capriche nos termos. Devolve decisões com ementa, numeradas [J1], [J2]….",
       input: searchInputSchema,
-      progressLabel: "Pesquisando jurisprudência",
+      progressLabel: `Pesquisando na ${JURISPRUDENCIAS_NAME}`,
       async run(input, context) {
         const text = await run(JURISPRUDENCIAS_TOOLS.search, toSearchArguments(input), context);
         const what = input.consulta ?? "a pesquisa estruturada";
@@ -179,9 +184,9 @@ export function createJurisprudenciaTools({ call }: JurisprudenciaDeps) {
     defineReadTool({
       name: "consultar_decisao",
       description:
-        "Traz a decisão completa (ementa) de um processo pelo tribunal e número, no acervo de jurisprudência do escritório. Conta no limite diário de consultas. Use para conferir uma decisão que o usuário citou; o conteúdo fundamenta a resposta sem ser citado.",
+        "Traz a decisão completa (ementa) de um processo pelo tribunal e número, na Jurisprudências.ai. Conta no limite diário de consultas. Use para conferir uma decisão que o usuário citou.",
       input: lookupInputSchema,
-      progressLabel: "Consultando a decisão",
+      progressLabel: `Consultando a decisão na ${JURISPRUDENCIAS_NAME}`,
       async run({ tribunal, processo }, context) {
         const text = await run(JURISPRUDENCIAS_TOOLS.lookup, { court: tribunal, process_number: processo }, context);
         const [ref] = context.citations.addDecisions([{ title: `${tribunal.toUpperCase()} ${processo}`, label: "Ementa" }]);
@@ -191,7 +196,7 @@ export function createJurisprudenciaTools({ call }: JurisprudenciaDeps) {
     defineReadTool({
       name: "listar_tribunais",
       description:
-        "Lista os tribunais disponíveis no acervo de jurisprudência, com a sigla e a quantidade de decisões de cada um. Use só se estiver em dúvida sobre a sigla de um tribunal.",
+        "Lista os tribunais disponíveis na Jurisprudências.ai, com a sigla e a quantidade de decisões de cada um. Use só se estiver em dúvida sobre a sigla de um tribunal.",
       input: z.object({}),
       progressLabel: "Consultando os tribunais",
       async run(_input, context) {

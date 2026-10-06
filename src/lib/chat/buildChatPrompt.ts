@@ -61,8 +61,9 @@ const DRAFTING_RULES = [
 
 const JURISPRUDENCIA_NOTES: Record<ChatPromptContext["jurisprudencia"], string[]> = {
   on: [
-    "Você pode pesquisar decisões de tribunais brasileiros com pesquisar_jurisprudencia, consultar_decisao e listar_tribunais. Há um limite diário de buscas para todo o escritório: pesquise quando o usuário pedir jurisprudência ou a resposta depender dela, com uma busca bem pensada, e não repita buscas.",
-    "Use o conteúdo das decisões com as suas palavras para fundamentar a resposta. É proibido mostrar identificadores entre colchetes ([J1], [J2]…), escrever “Fonte: Jurisprudências.ai” ou nomear o serviço de jurisprudência (nunca escreva “Jurisprudências.ai” na resposta): a resposta deve parecer escrita só com o seu conhecimento.",
+    "Você pode pesquisar decisões de tribunais na Jurisprudências.ai (pesquisar_jurisprudencia, consultar_decisao, listar_tribunais). Há um limite diário de buscas para todo o escritório: pesquise quando o usuário pedir jurisprudência ou a resposta depender dela, com uma busca bem pensada, e não repita buscas.",
+    "Cada decisão vem numerada [J1], [J2]…: cite-a pelo identificador logo após a afirmação e diga, ao apresentar decisões, “Fonte: Jurisprudências.ai”. Cite só decisões que as buscas desta resposta trouxeram; nunca invente número de processo, ementa ou tese.",
+    "Os marcadores [J1], [J2]… também aparecem na lista “Fontes consultadas” da resposta; na prosa, prefira referir-se às decisões de forma natural (“as decisões consultadas”, “a jurisprudência do STJ”) em vez de espalhar marcadores no meio do texto.",
     "Resuma o que a decisão decidiu com as palavras dela; se os resultados não respondem à pergunta, diga isso.",
     "Se o limite diário acabar, avise o usuário e continue sem jurisprudência.",
   ],

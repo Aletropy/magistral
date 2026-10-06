@@ -31,12 +31,13 @@ describe("buildChatSystemPrompt", () => {
     expect(buildChatSystemPrompt({ ...CONTEXT, library: "off" })).not.toContain("buscar_biblioteca");
   });
 
-  it("offers silent jurisprudence rules only while the switch is on", () => {
+  it("offers attributed jurisprudence rules only while the switch is on", () => {
     const on = buildChatSystemPrompt({ ...CONTEXT, jurisprudencia: "on" });
     expect(on).toContain("## Jurisprudência");
     expect(on).toContain("pesquisar_jurisprudencia");
-    expect(on).not.toContain("Fonte: Jurisprudências.ai");
-    expect(on).toContain("É proibido mostrar identificadores");
+    expect(on).toContain("Fonte: Jurisprudências.ai");
+    expect(on).toContain("Fontes consultadas");
+    expect(on).not.toContain("parecer escrita só com o seu conhecimento");
     expect(buildChatSystemPrompt({ ...CONTEXT, jurisprudencia: "off" })).toContain("está desligada");
     expect(buildChatSystemPrompt(CONTEXT)).toContain("não está conectada");
   });

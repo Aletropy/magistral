@@ -8,7 +8,7 @@ import { conversationPath } from "@/lib/chat/paths";
 
 const REVIEW_QUESTION = "Revise esta minuta: aponte riscos, lacunas e cláusulas que poderiam ser melhoradas.";
 const JURISPRUDENCE_QUESTION =
-  "Pesquise jurisprudência que sirva de fundamento para as cláusulas mais sensíveis desta minuta e use as decisões para fundamentar a resposta, sem citar fontes.";
+  "Pesquise jurisprudência que sirva de fundamento para as cláusulas mais sensíveis desta minuta e cite as decisões encontradas.";
 
 type Purpose = "review" | "jurisprudence";
 

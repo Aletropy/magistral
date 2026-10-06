@@ -16,7 +16,7 @@ import { TaskInputError } from "@/lib/tasks/errors";
 import { taskOwner, type TaskHandler } from "@/lib/tasks/handler";
 import { CHAT_TEMPERATURE, buildChatSystemPrompt, toAgentHistory, type ChatPromptContext } from "./buildChatPrompt";
 import { getChatRepository } from "./getChatRepository";
-import { normalizeChatHistory, normalizeCitations, stripJurisprudenciaCitations } from "./history";
+import { normalizeChatHistory, normalizeCitations } from "./history";
 import { loadAppData } from "./loadAppData";
 import { CONVERSATION_NOT_FOUND_MESSAGE, REPLY_CANCELED_MESSAGE } from "./messages";
 import { ASSISTANT_PATH, conversationPath } from "./paths";
@@ -95,7 +95,7 @@ export const chatReplyTask: TaskHandler<ChatReplyPayload, ChatReplyResult> = {
       onProgress: (label) => reportProgress(0, null, label),
     });
 
-    const answer = stripJurisprudenciaCitations(normalizeCitations(result.text));
+    const answer = normalizeCitations(result.text);
     return commit(() => {
       chats.completeReply(reply.id, answer, citations.consulted(), result.steps);
       return { conversationId: conversation.id, title: conversation.title, awaitingConfirmation: result.awaitingConfirmation };
