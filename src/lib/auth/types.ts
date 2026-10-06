@@ -14,6 +14,8 @@ export interface User {
   createdAt: string;
   /** Disabled users can't sign in; their sessions are ended when they are disabled. */
   disabledAt: string | null;
+  /** True when an admin set a walk-away PIN for this account (the lock gates pages and APIs). */
+  hasPin: boolean;
 }
 
 /** What client components get about the signed-in user. */

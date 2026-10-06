@@ -11,6 +11,7 @@ const userRowSchema = z.object({
   role: z.enum(USER_ROLES),
   created_at: z.string(),
   disabled_at: z.string().nullable(),
+  has_pin: z.number(),
 });
 const credentialsRowSchema = userRowSchema.extend({ password_hash: z.string() });
 const countRowSchema = z.object({ count: z.number() });
@@ -60,6 +61,10 @@ export interface UserRepository {
   createFirstAdmin(user: Omit<NewUser, "role">): User | null;
   update(id: string, changes: UserChanges): User | null;
   setPasswordHash(id: string, passwordHash: string): boolean;
+  /** The walk-away PIN's hash, or null when the account has no PIN. */
+  getPinHash(id: string): string | null;
+  /** Sets or clears (null) the walk-away PIN. */
+  setPinHash(id: string, pinHash: string | null): boolean;
 }
 
 function toUser(row: unknown): User {
@@ -71,10 +76,11 @@ function toUser(row: unknown): User {
     role: parsed.role,
     createdAt: parsed.created_at,
     disabledAt: parsed.disabled_at,
+    hasPin: parsed.has_pin === 1,
   };
 }
 
-const COLUMNS = "id, username, display_name, role, created_at, disabled_at";
+const COLUMNS = "id, username, display_name, role, created_at, disabled_at, (pin_hash IS NOT NULL) AS has_pin";
 const UNIQUE_CONSTRAINT = /UNIQUE constraint failed/;
 
 export function createUserRepository(db: DatabaseSync): UserRepository {
@@ -87,6 +93,8 @@ export function createUserRepository(db: DatabaseSync): UserRepository {
     "INSERT INTO users (id, username, display_name, password_hash, role) VALUES (?, ?, ?, ?, ?)",
   );
   const updatePassword = db.prepare("UPDATE users SET password_hash = ? WHERE id = ?");
+  const selectPinHash = db.prepare("SELECT pin_hash FROM users WHERE id = ?");
+  const updatePin = db.prepare("UPDATE users SET pin_hash = ? WHERE id = ?");
   const claimStatements = OWNED_TABLES.map((table) =>
     db.prepare(`UPDATE ${table} SET owner_id = ? WHERE owner_id IS NULL`),
   );
@@ -149,5 +157,10 @@ export function createUserRepository(db: DatabaseSync): UserRepository {
       return get(id);
     },
     setPasswordHash: (id, passwordHash) => updatePassword.run(passwordHash, id).changes > 0,
+    getPinHash(id) {
+      const row = selectPinHash.get(id) as { pin_hash: string | null } | undefined;
+      return row?.pin_hash ?? null;
+    },
+    setPinHash: (id, pinHash) => updatePin.run(pinHash, id).changes > 0,
   };
 }

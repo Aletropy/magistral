@@ -82,6 +82,9 @@ export async function updateUser(actor: User, id: string, update: UserUpdate): P
     users.setPasswordHash(id, await hashPassword(update.password));
     sessions.deleteForUser(id);
   }
+  if (update.pin !== undefined) {
+    users.setPinHash(id, update.pin === null ? null : await hashPassword(update.pin));
+  }
   const updated = users.update(id, {
     displayName: update.displayName,
     role: update.role,

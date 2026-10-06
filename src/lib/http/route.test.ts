@@ -5,13 +5,15 @@ import type { ActiveSession } from "@/lib/auth/sessionRepository";
 vi.mock("server-only", () => ({}));
 const readSession = vi.fn<() => Promise<ActiveSession | null>>();
 vi.mock("@/lib/auth/session", () => ({ readSession: () => readSession() }));
+const isUnlocked = vi.fn<(userId: string) => Promise<boolean>>();
+vi.mock("@/lib/auth/pin", () => ({ isUnlocked: (userId: string) => isUnlocked(userId) }));
 
 const { defineRoute } = await import("./route");
 
 const MEMBER: ActiveSession = {
   id: "session-1",
   lastSeenAt: "2026-09-27T12:00:00Z",
-  user: { id: "u1", username: "ana", displayName: "Ana", role: "member", createdAt: "", disabledAt: null },
+  user: { id: "u1", username: "ana", displayName: "Ana", role: "member", createdAt: "", disabledAt: null, hasPin: false },
 };
 
 function request(init: { method?: string; headers?: Record<string, string>; body?: string } = {}): Request {
@@ -27,6 +29,7 @@ const echo = defineRoute({ body: z.object({ name: z.string() }), maxBodyBytes: 1
   Response.json({ user: user.id, name: body.name }),
 );
 const adminOnly = defineRoute({ access: "admin" }, () => new Response(null, { status: 204 }));
+const sensitive = defineRoute({ sensitive: true }, () => new Response(null, { status: 204 }));
 
 describe("defineRoute", () => {
   beforeEach(() => {
@@ -59,5 +62,20 @@ describe("defineRoute", () => {
     readSession.mockResolvedValue(null);
     expect((await echo(request({ headers: { origin: "http://evil.test" } }), undefined)).status).toBe(403);
     expect(readSession).not.toHaveBeenCalled();
+  });
+
+  it("answers 403 for a sensitive route while the PIN is locked and 204 once unlocked", async () => {
+    isUnlocked.mockReset();
+    isUnlocked.mockResolvedValue(false);
+    expect((await sensitive(request(), undefined)).status).toBe(403);
+    expect(isUnlocked).toHaveBeenCalledWith("u1");
+    isUnlocked.mockResolvedValue(true);
+    expect((await sensitive(request(), undefined)).status).toBe(204);
+  });
+
+  it("never asks for the PIN unlock on routes that are not sensitive", async () => {
+    isUnlocked.mockReset();
+    expect((await echo(request(), undefined)).status).toBe(200);
+    expect(isUnlocked).not.toHaveBeenCalled();
   });
 });

@@ -1,11 +1,13 @@
 import { CircleCheck, Plug } from "lucide-react";
 import type { Metadata } from "next";
 import { connection } from "next/server";
+import { UnlockGate } from "@/components/auth/UnlockGate";
 import { JurisprudenciasConnection } from "@/components/integrations/JurisprudenciasConnection";
 import { Page } from "@/components/layout/Page";
 import { Badge } from "@/components/ui/badge";
 import { WarningCallout } from "@/components/ui/WarningCallout";
 import { requireAdmin } from "@/lib/auth/dal";
+import { isUnlocked } from "@/lib/auth/pin";
 import { AppError } from "@/lib/errors/AppError";
 import { startOfBrasiliaDay } from "@/lib/integrations/jurisprudencias/brasiliaDay";
 import {
@@ -38,7 +40,14 @@ function readStatus(): { status: ConnectionStatus | null; configurationError: st
 
 export default async function IntegrationsPage({ searchParams }: PageProps<"/integracoes">) {
   await connection();
-  await requireAdmin();
+  const admin = await requireAdmin();
+  if (!(await isUnlocked(admin.id))) {
+    return (
+      <Page title="Integrações">
+        <UnlockGate />
+      </Page>
+    );
+  }
   const result = (await searchParams)[CONNECTION_RESULT_PARAM];
   const { status, configurationError } = readStatus();
   const usage = getUsageRepository();

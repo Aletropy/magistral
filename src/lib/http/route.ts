@@ -1,7 +1,8 @@
 import "server-only";
 import type { z } from "zod";
 import { runAsUser } from "@/lib/auth/actor";
-import { FORBIDDEN_MESSAGE, NOT_SIGNED_IN_MESSAGE } from "@/lib/auth/messages";
+import { AREA_LOCKED_MESSAGE, FORBIDDEN_MESSAGE, NOT_SIGNED_IN_MESSAGE } from "@/lib/auth/messages";
+import { isUnlocked } from "@/lib/auth/pin";
 import { readSession } from "@/lib/auth/session";
 import type { ActiveSession } from "@/lib/auth/sessionRepository";
 import { isAdmin, type User } from "@/lib/auth/types";
@@ -29,6 +30,8 @@ interface RouteOptions<B> {
   body?: z.ZodType<B>;
   /** The largest body the route reads, JSON or multipart. */
   maxBodyBytes?: number;
+  /** Also requires the account's walk-away PIN to be unlocked on this browser (403 otherwise). */
+  sensitive?: true;
 }
 
 interface PublicRouteInput<B> {
@@ -94,6 +97,9 @@ export function defineRoute<C = unknown, B = undefined>(
     try {
       checkRequestSource(request);
       const { id: sessionId, user } = await authenticate(options.access ?? "user");
+      if (options.sensitive && !(await isUnlocked(user.id))) {
+        throw new AppError(HTTP_FORBIDDEN, AREA_LOCKED_MESSAGE);
+      }
       const input = await readInput(request, options);
       return await runAsUser(user.id, async () => handler({ ...input, user, sessionId }, context));
     } catch (error) {

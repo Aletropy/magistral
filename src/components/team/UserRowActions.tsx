@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { PinButton } from "@/components/team/PinButton";
 import { ResetPasswordButton } from "@/components/team/ResetPasswordButton";
 import { Button } from "@/components/ui/button";
 import { NATIVE_SELECT_CLASS } from "@/components/ui/nativeSelect";
@@ -41,6 +42,7 @@ export function UserRowActions({ user, isSelf }: { user: User; isSelf: boolean }
           ))}
         </select>
         {!isDisabled && <ResetPasswordButton userId={user.id} name={user.displayName} />}
+        <PinButton userId={user.id} name={user.displayName} hasPin={user.hasPin} />
         {!isSelf && (
           <Button
             variant={isDisabled ? "outline" : "destructive"}
