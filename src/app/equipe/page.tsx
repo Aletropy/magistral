@@ -1,12 +1,14 @@
 import type { Metadata } from "next";
 import { connection } from "next/server";
 import { Page } from "@/components/layout/Page";
+import { UnlockGate } from "@/components/auth/UnlockGate";
 import { NewUserForm } from "@/components/team/NewUserForm";
 import { UserRowActions } from "@/components/team/UserRowActions";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { requireAdmin } from "@/lib/auth/dal";
 import { getUserRepository } from "@/lib/auth/getAuthRepositories";
+import { isUnlocked } from "@/lib/auth/pin";
 import { formatDateTime } from "@/lib/usage/format";
 
 export const metadata: Metadata = { title: "Equipe" };
@@ -14,6 +16,13 @@ export const metadata: Metadata = { title: "Equipe" };
 export default async function TeamPage() {
   await connection();
   const admin = await requireAdmin();
+  if (!(await isUnlocked(admin.id))) {
+    return (
+      <Page title="Equipe" width="wide">
+        <UnlockGate />
+      </Page>
+    );
+  }
   const users = getUserRepository().list();
 
   return (
@@ -49,9 +58,12 @@ export default async function TeamPage() {
                   </span>
                 </TableCell>
                 <TableCell className="hidden md:table-cell">
-                  <Badge variant={user.disabledAt ? "outline" : "secondary"}>
-                    {user.disabledAt ? "Desativada" : "Ativa"}
-                  </Badge>
+                  <div className="flex flex-wrap gap-1.5">
+                    <Badge variant={user.disabledAt ? "outline" : "secondary"}>
+                      {user.disabledAt ? "Desativada" : "Ativa"}
+                    </Badge>
+                    {user.hasPin && <Badge variant="outline">PIN</Badge>}
+                  </div>
                 </TableCell>
                 <TableCell className="hidden tabular-nums md:table-cell">{formatDateTime(user.createdAt)}</TableCell>
                 <TableCell>

@@ -12,10 +12,11 @@ import { minutaRequestSchema, type MinutaRequest } from "./schema";
 const DRAFT_STAGE_LABELS: Record<DraftStage, string> = {
   library: "Consultando a biblioteca",
   drafting: "Redigindo a minuta",
+  verifying: "Verificando referências",
 };
 /** The stages as steps of a progress bar. */
-const DRAFT_STAGE_STEP: Record<DraftStage, number> = { library: 0, drafting: 1 };
-const DRAFT_STAGE_COUNT = 2;
+const DRAFT_STAGE_STEP: Record<DraftStage, number> = { library: 0, drafting: 1, verifying: 2 };
+const DRAFT_STAGE_COUNT = 3;
 const MAX_TITLE_PARTIES = 2;
 
 
@@ -37,6 +38,7 @@ export const draftMinutaTask: TaskHandler<MinutaRequest, DraftTaskResult> = {
     const ownerId = taskOwner(context);
     const { result, personaName } = await draftMinuta(payload, "minuta", {
       signal,
+      auditReferences: true,
       onStage: (stage) => reportProgress(DRAFT_STAGE_STEP[stage], DRAFT_STAGE_COUNT, DRAFT_STAGE_LABELS[stage]),
     });
     const documentTypeLabel = resolveDocumentTypeLabel(payload);

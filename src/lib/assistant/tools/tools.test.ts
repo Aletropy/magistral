@@ -68,6 +68,7 @@ function saveMinuta(ownerId = owner): string {
       forbiddenTermsFound: [],
       consultedSources: [],
       retrievalStrategy: null,
+      referenceCheck: null,
       approvedClauseOrderKept: true,
       approvedClauses: [],
     },

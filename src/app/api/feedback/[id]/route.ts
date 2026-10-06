@@ -8,7 +8,7 @@ const FEEDBACK_NOT_FOUND_MESSAGE = "Relato não encontrado.";
 
 /** Marks a report as handled, or opens it again. */
 export const PATCH = defineRoute(
-  { access: "admin", body: feedbackUpdateSchema },
+  { access: "admin", body: feedbackUpdateSchema, sensitive: true },
   async ({ body }, ctx: RouteContext<"/api/feedback/[id]">) => {
     const id = Number((await ctx.params).id);
     const changed =

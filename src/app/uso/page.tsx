@@ -4,8 +4,10 @@ import { DataPrivacyNotice } from "@/components/DataPrivacyNotice";
 import { Page } from "@/components/layout/Page";
 import { RecentCallsTable } from "@/components/RecentCallsTable";
 import { StatTile } from "@/components/StatTile";
+import { UnlockGate } from "@/components/auth/UnlockGate";
 import { UsageGroupTable } from "@/components/UsageGroupTable";
 import { requireAdmin } from "@/lib/auth/dal";
+import { isUnlocked } from "@/lib/auth/pin";
 import { formatDay, formatInteger, formatLatency, formatUsd } from "@/lib/usage/format";
 import { getUsageRepository } from "@/lib/usage/getUsageRepository";
 import { LLM_OPERATIONS, LLM_OPERATION_LABELS, type LlmOperation } from "@/lib/usage/types";
@@ -25,7 +27,14 @@ function formatOperation(key: string): string {
 
 export default async function UsagePage() {
   await connection();
-  await requireAdmin();
+  const admin = await requireAdmin();
+  if (!(await isUnlocked(admin.id))) {
+    return (
+      <Page title="Uso e custos" width="wide">
+        <UnlockGate />
+      </Page>
+    );
+  }
   const usage = getUsageRepository();
   const totals = usage.totals(USAGE_WINDOW_DAYS);
 

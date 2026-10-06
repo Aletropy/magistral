@@ -5,6 +5,7 @@ import { useMemo, useState, type ReactNode } from "react";
 import { ConsultedSources } from "@/components/ConsultedSources";
 import { DownloadButtons } from "@/components/DownloadButtons";
 import { ForbiddenTermsWarning } from "@/components/ForbiddenTermsWarning";
+import { ReferenceCheckWarning } from "@/components/ReferenceCheckWarning";
 import { MinutaPreview } from "@/components/MinutaPreview";
 import { RedlinePanel } from "@/components/RedlinePanel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -30,7 +31,9 @@ export function SavedMinutaView({ initial }: { initial: MinutaResponseBody }) {
   const [minuta, setMinuta] = useState(initial);
   const { persist, saveError } = useReviewPersistence();
   const blocks = useMemo(() => parseMarkdown(minuta.markdown), [minuta.markdown]);
-  const hasWarnings = minuta.forbiddenTermsFound.length > 0 || !minuta.approvedClauseOrderKept;
+  const unconfirmedReferences = minuta.referenceCheck?.unconfirmed ?? [];
+  const hasWarnings =
+    minuta.forbiddenTermsFound.length > 0 || !minuta.approvedClauseOrderKept || unconfirmedReferences.length > 0;
 
   function handleReviewApplied(markdown: string) {
     setMinuta((previous) => ({ ...previous, markdown }));
@@ -62,6 +65,7 @@ export function SavedMinutaView({ initial }: { initial: MinutaResponseBody }) {
           {hasWarnings ? (
             <div className="flex flex-col gap-2">
               <ForbiddenTermsWarning terms={minuta.forbiddenTermsFound} />
+              <ReferenceCheckWarning unconfirmed={unconfirmedReferences} />
               {!minuta.approvedClauseOrderKept && (
                 <WarningCallout>
                   A IA não manteve a ordem escolhida para as cláusulas aprovadas. Revise a sequência antes de exportar.

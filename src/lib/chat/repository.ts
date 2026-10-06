@@ -38,6 +38,7 @@ const summaryRowSchema = z.object({
   title: z.string(),
   minuta_id: z.string().nullable(),
   use_library: z.number(),
+  use_jurisprudencia: z.number(),
   created_at: z.string(),
   updated_at: z.string(),
   preview: z.string().nullable(),
@@ -109,6 +110,7 @@ export interface NewConversation {
   title: string;
   minutaId: string | null;
   useLibrary: boolean;
+  useJurisprudencia: boolean;
 }
 
 export interface ChatExchange {
@@ -123,6 +125,7 @@ export interface ChatRepository {
   get(id: string, ownerId: string): ChatConversation | null;
   rename(id: string, ownerId: string, title: string): boolean;
   setUseLibrary(id: string, ownerId: string, useLibrary: boolean): boolean;
+  setUseJurisprudencia(id: string, ownerId: string, useJurisprudencia: boolean): boolean;
   delete(id: string, ownerId: string): boolean;
   /**
    * Adds the user's message and an empty pending reply in one step. Throws ChatBusyError while another
@@ -175,6 +178,7 @@ function toSummary(row: unknown): ChatConversationSummary {
     title: parsed.title,
     minutaId: parsed.minuta_id,
     useLibrary: parsed.use_library === 1,
+    useJurisprudencia: parsed.use_jurisprudencia === 1,
     createdAt: parsed.created_at,
     updatedAt: parsed.updated_at,
     preview: parsed.preview,
@@ -185,7 +189,7 @@ function toSummary(row: unknown): ChatConversationSummary {
 const NOW = "strftime('%Y-%m-%dT%H:%M:%fZ', 'now')";
 
 const SUMMARY_COLUMNS = `
-  c.id, c.title, c.minuta_id, c.use_library, c.created_at, c.updated_at,
+  c.id, c.title, c.minuta_id, c.use_library, c.use_jurisprudencia, c.created_at, c.updated_at,
   (SELECT substr(m.content, 1, ${PREVIEW_CHARS}) FROM chat_conversation_messages m
     WHERE m.conversation_id = c.id AND m.content <> '' ORDER BY m.id DESC LIMIT 1) AS preview,
   EXISTS (SELECT 1 FROM chat_conversation_messages m
@@ -193,7 +197,7 @@ const SUMMARY_COLUMNS = `
 
 export function createChatRepository(db: DatabaseSync): ChatRepository {
   const insertConversation = db.prepare(
-    "INSERT INTO chat_conversations (id, owner_id, title, minuta_id, use_library) VALUES (?, ?, ?, ?, ?)",
+    "INSERT INTO chat_conversations (id, owner_id, title, minuta_id, use_library, use_jurisprudencia) VALUES (?, ?, ?, ?, ?, ?)",
   );
   const selectSummaries = db.prepare(
     `SELECT ${SUMMARY_COLUMNS} FROM chat_conversations c WHERE c.owner_id = ? ORDER BY c.updated_at DESC`,
@@ -235,6 +239,9 @@ export function createChatRepository(db: DatabaseSync): ChatRepository {
     `UPDATE chat_conversations SET title = ?, updated_at = ${NOW} WHERE id = ? AND owner_id = ?`,
   );
   const updateUseLibrary = db.prepare("UPDATE chat_conversations SET use_library = ? WHERE id = ? AND owner_id = ?");
+  const updateUseJurisprudencia = db.prepare(
+    "UPDATE chat_conversations SET use_jurisprudencia = ? WHERE id = ? AND owner_id = ?",
+  );
   const touch = db.prepare(`UPDATE chat_conversations SET updated_at = ${NOW} WHERE id = ?`);
   const deleteConversation = db.prepare("DELETE FROM chat_conversations WHERE id = ? AND owner_id = ?");
   const selectPending = db.prepare(
@@ -261,9 +268,9 @@ export function createChatRepository(db: DatabaseSync): ChatRepository {
   }
 
   return {
-    createConversation({ ownerId, title, minutaId, useLibrary }) {
+    createConversation({ ownerId, title, minutaId, useLibrary, useJurisprudencia }) {
       const id = randomUUID();
-      insertConversation.run(id, ownerId, title, minutaId, useLibrary ? 1 : 0);
+      insertConversation.run(id, ownerId, title, minutaId, useLibrary ? 1 : 0, useJurisprudencia ? 1 : 0);
       return id;
     },
 
@@ -281,6 +288,8 @@ export function createChatRepository(db: DatabaseSync): ChatRepository {
 
     rename: (id, ownerId, title) => updateTitle.run(title, id, ownerId).changes > 0,
     setUseLibrary: (id, ownerId, useLibrary) => updateUseLibrary.run(useLibrary ? 1 : 0, id, ownerId).changes > 0,
+    setUseJurisprudencia: (id, ownerId, useJurisprudencia) =>
+      updateUseJurisprudencia.run(useJurisprudencia ? 1 : 0, id, ownerId).changes > 0,
     delete: (id, ownerId) => deleteConversation.run(id, ownerId).changes > 0,
 
     addExchange(conversationId, content) {

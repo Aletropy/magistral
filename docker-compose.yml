@@ -2,6 +2,9 @@
 # then: docker compose --env-file .env.production up -d --build. See docs/deploy.md.
 services:
   app:
+    # Imagem pronta no GHCR (publicada pelo workflow ao subir para main, com verificação antes);
+    # o bloco build abaixo permite reconstruir localmente quando preferir (up --build).
+    image: ghcr.io/aletropy/magistral:latest
     build:
       context: .
       args:

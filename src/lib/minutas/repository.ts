@@ -118,7 +118,8 @@ export function createMinutaRepository(db: DatabaseSync): MinutaRepository {
       return {
         ...toSummary(row),
         request: minutaRequestSchema.parse(JSON.parse(parsed.request)),
-        result: { ...rest, markdown: parsed.markdown },
+        // Rows written before the citation audit have no check stored.
+        result: { ...rest, referenceCheck: rest.referenceCheck ?? null, markdown: parsed.markdown },
       };
     },
 

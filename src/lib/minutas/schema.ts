@@ -17,6 +17,10 @@ export const storedResultSchema = z.object({
   forbiddenTermsFound: z.array(z.string()),
   consultedSources: z.array(z.object({ ref: z.string(), title: z.string(), label: z.string() })),
   retrievalStrategy: z.enum(["full", "search"]).nullable(),
+  referenceCheck: z
+    .object({ checked: z.number(), unconfirmed: z.array(z.object({ reference: z.string(), reason: z.string() })) })
+    .nullable()
+    .optional(),
   approvedClauseOrderKept: z.boolean(),
   approvedClauses: z.array(z.object({ title: z.string(), body: z.string() })),
 });

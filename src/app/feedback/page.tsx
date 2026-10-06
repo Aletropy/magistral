@@ -1,11 +1,13 @@
 import { MessageSquareWarning } from "lucide-react";
 import type { Metadata } from "next";
 import { connection } from "next/server";
+import { UnlockGate } from "@/components/auth/UnlockGate";
 import { ResolveFeedbackButton } from "@/components/feedback/ResolveFeedbackButton";
 import { EmptyState } from "@/components/layout/EmptyState";
 import { Page } from "@/components/layout/Page";
 import { Badge } from "@/components/ui/badge";
 import { requireAdmin } from "@/lib/auth/dal";
+import { isUnlocked } from "@/lib/auth/pin";
 import { getFeedbackRepository } from "@/lib/feedback/getFeedbackRepository";
 import { formatDateTime } from "@/lib/usage/format";
 
@@ -16,7 +18,14 @@ const FEEDBACK_LIMIT = 200;
 
 export default async function FeedbackPage() {
   await connection();
-  await requireAdmin();
+  const admin = await requireAdmin();
+  if (!(await isUnlocked(admin.id))) {
+    return (
+      <Page title="Feedback" width="wide">
+        <UnlockGate />
+      </Page>
+    );
+  }
   const repository = getFeedbackRepository();
   const reports = repository.list(FEEDBACK_LIMIT);
   const open = repository.countOpen();

@@ -70,7 +70,11 @@ export const chatReplyTask: TaskHandler<ChatReplyPayload, ChatReplyResult> = {
     const saved = conversation.minutaId ? getMinutaRepository().get(conversation.minutaId, ownerId) : null;
     const minuta = saved ? { title: saved.title, markdown: saved.result.markdown.slice(0, CHAT_MINUTA_MAX_CHARS) } : null;
     const citations = createCitationRegistry();
-    const jurisprudencia = isJurisprudenciasConnected();
+    const jurisprudencia: ChatPromptContext["jurisprudencia"] = !isJurisprudenciasConnected()
+      ? "unavailable"
+      : conversation.useJurisprudencia
+        ? "on"
+        : "off";
     const pageContext = payload.context
       ? describePageContext(payload.context, ownerId, {
           minutas: getMinutaRepository(),
@@ -85,7 +89,7 @@ export const chatReplyTask: TaskHandler<ChatReplyPayload, ChatReplyResult> = {
       generator: getToolChatGenerator("chat"),
       system: buildChatSystemPrompt({ appData: loadAppData(), library, jurisprudencia, minuta, pageContext }),
       history: toAgentHistory(history),
-      tools: getAssistantTools({ searchLibrary: library === "on", jurisprudencia }),
+      tools: getAssistantTools({ searchLibrary: library === "on", jurisprudencia: jurisprudencia === "on" }),
       temperature: CHAT_TEMPERATURE,
       context: { ownerId, conversationId: conversation.id, signal, citations },
       onProgress: (label) => reportProgress(0, null, label),

@@ -20,7 +20,7 @@ describe("createChatRepository", () => {
     owner = insertTestUser(db, "ana");
     other = insertTestUser(db, "bruno");
     chats = createChatRepository(db);
-    id = chats.createConversation({ ownerId: owner, title: "Multa contratual", minutaId: null, useLibrary: true });
+    id = chats.createConversation({ ownerId: owner, title: "Multa contratual", minutaId: null, useLibrary: true, useJurisprudencia: true });
   });
 
   const READ_STEP = {
@@ -113,11 +113,12 @@ describe("createChatRepository", () => {
     expect(() => chats.retryReply(id, replyId)).toThrow(ChatBusyError);
   });
 
-  it("renames, toggles the library and deletes with the messages", () => {
+  it("renames, toggles the library and jurisprudence searches, and deletes with the messages", () => {
     chats.addExchange(id, "Pergunta");
     expect(chats.rename(id, owner, "Novo título")).toBe(true);
     expect(chats.setUseLibrary(id, owner, false)).toBe(true);
-    expect(chats.get(id, owner)).toMatchObject({ title: "Novo título", useLibrary: false });
+    expect(chats.setUseJurisprudencia(id, owner, false)).toBe(true);
+    expect(chats.get(id, owner)).toMatchObject({ title: "Novo título", useLibrary: false, useJurisprudencia: false });
     expect(chats.delete(id, owner)).toBe(true);
     expect(chats.get(id, owner)).toBeNull();
     expect(chats.list(owner)).toEqual([]);

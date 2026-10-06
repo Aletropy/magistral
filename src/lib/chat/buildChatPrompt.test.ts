@@ -8,7 +8,7 @@ const CONTEXT: ChatPromptContext = {
     librarySources: [{ title: "Lei Complementar 7", kind: "Lei" }],
   },
   library: "on",
-  jurisprudencia: false,
+  jurisprudencia: "unavailable",
   minuta: null,
 };
 
@@ -31,9 +31,15 @@ describe("buildChatSystemPrompt", () => {
     expect(buildChatSystemPrompt({ ...CONTEXT, library: "off" })).not.toContain("buscar_biblioteca");
   });
 
-  it("offers jurisprudence rules only while the account is connected", () => {
-    expect(buildChatSystemPrompt({ ...CONTEXT, jurisprudencia: true })).toContain("Fonte: Jurisprudências.ai");
-    expect(buildChatSystemPrompt(CONTEXT)).not.toContain("## Jurisprudência");
+  it("offers attributed jurisprudence rules only while the switch is on", () => {
+    const on = buildChatSystemPrompt({ ...CONTEXT, jurisprudencia: "on" });
+    expect(on).toContain("## Jurisprudência");
+    expect(on).toContain("pesquisar_jurisprudencia");
+    expect(on).toContain("Fonte: Jurisprudências.ai");
+    expect(on).toContain("Fontes consultadas");
+    expect(on).not.toContain("parecer escrita só com o seu conhecimento");
+    expect(buildChatSystemPrompt({ ...CONTEXT, jurisprudencia: "off" })).toContain("está desligada");
+    expect(buildChatSystemPrompt(CONTEXT)).toContain("não está conectada");
   });
 
   it("tells where the user is only when the panel sent a page", () => {

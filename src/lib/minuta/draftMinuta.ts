@@ -7,7 +7,9 @@ import type { Clause } from "@/lib/clauses/types";
 import { generateMinuta } from "@/lib/llm/generateMinuta";
 import { getEmbedder } from "@/lib/llm/getEmbedder";
 import { getMinutaGenerator } from "@/lib/llm/getMinutaGenerator";
+import { getStructuredGenerator } from "@/lib/llm/getStructuredGenerator";
 import { activeLibraryContextBudget } from "@/lib/llm/providerRegistry";
+import { logEvent } from "@/lib/log";
 import type { DraftResult } from "@/lib/minuta/types";
 import { findNegativeConstraintViolations } from "@/lib/personas/findNegativeConstraintViolations";
 import { getPersonaRepository } from "@/lib/personas/getPersonaRepository";
@@ -20,6 +22,8 @@ import { selectLibraryContext, type LibraryContext } from "@/lib/rag/selectConte
 import type { LlmOperation } from "@/lib/usage/types";
 import { MinutaRequestError } from "./errors";
 import type { MinutaRequest } from "./schema";
+import { auditMinutaReferences, extractNormReferences } from "./auditReferences";
+import type { ReferenceCheck } from "./types";
 
 export interface DraftedMinuta {
   result: DraftResult;
@@ -28,12 +32,17 @@ export interface DraftedMinuta {
 }
 
 /** The slow steps of a draft, reported so a background task can show where it is. */
-export type DraftStage = "library" | "drafting";
+export type DraftStage = "library" | "drafting" | "verifying";
 
 export interface DraftOptions {
   /** Cancels the retrieval and the LLM call. */
   signal?: AbortSignal;
   onStage?: (stage: DraftStage) => void;
+  /**
+   * Checks the draft's norm references against the sources with one extra structured call.
+   * Interactive drafts ask for it; batch items don't, so a big batch doesn't double its LLM calls.
+   */
+  auditReferences?: boolean;
 }
 
 interface DraftInputs {
@@ -68,7 +77,7 @@ export async function draftMinuta(
   operation: LlmOperation,
   options: DraftOptions = {},
 ): Promise<DraftedMinuta> {
-  const { signal, onStage } = options;
+  const { signal, onStage, auditReferences = false } = options;
   const { persona, approvedClauses } = loadDraftInputs(request);
 
   let library: LibraryContext | null = null;
@@ -91,11 +100,34 @@ export async function draftMinuta(
     { sources, approvedClauses },
     { signal },
   );
+  signal?.throwIfAborted();
+  let referenceCheck: ReferenceCheck | null = null;
+  const willAudit = auditReferences && sources.length > 0;
+  if (willAudit) {
+    onStage?.("verifying");
+    try {
+      const audit = await auditMinutaReferences(markdown, sources, getStructuredGenerator(operation), { signal });
+      referenceCheck = audit.checked === 0 && audit.unconfirmed.length === 0 ? null : audit;
+    } catch (error) {
+      // A failed audit must not lose the draft: it goes out unchecked, and the failure is logged.
+      logEvent(
+        "warn",
+        "minuta.reference_audit_failed",
+        {
+          stage: "verifying",
+          references: extractNormReferences(markdown).map(({ reference }) => reference),
+        },
+        error,
+      );
+      referenceCheck = null;
+    }
+  }
   const result: DraftResult = {
     markdown,
     forbiddenTermsFound: findNegativeConstraintViolations(markdown, persona.negativeConstraints),
     consultedSources: sources.map(({ ref, title, label }) => ({ ref, title, label })),
     retrievalStrategy: library?.strategy ?? null,
+    referenceCheck,
     approvedClauseOrderKept: isApprovedClauseOrderKept(
       markdown,
       approvedClauses.map((clause) => clause.title),

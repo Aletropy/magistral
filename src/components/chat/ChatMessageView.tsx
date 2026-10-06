@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import type { StepDecision } from "@/lib/assistant/stepDecisions";
 import type { ChatMessage } from "@/lib/chat/types";
+import { JURISPRUDENCIAS_CREDIT } from "@/lib/integrations/jurisprudencias/config";
 import { cn } from "@/lib/utils";
 import { ChatMarkdown } from "./ChatMarkdown";
 import { ToolSteps } from "./ToolSteps";
@@ -30,6 +31,9 @@ function Sources({ message }: { message: ChatMessage }) {
           <li key={source.ref}>
             <span className="font-medium">[{source.ref}]</span> {source.title}
             <span className="text-muted-foreground"> — {source.label}</span>
+            {/^J\d+$/.test(source.ref) && (
+              <span className="block text-muted-foreground">{JURISPRUDENCIAS_CREDIT}</span>
+            )}
           </li>
         ))}
       </ol>

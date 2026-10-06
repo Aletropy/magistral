@@ -168,15 +168,26 @@ export function ChatThread({ initial, compact = false, getContext }: ChatThreadP
           isSending={isSending}
           onSend={send}
           footer={
-            <label className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                className="size-4 accent-primary"
-                checked={conversation.useLibrary}
-                onChange={(event) => void update({ useLibrary: event.target.checked })}
-              />
-              Consultar a biblioteca jurídica
-            </label>
+            <div className="flex flex-wrap gap-x-4 gap-y-1">
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  className="size-4 accent-primary"
+                  checked={conversation.useLibrary}
+                  onChange={(event) => void update({ useLibrary: event.target.checked })}
+                />
+                Consultar a biblioteca jurídica
+              </label>
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  className="size-4 accent-primary"
+                  checked={conversation.useJurisprudencia}
+                  onChange={(event) => void update({ useJurisprudencia: event.target.checked })}
+                />
+                Pesquisar jurisprudência
+              </label>
+            </div>
           }
         />
       </div>

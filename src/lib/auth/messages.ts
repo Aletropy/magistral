@@ -9,3 +9,7 @@ export const USER_NOT_FOUND_MESSAGE = "Usuário não encontrado.";
 export const LAST_ADMIN_MESSAGE = "O escritório precisa de ao menos um administrador ativo.";
 export const SELF_DISABLE_MESSAGE = "Você não pode desativar a própria conta.";
 export const WRONG_CURRENT_PASSWORD_MESSAGE = "A senha atual está incorreta.";
+export const WRONG_PIN_MESSAGE = "PIN incorreto. Tente novamente.";
+export const PIN_LOCKED_MESSAGE = "Muitas tentativas com o PIN. Aguarde alguns minutos e tente de novo.";
+export const NO_PIN_MESSAGE = "Esta conta não tem PIN definido.";
+export const AREA_LOCKED_MESSAGE = "Esta área está bloqueada. Desbloqueie com o PIN para continuar.";

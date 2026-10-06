@@ -30,6 +30,8 @@ export interface ChatConversationSummary {
   minutaId: string | null;
   /** Each question searches the legal library. */
   useLibrary: boolean;
+  /** Each question may search jurisprudence for grounding, never shown as a source. */
+  useJurisprudencia: boolean;
   createdAt: string;
   updatedAt: string;
   /** The start of the newest message, for the conversation list. */

@@ -1,7 +1,7 @@
 import type { ConsultedSource } from "@/lib/minuta/types";
 import type { ContextSource } from "@/lib/rag/selectContext";
 
-/** A decision a reply cites, numbered [J1], [J2]… like library excerpts are [F1], [F2]…. */
+/** A decision used quietly as grounding, numbered [J1], [J2]… like library excerpts are [F1], [F2]…. */
 export interface DecisionReference {
   title: string;
   label: string;

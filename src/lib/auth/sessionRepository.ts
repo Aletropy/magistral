@@ -11,6 +11,7 @@ const sessionRowSchema = z.object({
   role: z.enum(USER_ROLES),
   created_at: z.string(),
   disabled_at: z.string().nullable(),
+  has_pin: z.number(),
 });
 
 export interface ActiveSession {
@@ -45,7 +46,8 @@ export function createSessionRepository(db: DatabaseSync): SessionRepository {
     "INSERT INTO sessions (id, user_id, expires_at, last_seen_at, user_agent, created_at) VALUES (?, ?, ?, ?, ?, ?)",
   );
   const selectActive = db.prepare(
-    `SELECT s.id AS session_id, s.last_seen_at, u.id, u.username, u.display_name, u.role, u.created_at, u.disabled_at
+    `SELECT s.id AS session_id, s.last_seen_at, u.id, u.username, u.display_name, u.role, u.created_at, u.disabled_at,
+            u.pin_hash IS NOT NULL AS has_pin
      FROM sessions s JOIN users u ON u.id = s.user_id
      WHERE s.id = ? AND s.expires_at > ? AND u.disabled_at IS NULL`,
   );
@@ -73,6 +75,7 @@ export function createSessionRepository(db: DatabaseSync): SessionRepository {
           role: parsed.role,
           createdAt: parsed.created_at,
           disabledAt: parsed.disabled_at,
+          hasPin: parsed.has_pin === 1,
         },
       };
     },

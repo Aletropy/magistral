@@ -15,13 +15,14 @@ export const GET = defineRoute({}, async ({ user }, ctx: Context) => {
   return Response.json({ conversation } satisfies ConversationResponseBody);
 });
 
-/** Renames the conversation or turns the library search on or off. */
+/** Renames the conversation or turns the library and jurisprudence searches on or off. */
 export const PATCH = defineRoute({ body: conversationUpdateSchema }, async ({ user, body }, ctx: Context) => {
   const { id } = await ctx.params;
   const chats = getChatRepository();
   if (!chats.get(id, user.id)) return errorResponse(HTTP_NOT_FOUND, CONVERSATION_NOT_FOUND_MESSAGE);
   if (body.title !== undefined) chats.rename(id, user.id, body.title);
   if (body.useLibrary !== undefined) chats.setUseLibrary(id, user.id, body.useLibrary);
+  if (body.useJurisprudencia !== undefined) chats.setUseJurisprudencia(id, user.id, body.useJurisprudencia);
   return Response.json({ conversation: chats.get(id, user.id)! } satisfies ConversationResponseBody);
 });
 

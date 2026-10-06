@@ -23,7 +23,12 @@ const COURT_FIELDS = ["court", "tribunal", "court_abbreviation"];
 const DATE_FIELDS = ["publication_date", "trial_date", "data_publicacao", "date"];
 const LIST_FIELDS = ["decisions", "results", "items", "data"];
 
-const CITATION_NOTE = `Cite cada decisão usada pelo identificador entre colchetes logo após a afirmação (ex.: [J1]) e indique a fonte “${JURISPRUDENCIAS_CREDIT}”. Não cite decisões fora desta lista e não invente ementas.`;
+/**
+ * How the model should use the numbered decisions: each one gets a [Jn] that lands in the reply's
+ * "Fontes consultadas" list with the provider's credit, and the prose prefers natural references to
+ * scattered mid-sentence markers — without ever hiding where the decision came from.
+ */
+const CITATION_NOTE = `Cada decisão usada recebe um identificador ([J1], [J2]…) e entra na lista “Fontes consultadas” da resposta. Ao apresentar uma decisão, indique a fonte: ${JURISPRUDENCIAS_CREDIT}. Na prosa, prefira referir-se a elas de forma natural (“as decisões consultadas”, “a jurisprudência do STJ”) a espalhar marcadores no meio do texto. Não cite decisões fora desta lista e não invente ementas.`;
 
 const terms = z.array(z.string().trim().min(1).max(MAX_TERM_CHARS)).max(MAX_TERMS);
 const date = z.string().regex(DATE, DATE_HINT);
@@ -162,7 +167,8 @@ export function createJurisprudenciaTools({ call }: JurisprudenciaDeps) {
   return [
     defineReadTool({
       name: "pesquisar_jurisprudencia",
-      description: `Pesquisa decisões de um tribunal brasileiro na ${JURISPRUDENCIAS_NAME}. Cada busca conta no limite diário do escritório (plano gratuito: 5 por dia), então pesquise só quando o usuário pedir ou a resposta depender de jurisprudência, escolha o tribunal certo e capriche nos termos. Devolve decisões com ementa, numeradas [J1], [J2]….`,
+      description:
+        "Pesquisa decisões de um tribunal brasileiro na Jurisprudências.ai. Cada busca conta no limite diário do escritório (plano gratuito: 5 por dia), então pesquise só quando o usuário pedir ou a resposta depender de jurisprudência, escolha o tribunal certo e capriche nos termos. Devolve decisões com ementa, numeradas [J1], [J2]….",
       input: searchInputSchema,
       progressLabel: `Pesquisando na ${JURISPRUDENCIAS_NAME}`,
       async run(input, context) {
@@ -177,7 +183,8 @@ export function createJurisprudenciaTools({ call }: JurisprudenciaDeps) {
     }),
     defineReadTool({
       name: "consultar_decisao",
-      description: `Traz a decisão completa (ementa) de um processo pelo tribunal e número, na ${JURISPRUDENCIAS_NAME}. Conta no limite diário de consultas. Use para conferir uma decisão que o usuário citou.`,
+      description:
+        "Traz a decisão completa (ementa) de um processo pelo tribunal e número, na Jurisprudências.ai. Conta no limite diário de consultas. Use para conferir uma decisão que o usuário citou.",
       input: lookupInputSchema,
       progressLabel: `Consultando a decisão na ${JURISPRUDENCIAS_NAME}`,
       async run({ tribunal, processo }, context) {
@@ -188,7 +195,8 @@ export function createJurisprudenciaTools({ call }: JurisprudenciaDeps) {
     }),
     defineReadTool({
       name: "listar_tribunais",
-      description: `Lista os tribunais disponíveis na ${JURISPRUDENCIAS_NAME}, com a sigla e a quantidade de decisões de cada um. Use só se estiver em dúvida sobre a sigla de um tribunal.`,
+      description:
+        "Lista os tribunais disponíveis na Jurisprudências.ai, com a sigla e a quantidade de decisões de cada um. Use só se estiver em dúvida sobre a sigla de um tribunal.",
       input: z.object({}),
       progressLabel: "Consultando os tribunais",
       async run(_input, context) {

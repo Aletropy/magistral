@@ -19,6 +19,7 @@ export function NewConversation({ librarySourceCount }: { librarySourceCount: nu
   const router = useRouter();
   const [text, setText] = useState("");
   const [useLibrary, setUseLibrary] = useState(librarySourceCount > 0);
+  const [useJurisprudencia, setUseJurisprudencia] = useState(true);
   const { start, isSending, error } = useStartConversation((id) => router.push(conversationPath(id)));
 
   return (
@@ -54,18 +55,29 @@ export function NewConversation({ librarySourceCount }: { librarySourceCount: nu
         isSending={isSending}
         value={text}
         onValueChange={setText}
-        onSend={(message) => start({ message, useLibrary })}
+        onSend={(message) => start({ message, useLibrary, useJurisprudencia })}
         footer={
-          <label className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              className="size-4 accent-primary"
-              checked={useLibrary}
-              disabled={librarySourceCount === 0}
-              onChange={(event) => setUseLibrary(event.target.checked)}
-            />
-            {librarySourceCount === 0 ? "Biblioteca vazia" : "Consultar a biblioteca jurídica"}
-          </label>
+          <div className="flex flex-wrap gap-x-4 gap-y-1">
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                className="size-4 accent-primary"
+                checked={useLibrary}
+                disabled={librarySourceCount === 0}
+                onChange={(event) => setUseLibrary(event.target.checked)}
+              />
+              {librarySourceCount === 0 ? "Biblioteca vazia" : "Consultar a biblioteca jurídica"}
+            </label>
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                className="size-4 accent-primary"
+                checked={useJurisprudencia}
+                onChange={(event) => setUseJurisprudencia(event.target.checked)}
+              />
+              Pesquisar jurisprudência
+            </label>
+          </div>
         }
       />
       {error && (

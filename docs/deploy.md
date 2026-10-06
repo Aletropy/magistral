@@ -179,6 +179,12 @@ cd ~/magistral
 docker compose --env-file .env.production up -d --build
 ```
 
+O `--build` constrói a imagem na própria máquina. Alternativa: usar a imagem pronta
+**`ghcr.io/aletropy/magistral:latest`** — o workflow *Publicar imagem Docker* publica essa tag no GHCR a
+cada subida para `main`, **só depois** de `pnpm typecheck`, `pnpm lint` e `pnpm test` passarem. Para
+usá-la, rode `docker compose pull app` e depois o `up -d` **sem** `--build`. A imagem publicada é x86_64
+(a arquitetura do runner do GitHub): em máquinas ARM, construa sempre com `--build` na própria máquina.
+
 Para também manter o DuckDNS atualizado sozinho (útil se você não usou Elastic IP), acrescente o perfil:
 
 ```bash
@@ -290,6 +296,7 @@ Para uma proteção maior, ative os snapshots do disco (EBS) da instância.
 | A IA responde que nenhum modelo garante retenção zero | O modelo não tem rota `zdr` | Na demonstração, `OPENROUTER_ALLOW_DATA_COLLECTION=true` (dados fictícios); na versão final, um modelo/provedor pago com retenção zero |
 | Construção da imagem morre por falta de memória | Máquina de 2 GB sem troca | Crie o swap do passo 4 |
 | Integrações mostra "chave de segurança mudou" | `MAGISTRAL_SECRET_KEY` foi alterada | Volte a chave anterior ou conecte de novo |
+| Alguém esqueceu o PIN e as áreas restritas não abrem | PIN perdido ou aparelho novo | Em Equipe, “Alterar PIN” define um novo (o antigo deixa de valer em todos os aparelhos); cinco erros seguidos travam o PIN por 15 minutos |
 | Indexar a biblioteca demora na primeira vez | Baixando o modelo de busca | Aguarde; ele fica guardado no volume |
 
 Depois de editar o `.env.production`, aplique com `docker compose --env-file .env.production up -d`

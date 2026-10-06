@@ -101,6 +101,7 @@ describe("API routes with accounts", () => {
         forbiddenTermsFound: [],
         consultedSources: [],
         retrievalStrategy: null,
+        referenceCheck: null,
         approvedClauseOrderKept: true,
         approvedClauses: [],
       },
@@ -126,7 +127,7 @@ describe("API routes with accounts", () => {
 
   it("runs a proposed action once, only for the conversation's owner, and queues the follow-up", async () => {
     const chats = getChatRepository();
-    const conversationId = chats.createConversation({ ownerId: anaId, title: "Cláusulas", minutaId: null, useLibrary: false });
+    const conversationId = chats.createConversation({ ownerId: anaId, title: "Cláusulas", minutaId: null, useLibrary: false, useJurisprudencia: false });
     const { replyId } = chats.addExchange(conversationId, "Crie uma cláusula de multa");
     const clause = { titulo: "Multa por atraso", categoria: "Multa", tiposDocumento: [], texto: "Multa de 2%." };
     chats.completeReply(replyId, "Preparei a cláusula.", [], [

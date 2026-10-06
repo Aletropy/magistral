@@ -5,6 +5,10 @@ export const MIN_PASSWORD_CHARS = 10;
 export const MAX_PASSWORD_CHARS = 200;
 export const MAX_USERNAME_CHARS = 40;
 export const MAX_DISPLAY_NAME_CHARS = 80;
+/** The walk-away PIN: digits only, short enough to type on a phone at the desk. */
+export const MIN_PIN_DIGITS = 4;
+export const MAX_PIN_DIGITS = 8;
+
 const USERNAME_PATTERN = /^[a-z0-9._-]+$/i;
 
 const usernameSchema = z
@@ -31,6 +35,13 @@ export const loginSchema = z.object({
 });
 export type LoginInput = z.infer<typeof loginSchema>;
 
+/** The walk-away PIN an admin sets for an account. */
+export const pinSchema = z
+  .string()
+  .regex(new RegExp(`^[0-9]{${MIN_PIN_DIGITS},${MAX_PIN_DIGITS}}$`), {
+    error: `O PIN precisa ter de ${MIN_PIN_DIGITS} a ${MAX_PIN_DIGITS} dígitos numéricos.`,
+  });
+
 export const newUserSchema = z.object({
   username: usernameSchema,
   displayName: displayNameSchema,
@@ -51,6 +62,8 @@ export const userUpdateSchema = z
     role: z.enum(USER_ROLES).optional(),
     disabled: z.boolean().optional(),
     password: newPasswordSchema.optional(),
+    /** Sets the walk-away PIN; null removes it. */
+    pin: pinSchema.nullable().optional(),
   })
   .refine((update) => Object.values(update).some((value) => value !== undefined), { error: "Nada para atualizar." });
 export type UserUpdate = z.infer<typeof userUpdateSchema>;

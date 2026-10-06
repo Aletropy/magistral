@@ -6,15 +6,11 @@ import {
   SESSION_REFRESH_INTERVAL_MS,
   SESSION_TTL_MS,
 } from "./config";
+import { isHttps } from "./cookieFlags";
 import { getSessionRepository } from "./getAuthRepositories";
+import { UNLOCK_COOKIE_NAME } from "./pinCookies";
 import type { ActiveSession } from "./sessionRepository";
 import { newSessionToken, sessionIdOf } from "./sessionToken";
-
-/** Browsers only send a `Secure` cookie over HTTPS, so it is set only when the app is served that way. */
-function isHttps(request: Request): boolean {
-  const forwarded = request.headers.get("x-forwarded-proto");
-  return (forwarded ?? new URL(request.url).protocol.replace(":", "")) === "https";
-}
 
 /** Signs the user in on this browser: stores a new session and sets its cookie. */
 export async function startSession(request: Request, userId: string): Promise<void> {
@@ -43,6 +39,7 @@ export async function endSession(): Promise<void> {
   const token = jar.get(SESSION_COOKIE_NAME)?.value;
   if (token) getSessionRepository().delete(sessionIdOf(token));
   jar.delete(SESSION_COOKIE_NAME);
+  jar.delete(UNLOCK_COOKIE_NAME);
 }
 
 /**
