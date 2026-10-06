@@ -179,6 +179,12 @@ cd ~/magistral
 docker compose --env-file .env.production up -d --build
 ```
 
+O `--build` constrói a imagem na própria máquina. Alternativa: usar a imagem pronta
+**`ghcr.io/aletropy/magistral:latest`** — o workflow *Publicar imagem Docker* publica essa tag no GHCR a
+cada subida para `main`, **só depois** de `pnpm typecheck`, `pnpm lint` e `pnpm test` passarem. Para
+usá-la, rode `docker compose pull app` e depois o `up -d` **sem** `--build`. A imagem publicada é x86_64
+(a arquitetura do runner do GitHub): em máquinas ARM, construa sempre com `--build` na própria máquina.
+
 Para também manter o DuckDNS atualizado sozinho (útil se você não usou Elastic IP), acrescente o perfil:
 
 ```bash
