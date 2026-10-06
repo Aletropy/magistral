@@ -7,7 +7,7 @@ import {
   SESSION_TTL_MS,
 } from "./config";
 import { getSessionRepository } from "./getAuthRepositories";
-import { clearSystemUnlock } from "../systemPin";
+import { clearPinUnlock, DEV_PIN, SYSTEM_PIN } from "../systemPin";
 import type { ActiveSession } from "./sessionRepository";
 import { newSessionToken, sessionIdOf } from "./sessionToken";
 
@@ -44,7 +44,8 @@ export async function endSession(): Promise<void> {
   const token = jar.get(SESSION_COOKIE_NAME)?.value;
   if (token) getSessionRepository().delete(sessionIdOf(token));
   jar.delete(SESSION_COOKIE_NAME);
-  await clearSystemUnlock();
+  await clearPinUnlock(SYSTEM_PIN);
+  await clearPinUnlock(DEV_PIN);
 }
 
 /**

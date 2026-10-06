@@ -32,13 +32,15 @@ interface AppShellProps {
   release: ReleaseInfo;
   /** Hides the Sistema group behind the office PIN. */
   systemLocked: boolean;
+  /** Hides Desenvolvimento (Uso, Integrações) behind its own PIN. */
+  devLocked: boolean;
   children: ReactNode;
 }
 
-export function AppShell({ user, release, systemLocked, children }: AppShellProps) {
+export function AppShell({ user, release, systemLocked, devLocked, children }: AppShellProps) {
   return (
     <AssistantProvider userId={user.id}>
-      <ShellFrame user={user} release={release} systemLocked={systemLocked}>
+      <ShellFrame user={user} release={release} systemLocked={systemLocked} devLocked={devLocked}>
         {children}
       </ShellFrame>
       <AssistantPanel />
@@ -46,7 +48,7 @@ export function AppShell({ user, release, systemLocked, children }: AppShellProp
   );
 }
 
-function ShellFrame({ user, release, systemLocked, children }: AppShellProps) {
+function ShellFrame({ user, release, systemLocked, devLocked, children }: AppShellProps) {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const pathname = usePathname();
   const drawerRef = useRef<HTMLDivElement>(null);
@@ -89,7 +91,7 @@ function ShellFrame({ user, release, systemLocked, children }: AppShellProps) {
       </a>
 
       <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 overflow-y-auto border-r bg-sidebar lg:block">
-        <SidebarNav user={user} systemLocked={systemLocked} />
+        <SidebarNav user={user} systemLocked={systemLocked} devLocked={devLocked} />
       </aside>
 
       {isDrawerOpen && (
@@ -118,7 +120,7 @@ function ShellFrame({ user, release, systemLocked, children }: AppShellProps) {
             >
               <X aria-hidden />
             </Button>
-            <SidebarNav user={user} systemLocked={systemLocked} onNavigate={closeDrawer} />
+            <SidebarNav user={user} systemLocked={systemLocked} devLocked={devLocked} onNavigate={closeDrawer} />
           </div>
         </div>
       )}

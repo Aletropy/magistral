@@ -6,7 +6,7 @@ import { Page } from "@/components/layout/Page";
 import { Badge } from "@/components/ui/badge";
 import { WarningCallout } from "@/components/ui/WarningCallout";
 import { requireAdmin } from "@/lib/auth/dal";
-import { requireSystemUnlock } from "@/lib/systemPin";
+import { requireDevUnlock } from "@/lib/systemPin";
 import { AppError } from "@/lib/errors/AppError";
 import { startOfBrasiliaDay } from "@/lib/integrations/jurisprudencias/brasiliaDay";
 import {
@@ -40,7 +40,7 @@ function readStatus(): { status: ConnectionStatus | null; configurationError: st
 export default async function IntegrationsPage({ searchParams }: PageProps<"/integracoes">) {
   await connection();
   await requireAdmin();
-  await requireSystemUnlock();
+  await requireDevUnlock();
   const result = (await searchParams)[CONNECTION_RESULT_PARAM];
   const { status, configurationError } = readStatus();
   const usage = getUsageRepository();

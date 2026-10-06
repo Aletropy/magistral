@@ -6,7 +6,7 @@ import { AppShell } from "@/components/shell/AppShell";
 import { Toaster } from "@/components/ui/sonner";
 import { getCurrentUser } from "@/lib/auth/dal";
 import { toCurrentUser } from "@/lib/auth/types";
-import { isSystemUnlocked } from "@/lib/systemPin";
+import { DEV_PIN, SYSTEM_PIN, isPinUnlocked } from "@/lib/systemPin";
 import { getReleaseInfo } from "@/lib/config/release";
 import { NONCE_HEADER } from "@/lib/http/contentSecurityPolicy";
 import { THEME_INIT_SCRIPT } from "@/lib/theme/theme";
@@ -24,8 +24,10 @@ export const metadata: Metadata = {
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
   const [user, requestHeaders] = await Promise.all([getCurrentUser(), headers()]);
-  // The Sistema group stays hidden until the office PIN unlocks it.
-  const systemLocked = user ? !(await isSystemUnlocked()) : false;
+  // The Sistema group (and Desenvolvimento inside it) stay hidden until each PIN unlocks them.
+  // Reloads forget the unlocks in proxy.ts; client-side navigation keeps them.
+  const systemLocked = user ? !(await isPinUnlocked(SYSTEM_PIN)) : false;
+  const devLocked = user ? !(await isPinUnlocked(DEV_PIN)) : false;
   // The Content-Security-Policy only lets inline scripts with this request's nonce run.
   const nonce = requestHeaders.get(NONCE_HEADER) ?? undefined;
 
@@ -38,7 +40,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       <body className="flex min-h-full flex-col">
         {user ? (
           <ActivityProvider>
-            <AppShell user={toCurrentUser(user)} release={getReleaseInfo()} systemLocked={systemLocked}>
+            <AppShell user={toCurrentUser(user)} release={getReleaseInfo()} systemLocked={systemLocked} devLocked={devLocked}>
               {children}
             </AppShell>
           </ActivityProvider>

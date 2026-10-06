@@ -21,7 +21,7 @@ export const APP_GUIDE: readonly GuideEntry[] = [
     feature: "Início",
     path: HOME_PATH,
     howTo:
-      "O painel com a caixa “Como posso ajudar?” (a conversa continua no Advogado IA ao lado da página), as minutas e conversas recentes, o que está rodando agora e o acervo do escritório. O menu lateral agrupa Criar (Nova minuta, Advogado IA, Lotes), Acervo (Histórico, Personas, Cláusulas, Biblioteca) e Sistema (Tarefas; Uso e Equipe para administradores).",
+      "O painel com a caixa “Como posso ajudar?” (a conversa continua no Advogado IA ao lado da página), as minutas e conversas recentes, o que está rodando agora e o acervo do escritório. O menu lateral agrupa Criar (Nova minuta, Advogado IA, Lotes), Acervo (Histórico, Personas, Cláusulas, Biblioteca) e Sistema (Tarefas; Equipe para administradores; Desenvolvimento com Uso e Integrações). A aba Sistema e a área Desenvolvimento pedem um PIN cada vez que a página recarrega.",
   },
   {
     feature: "Nova minuta — passo a passo",

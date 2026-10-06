@@ -7,17 +7,35 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { NETWORK_ERROR_MESSAGE, readErrorMessage } from "@/lib/http/client";
 import { SYSTEM_UNLOCK_ENDPOINT } from "@/lib/http/endpoints";
+import type { PinScope } from "@/lib/pinCookies";
 
 const SUBMIT_FAILED_MESSAGE = "Não foi possível desbloquear. Tente novamente.";
+
+const COPY: Record<PinScope, { title: string; description: string; digits: number; dialogLabel: string }> = {
+  sistema: {
+    title: "Área restrita",
+    description: "Informe o PIN de 4 dígitos do escritório.",
+    digits: 4,
+    dialogLabel: "Desbloquear Sistema",
+  },
+  desenvolvimento: {
+    title: "Desenvolvimento",
+    description: "Informe o PIN de 6 dígitos do desenvolvimento.",
+    digits: 6,
+    dialogLabel: "Desbloquear Desenvolvimento",
+  },
+};
 
 interface SystemPinDialogProps {
   open: boolean;
   onClose: () => void;
+  scope?: PinScope;
 }
 
-/** Asks the four office digits that reveal the Sistema section. */
-export function SystemPinDialog({ open, onClose }: SystemPinDialogProps) {
+/** Asks the office digits that reveal a locked section. */
+export function SystemPinDialog({ open, onClose, scope = "sistema" }: SystemPinDialogProps) {
   const router = useRouter();
+  const { title, description, digits, dialogLabel } = COPY[scope];
   const [pin, setPin] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isPending, setIsPending] = useState(false);
@@ -36,8 +54,8 @@ export function SystemPinDialog({ open, onClose }: SystemPinDialogProps) {
 
   async function submit(event: FormEvent) {
     event.preventDefault();
-    if (!/^\d{4}$/.test(pin)) {
-      setError("Informe os 4 dígitos do PIN.");
+    if (!new RegExp(`^\\d{${digits}}$`).test(pin)) {
+      setError(`Informe os ${digits} dígitos do PIN.`);
       return;
     }
     setIsPending(true);
@@ -46,7 +64,7 @@ export function SystemPinDialog({ open, onClose }: SystemPinDialogProps) {
       const response = await fetch(SYSTEM_UNLOCK_ENDPOINT, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ pin }),
+        body: JSON.stringify({ scope, pin }),
       });
       if (!response.ok) {
         setError(await readErrorMessage(response, SUBMIT_FAILED_MESSAGE));
@@ -65,7 +83,7 @@ export function SystemPinDialog({ open, onClose }: SystemPinDialogProps) {
     <div
       role="dialog"
       aria-modal="true"
-      aria-label="Desbloquear Sistema"
+      aria-label={dialogLabel}
       onKeyDown={handleKeyDown}
       onClick={close}
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-[1px]"
@@ -76,20 +94,20 @@ export function SystemPinDialog({ open, onClose }: SystemPinDialogProps) {
         className="flex w-full max-w-xs flex-col gap-3 rounded-lg border bg-card p-5 shadow-xl"
       >
         <div className="flex flex-col gap-1">
-          <p className="font-medium">Área restrita</p>
-          <p className="text-sm text-muted-foreground">Informe o PIN de 4 dígitos do escritório.</p>
+          <p className="font-medium">{title}</p>
+          <p className="text-sm text-muted-foreground">{description}</p>
         </div>
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor="system-pin">PIN</Label>
+          <Label htmlFor={`pin-${scope}`}>PIN</Label>
           <Input
-            id="system-pin"
+            id={`pin-${scope}`}
             type="password"
             inputMode="numeric"
             autoComplete="off"
-            maxLength={4}
+            maxLength={digits}
             autoFocus
             value={pin}
-            onChange={(event) => setPin(event.target.value.replace(/\D/g, "").slice(0, 4))}
+            onChange={(event) => setPin(event.target.value.replace(/\D/g, "").slice(0, digits))}
             className="text-center text-lg tracking-[0.5em]"
           />
         </div>
@@ -102,7 +120,7 @@ export function SystemPinDialog({ open, onClose }: SystemPinDialogProps) {
           <Button type="button" variant="outline" onClick={close} disabled={isPending}>
             Cancelar
           </Button>
-          <Button type="submit" disabled={isPending || pin.length !== 4}>
+          <Button type="submit" disabled={isPending || pin.length !== digits}>
             {isPending ? "Desbloqueando…" : "Desbloquear"}
           </Button>
         </div>
