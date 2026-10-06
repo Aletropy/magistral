@@ -96,7 +96,7 @@ export function useConversation(initial: ChatConversation, { getContext }: Conve
   );
 
   const update = useCallback(
-    (changes: { title?: string; useLibrary?: boolean }) =>
+    (changes: { title?: string; useLibrary?: boolean; useJurisprudencia?: boolean }) =>
       act(() => sendJson("PATCH", conversationEndpoint(id), changes), UPDATE_FAILED),
     [act, id],
   );

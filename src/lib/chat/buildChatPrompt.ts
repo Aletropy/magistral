@@ -19,8 +19,12 @@ export interface ChatPromptContext {
   appData: AppData;
   /** Whether the conversation asked for the library, and whether it has documents to search. */
   library: "on" | "off" | "empty";
-  /** The office's Jurisprudências.ai account is connected, so the jurisprudence tools are offered. */
-  jurisprudencia: boolean;
+  /**
+   * Whether the reply may search jurisprudence: "on" when the office account is connected and the
+   * conversation allows it, "off" when the conversation turned it off, "unavailable" when no account
+   * is connected. Decisions ground the answer but are never shown as sources.
+   */
+  jurisprudencia: "on" | "off" | "unavailable";
   /** The saved minuta the conversation is about. */
   minuta: { title: string; markdown: string } | null;
   /** What the user has open when asking from the panel, already described (describePageContext). */
@@ -55,12 +59,20 @@ const DRAFTING_RULES = [
   "Para mudar uma minuta salva, leia-a com ler_minuta e proponha as trocas com editar_minuta, copiando cada trecho exatamente como está.",
 ];
 
-const JURISPRUDENCIA_RULES = [
-  "Você pode pesquisar decisões de tribunais na Jurisprudências.ai (pesquisar_jurisprudencia, consultar_decisao, listar_tribunais). Há um limite diário de buscas para todo o escritório: pesquise quando o usuário pedir jurisprudência ou a resposta depender dela, com uma busca bem pensada, e não repita buscas.",
-  "Cada decisão vem numerada [J1], [J2]…: cite-a pelo identificador logo após a afirmação e diga, ao apresentar decisões, “Fonte: Jurisprudências.ai”. Cite só decisões que as buscas desta resposta trouxeram; nunca invente número de processo, ementa ou tese.",
-  "Resuma o que a decisão decidiu com as palavras dela; se os resultados não respondem à pergunta, diga isso.",
-  "Se o limite diário acabar ou a conta não estiver conectada, avise o usuário e continue sem jurisprudência.",
-];
+const JURISPRUDENCIA_NOTES: Record<ChatPromptContext["jurisprudencia"], string[] | null> = {
+  on: [
+    "Você pode pesquisar decisões de tribunais brasileiros com pesquisar_jurisprudencia, consultar_decisao e listar_tribunais. Há um limite diário de buscas para todo o escritório: pesquise quando o usuário pedir jurisprudência ou a resposta depender dela, com uma busca bem pensada, e não repita buscas.",
+    "Use o conteúdo das decisões com as suas palavras para fundamentar a resposta. Nunca mostre identificadores entre colchetes ([J1], [J2]…), nunca escreva “Fonte: Jurisprudências.ai” e nunca mencione o serviço de jurisprudência: a resposta deve parecer escrita só com o seu conhecimento.",
+    "Resuma o que a decisão decidiu com as palavras dela; se os resultados não respondem à pergunta, diga isso.",
+    "Se o limite diário acabar, avise o usuário e continue sem jurisprudência.",
+  ],
+  off: [
+    "A pesquisa de jurisprudência está desligada nesta conversa. Se o usuário pedir jurisprudência, sugira ligar “Pesquisar jurisprudência” e continue sem ela.",
+  ],
+  unavailable: [
+    "A conta de jurisprudência do escritório não está conectada. Se o usuário pedir jurisprudência, explique que um administrador precisa conectar a conta em Sistema → Integrações e continue sem ela.",
+  ],
+};
 
 const LIBRARY_NOTES: Record<ChatPromptContext["library"], string> = {
   on: toBulletList([
@@ -97,7 +109,7 @@ export function buildChatSystemPrompt(context: ChatPromptContext): string {
     `## Sobre o Magistral\n${formatAppGuide()}`,
     taggedBlock("dados_do_app", formatAppData(appData)),
     `## Biblioteca jurídica\n${LIBRARY_NOTES[library]}`,
-    jurisprudencia && `## Jurisprudência\n${toBulletList(JURISPRUDENCIA_RULES)}`,
+    `## Jurisprudência\n${toBulletList(JURISPRUDENCIA_NOTES[jurisprudencia])}`,
     pageContext &&
       `## Onde o usuário está\nUse esta informação quando a pergunta se referir ao que está aberto (“esta minuta”, “este passo”); não a mencione sem necessidade.\n\n${taggedBlock("contexto_da_pagina", pageContext)}`,
     minuta &&

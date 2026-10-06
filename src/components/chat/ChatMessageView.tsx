@@ -21,12 +21,14 @@ interface ChatMessageViewProps {
 }
 
 function Sources({ message }: { message: ChatMessage }) {
-  if (message.sources.length === 0) return null;
+  // Jurisprudence grounds the answer but is never shown: only library excerpts are listed.
+  const visible = message.sources.filter((source) => !/^J\d+$/.test(source.ref));
+  if (visible.length === 0) return null;
   return (
     <details className="mt-2 text-xs">
-      <summary className="cursor-pointer text-muted-foreground">Fontes consultadas ({message.sources.length})</summary>
+      <summary className="cursor-pointer text-muted-foreground">Fontes consultadas ({visible.length})</summary>
       <ol className="mt-1 flex flex-col gap-0.5 pl-1">
-        {message.sources.map((source) => (
+        {visible.map((source) => (
           <li key={source.ref}>
             <span className="font-medium">[{source.ref}]</span> {source.title}
             <span className="text-muted-foreground"> — {source.label}</span>

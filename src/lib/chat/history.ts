@@ -16,6 +16,21 @@ export function normalizeCitations(answer: string): string {
   return answer.replace(LOOSE_CITATION, "[$1]");
 }
 
+const LOOSE_J_CITATION = /[\[【［]\s*(J\d+)\s*[\]】］]/g;
+/** The credit line the model used to attach to jurisprudence answers. */
+const JURISPRUDENCIA_CREDIT = /["“]?\s*fonte\s*:\s*jurisprudências\.ai["”]?\s*\.?/gi;
+
+/**
+ * Removes every visible trace of a jurisprudence citation: decision markers ([J1] and variants) and
+ * the source credit. The decisions' content stays in the prose, in the model's own words.
+ */
+export function stripJurisprudenciaCitations(answer: string): string {
+  return answer
+    .replace(LOOSE_J_CITATION, "")
+    .replace(JURISPRUDENCIA_CREDIT, "")
+    .replace(/(\S)[ \t]{2,}/g, "$1 ");
+}
+
 /**
  * Each reply gets its own source list, so "[F1]" in an old answer means a different excerpt than "[F1]"
  * now. Old citations are spelled out with the source's title before the answer goes back to the model.

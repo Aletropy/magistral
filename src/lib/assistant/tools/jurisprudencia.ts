@@ -2,7 +2,6 @@ import { z } from "zod";
 import type { JurisprudenciasCaller } from "@/lib/integrations/jurisprudencias/caller";
 import {
   COURT_IDS,
-  JURISPRUDENCIAS_CREDIT,
   JURISPRUDENCIAS_NAME,
   JURISPRUDENCIAS_TOOLS,
 } from "@/lib/integrations/jurisprudencias/config";
@@ -23,7 +22,8 @@ const COURT_FIELDS = ["court", "tribunal", "court_abbreviation"];
 const DATE_FIELDS = ["publication_date", "trial_date", "data_publicacao", "date"];
 const LIST_FIELDS = ["decisions", "results", "items", "data"];
 
-const CITATION_NOTE = `Cite cada decisão usada pelo identificador entre colchetes logo após a afirmação (ex.: [J1]) e indique a fonte “${JURISPRUDENCIAS_CREDIT}”. Não cite decisões fora desta lista e não invente ementas.`;
+const SILENT_USE_NOTE =
+  "Use estas decisões com as suas palavras para fundamentar a resposta. Nunca mostre identificadores [Jn] nem mencione a fonte ou o serviço de jurisprudência na resposta.";
 
 const terms = z.array(z.string().trim().min(1).max(MAX_TERM_CHARS)).max(MAX_TERMS);
 const date = z.string().regex(DATE, DATE_HINT);
@@ -108,8 +108,9 @@ function decisionList(data: unknown): Json[] | null {
 }
 
 /**
- * Numbers what the service answered so the model can cite it: each decision gets a [Jn] when the answer
- * is a JSON list; otherwise the whole answer is one reference described by `fallback`.
+ * Numbers what the service answered so the reply can tell decisions apart: each decision gets a [Jn]
+ * while the answer is being written. References never reach the user; they only track which decision
+ * is which inside one reply.
  */
 export function numberDecisions(text: string, citations: CitationRegistry, fallback: { title: string; label: string }): string {
   let data: unknown = null;
@@ -144,7 +145,7 @@ function annotate(list: Json[], citations: CitationRegistry): Json[] {
 
 function outcome(text: string, summary: string, card?: ToolOutcome["card"]): ToolOutcome {
   return {
-    output: `${CITATION_NOTE}\n\n${text}`,
+    output: `${SILENT_USE_NOTE}\n\n${text}`,
     summary,
     card: card ?? null,
     maxOutputChars: DECISIONS_RESULT_MAX_CHARS,
@@ -162,9 +163,9 @@ export function createJurisprudenciaTools({ call }: JurisprudenciaDeps) {
   return [
     defineReadTool({
       name: "pesquisar_jurisprudencia",
-      description: `Pesquisa decisões de um tribunal brasileiro na ${JURISPRUDENCIAS_NAME}. Cada busca conta no limite diário do escritório (plano gratuito: 5 por dia), então pesquise só quando o usuário pedir ou a resposta depender de jurisprudência, escolha o tribunal certo e capriche nos termos. Devolve decisões com ementa, numeradas [J1], [J2]….`,
+      description: `Pesquisa decisões de um tribunal brasileiro na ${JURISPRUDENCIAS_NAME}. Cada busca conta no limite diário do escritório (plano gratuito: 5 por dia), então pesquise só quando o usuário pedir ou a resposta depender de jurisprudência, escolha o tribunal certo e capriche nos termos. Devolve decisões com ementa para fundamentar a resposta com as suas palavras, sem citar fontes.`,
       input: searchInputSchema,
-      progressLabel: `Pesquisando na ${JURISPRUDENCIAS_NAME}`,
+      progressLabel: "Pesquisando jurisprudência",
       async run(input, context) {
         const text = await run(JURISPRUDENCIAS_TOOLS.search, toSearchArguments(input), context);
         const what = input.consulta ?? "a pesquisa estruturada";
@@ -177,9 +178,9 @@ export function createJurisprudenciaTools({ call }: JurisprudenciaDeps) {
     }),
     defineReadTool({
       name: "consultar_decisao",
-      description: `Traz a decisão completa (ementa) de um processo pelo tribunal e número, na ${JURISPRUDENCIAS_NAME}. Conta no limite diário de consultas. Use para conferir uma decisão que o usuário citou.`,
+      description: `Traz a decisão completa (ementa) de um processo pelo tribunal e número, na ${JURISPRUDENCIAS_NAME}. Conta no limite diário de consultas. Use para conferir uma decisão que o usuário citou; o conteúdo fundamenta a resposta sem ser citado.`,
       input: lookupInputSchema,
-      progressLabel: `Consultando a decisão na ${JURISPRUDENCIAS_NAME}`,
+      progressLabel: "Consultando a decisão",
       async run({ tribunal, processo }, context) {
         const text = await run(JURISPRUDENCIAS_TOOLS.lookup, { court: tribunal, process_number: processo }, context);
         const [ref] = context.citations.addDecisions([{ title: `${tribunal.toUpperCase()} ${processo}`, label: "Ementa" }]);

@@ -400,6 +400,11 @@ function createIntegrationsTable(db: DatabaseSync): void {
   `);
 }
 
+/** Each conversation chooses whether the Advogado IA may search jurisprudence; older rows default to on. */
+function addConversationJurisprudenciaToggle(db: DatabaseSync): void {
+  db.exec("ALTER TABLE chat_conversations ADD COLUMN use_jurisprudencia INTEGER NOT NULL DEFAULT 1");
+}
+
 /** Ordered schema changes. Append new migrations; never edit or reorder existing ones. */
 export const MIGRATIONS: readonly Migration[] = [
   createPersonaTables,
@@ -419,6 +424,7 @@ export const MIGRATIONS: readonly Migration[] = [
   createFeedbackTable,
   createChatToolStepsTable,
   createIntegrationsTable,
+  addConversationJurisprudenciaToggle,
 ];
 
 function readSchemaVersion(db: DatabaseSync): number {

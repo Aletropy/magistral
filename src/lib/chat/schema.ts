@@ -22,6 +22,7 @@ export const newConversationSchema = z.object({
   /** Starts a conversation about a saved minuta. */
   minutaId: z.string().max(MAX_ID_CHARS).nullable().default(null),
   useLibrary: z.boolean().default(true),
+  useJurisprudencia: z.boolean().default(true),
   context: contextField,
 });
 export type NewConversationInput = z.input<typeof newConversationSchema>;
@@ -35,8 +36,9 @@ export const conversationUpdateSchema = z
       .max(MAX_CHAT_TITLE_CHARS, { error: `Use no máximo ${MAX_CHAT_TITLE_CHARS} caracteres.` })
       .optional(),
     useLibrary: z.boolean().optional(),
+    useJurisprudencia: z.boolean().optional(),
   })
-  .refine((update) => update.title !== undefined || update.useLibrary !== undefined, {
+  .refine((update) => update.title !== undefined || update.useLibrary !== undefined || update.useJurisprudencia !== undefined, {
     error: "Nada para atualizar.",
   });
 export type ConversationUpdate = z.infer<typeof conversationUpdateSchema>;

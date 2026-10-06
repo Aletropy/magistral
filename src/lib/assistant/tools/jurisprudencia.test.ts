@@ -39,7 +39,7 @@ describe("pesquisar_jurisprudencia", () => {
       { court: "stj", query: "fiança locação", page: 0, sort_by: "trial_date", pub_from: "2025-01-01" },
       { signal: ctx.signal },
     );
-    expect(outcome.output).toContain("Fonte: Jurisprudências.ai");
+    expect(outcome.output).toContain("Nunca mostre identificadores");
     expect(outcome.output).toContain('"ref": "J1"');
     expect(outcome.output).toContain('"ref": "J2"');
     expect(ctx.citations.consulted()).toEqual([

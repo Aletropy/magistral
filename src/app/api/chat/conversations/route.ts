@@ -14,13 +14,13 @@ export const GET = defineRoute({}, ({ user }) =>
 
 /** Starts a conversation with its first question (optionally about a saved minuta) and queues the answer. */
 export const POST = defineRoute({ body: newConversationSchema }, ({ user, body }) => {
-  const { message, minutaId, useLibrary, context } = body;
+  const { message, minutaId, useLibrary, useJurisprudencia, context } = body;
   const minuta = minutaId ? getMinutaRepository().get(minutaId, user.id) : null;
   if (minutaId && !minuta) return errorResponse(HTTP_NOT_FOUND, MINUTA_NOT_FOUND_MESSAGE);
 
   const chats = getChatRepository();
   const title = titleFromMessage(minuta ? `Sobre: ${minuta.title}` : message);
-  const conversationId = chats.createConversation({ ownerId: user.id, title, minutaId, useLibrary });
+  const conversationId = chats.createConversation({ ownerId: user.id, title, minutaId, useLibrary, useJurisprudencia });
   const { replyId } = chats.addExchange(conversationId, message);
   const taskId = startReply(chats, { ownerId: user.id, conversationId, replyId, title, context });
   return Response.json({ conversationId, taskId } satisfies ConversationCreatedResponseBody, { status: HTTP_CREATED });

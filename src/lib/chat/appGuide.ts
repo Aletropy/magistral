@@ -91,7 +91,7 @@ export const APP_GUIDE: readonly GuideEntry[] = [
     feature: "Integrações",
     path: INTEGRATIONS_PATH,
     howTo:
-      "Só para administradores. Conecta a conta do escritório na Jurisprudências.ai; com ela conectada, o Advogado IA pesquisa decisões de tribunais (STF, STJ, TST, TRFs, TRTs, TJs, CARF) quando a conversa pede e cita cada uma como [J1]. Há limite diário de buscas (plano gratuito: 5 buscas e 10 consultas de processo; assinatura: 500 buscas). Na página da minuta, o botão “Pesquisar jurisprudência” aparece quando a conta está conectada.",
+      "Só para administradores. Conecta a conta do escritório na Jurisprudências.ai; com ela conectada, o Advogado IA pesquisa decisões de tribunais (STF, STJ, TST, TRFs, TRTs, TJs, CARF) quando a conversa pede e usa o conteúdo para fundamentar a resposta, sem mostrar fontes. Há limite diário de buscas (plano gratuito: 5 buscas e 10 consultas de processo; assinatura: 500 buscas). Na página da minuta, o botão “Pesquisar jurisprudência” aparece quando a conta está conectada.",
   },
   {
     feature: "Equipe e conta",
