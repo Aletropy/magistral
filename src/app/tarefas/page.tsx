@@ -3,6 +3,7 @@ import { connection } from "next/server";
 import { Page } from "@/components/layout/Page";
 import { TaskList } from "@/components/tasks/TaskList";
 import { requireUser } from "@/lib/auth/dal";
+import { requireSystemUnlock } from "@/lib/systemPin";
 import { getTaskRepository } from "@/lib/tasks/getTaskRepository";
 import { TASK_RETENTION_DAYS } from "@/lib/tasks/getTaskWorker";
 
@@ -14,6 +15,7 @@ const TASK_PAGE_LIMIT = 100;
 export default async function TasksPage() {
   await connection();
   const user = await requireUser();
+  await requireSystemUnlock();
   const tasks = getTaskRepository().list({ ownerId: user.id, limit: TASK_PAGE_LIMIT });
 
   return (

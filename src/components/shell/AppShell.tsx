@@ -30,13 +30,15 @@ const FOCUS_PAGES: ReadonlyMap<string, string> = new Map([[NEW_MINUTA_PATH, "Sai
 interface AppShellProps {
   user: CurrentUser;
   release: ReleaseInfo;
+  /** Hides the Sistema group behind the office PIN. */
+  systemLocked: boolean;
   children: ReactNode;
 }
 
-export function AppShell({ user, release, children }: AppShellProps) {
+export function AppShell({ user, release, systemLocked, children }: AppShellProps) {
   return (
     <AssistantProvider userId={user.id}>
-      <ShellFrame user={user} release={release}>
+      <ShellFrame user={user} release={release} systemLocked={systemLocked}>
         {children}
       </ShellFrame>
       <AssistantPanel />
@@ -44,7 +46,7 @@ export function AppShell({ user, release, children }: AppShellProps) {
   );
 }
 
-function ShellFrame({ user, release, children }: AppShellProps) {
+function ShellFrame({ user, release, systemLocked, children }: AppShellProps) {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const pathname = usePathname();
   const drawerRef = useRef<HTMLDivElement>(null);
@@ -87,7 +89,7 @@ function ShellFrame({ user, release, children }: AppShellProps) {
       </a>
 
       <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 overflow-y-auto border-r bg-sidebar lg:block">
-        <SidebarNav user={user} />
+        <SidebarNav user={user} systemLocked={systemLocked} />
       </aside>
 
       {isDrawerOpen && (
@@ -116,7 +118,7 @@ function ShellFrame({ user, release, children }: AppShellProps) {
             >
               <X aria-hidden />
             </Button>
-            <SidebarNav user={user} onNavigate={closeDrawer} />
+            <SidebarNav user={user} systemLocked={systemLocked} onNavigate={closeDrawer} />
           </div>
         </div>
       )}

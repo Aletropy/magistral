@@ -6,6 +6,7 @@ import { RecentCallsTable } from "@/components/RecentCallsTable";
 import { StatTile } from "@/components/StatTile";
 import { UsageGroupTable } from "@/components/UsageGroupTable";
 import { requireAdmin } from "@/lib/auth/dal";
+import { requireSystemUnlock } from "@/lib/systemPin";
 import { formatDay, formatInteger, formatLatency, formatUsd } from "@/lib/usage/format";
 import { getUsageRepository } from "@/lib/usage/getUsageRepository";
 import { LLM_OPERATIONS, LLM_OPERATION_LABELS, type LlmOperation } from "@/lib/usage/types";
@@ -26,6 +27,7 @@ function formatOperation(key: string): string {
 export default async function UsagePage() {
   await connection();
   await requireAdmin();
+  await requireSystemUnlock();
   const usage = getUsageRepository();
   const totals = usage.totals(USAGE_WINDOW_DAYS);
 

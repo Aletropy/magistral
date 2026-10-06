@@ -6,6 +6,7 @@ import { EmptyState } from "@/components/layout/EmptyState";
 import { Page } from "@/components/layout/Page";
 import { Badge } from "@/components/ui/badge";
 import { requireAdmin } from "@/lib/auth/dal";
+import { requireSystemUnlock } from "@/lib/systemPin";
 import { getFeedbackRepository } from "@/lib/feedback/getFeedbackRepository";
 import { formatDateTime } from "@/lib/usage/format";
 
@@ -17,6 +18,7 @@ const FEEDBACK_LIMIT = 200;
 export default async function FeedbackPage() {
   await connection();
   await requireAdmin();
+  await requireSystemUnlock();
   const repository = getFeedbackRepository();
   const reports = repository.list(FEEDBACK_LIMIT);
   const open = repository.countOpen();
