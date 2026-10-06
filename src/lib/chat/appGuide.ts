@@ -21,7 +21,7 @@ export const APP_GUIDE: readonly GuideEntry[] = [
     feature: "Início",
     path: HOME_PATH,
     howTo:
-      "O painel com a caixa “Como posso ajudar?” (a conversa continua no Advogado IA ao lado da página), as minutas e conversas recentes, o que está rodando agora e o acervo do escritório. O menu lateral agrupa Criar (Nova minuta, Advogado IA, Lotes), Acervo (Histórico, Personas, Cláusulas, Biblioteca) e Sistema (Tarefas; Uso e Equipe para administradores).",
+      "O painel com a caixa “Como posso ajudar?” (a conversa continua no Advogado IA ao lado da página), as minutas e conversas recentes, o que está rodando agora e o acervo do escritório. O menu lateral agrupa Criar (Nova minuta, Advogado IA, Lotes), Acervo (Histórico, Personas, Cláusulas, Biblioteca) e Sistema (Tarefas; Uso e Equipe para administradores). Administradores podem definir um PIN por conta em Equipe; com ele ligado, Equipe, Feedback, Uso e Integrações pedem o PIN a cada recarga da página.",
   },
   {
     feature: "Nova minuta — passo a passo",
@@ -97,7 +97,7 @@ export const APP_GUIDE: readonly GuideEntry[] = [
     feature: "Equipe e conta",
     path: `${TEAM_PATH} e ${ACCOUNT_PATH}`,
     howTo:
-      "Cada pessoa entra com a própria conta. Minutas, conversas, lotes e tarefas são de cada um; personas, cláusulas e a biblioteca são do escritório. Administradores cadastram pessoas em Equipe; qualquer um troca a senha em Minha conta.",
+      "Cada pessoa entra com a própria conta. Minutas, conversas, lotes e tarefas são de cada um; personas, cláusulas e a biblioteca são do escritório. Administradores cadastram pessoas em Equipe, definem ou removem o PIN de cada conta e podem trocá-lo se alguém esquecer; qualquer um troca a senha em Minha conta.",
   },
   {
     feature: "Advogado IA",

@@ -296,6 +296,7 @@ Para uma proteção maior, ative os snapshots do disco (EBS) da instância.
 | A IA responde que nenhum modelo garante retenção zero | O modelo não tem rota `zdr` | Na demonstração, `OPENROUTER_ALLOW_DATA_COLLECTION=true` (dados fictícios); na versão final, um modelo/provedor pago com retenção zero |
 | Construção da imagem morre por falta de memória | Máquina de 2 GB sem troca | Crie o swap do passo 4 |
 | Integrações mostra "chave de segurança mudou" | `MAGISTRAL_SECRET_KEY` foi alterada | Volte a chave anterior ou conecte de novo |
+| Alguém esqueceu o PIN e as áreas restritas não abrem | PIN perdido ou aparelho novo | Em Equipe, “Alterar PIN” define um novo (o antigo deixa de valer em todos os aparelhos); cinco erros seguidos travam o PIN por 15 minutos |
 | Indexar a biblioteca demora na primeira vez | Baixando o modelo de busca | Aguarde; ele fica guardado no volume |
 
 Depois de editar o `.env.production`, aplique com `docker compose --env-file .env.production up -d`
