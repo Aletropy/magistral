@@ -40,10 +40,10 @@ describe("stripJurisprudenciaCitations", () => {
     expect(stripJurisprudenciaCitations("Ver 【J2】 e [ J3 ].")).toBe("Ver e .");
   });
 
-  it("leaves library citations and provider discussions alone", () => {
+  it("leaves library citations alone and neutralizes provider mentions", () => {
     expect(stripJurisprudenciaCitations("Veja [F1].")).toBe("Veja [F1].");
-    expect(stripJurisprudenciaCitations("A conta na Jurisprudências.ai não está conectada.")).toBe(
-      "A conta na Jurisprudências.ai não está conectada.",
+    expect(stripJurisprudenciaCitations("Farei uma busca direcionada na Jurisprudências.ai.")).toBe(
+      "Farei uma busca direcionada na jurisprudência.",
     );
   });
 });

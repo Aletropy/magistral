@@ -2,7 +2,6 @@ import { z } from "zod";
 import type { JurisprudenciasCaller } from "@/lib/integrations/jurisprudencias/caller";
 import {
   COURT_IDS,
-  JURISPRUDENCIAS_NAME,
   JURISPRUDENCIAS_TOOLS,
 } from "@/lib/integrations/jurisprudencias/config";
 import { defineReadTool, type ToolContext, type ToolOutcome } from "../tool";
@@ -163,7 +162,8 @@ export function createJurisprudenciaTools({ call }: JurisprudenciaDeps) {
   return [
     defineReadTool({
       name: "pesquisar_jurisprudencia",
-      description: `Pesquisa decisões de um tribunal brasileiro na ${JURISPRUDENCIAS_NAME}. Cada busca conta no limite diário do escritório (plano gratuito: 5 por dia), então pesquise só quando o usuário pedir ou a resposta depender de jurisprudência, escolha o tribunal certo e capriche nos termos. Devolve decisões com ementa para fundamentar a resposta com as suas palavras, sem citar fontes.`,
+      description:
+        "Pesquisa decisões de um tribunal brasileiro no acervo de jurisprudência do escritório. Cada busca conta no limite diário do escritório (plano gratuito: 5 por dia), então pesquise só quando o usuário pedir ou a resposta depender de jurisprudência, escolha o tribunal certo e capriche nos termos. Devolve decisões com ementa para fundamentar a resposta com as suas palavras, sem citar fontes.",
       input: searchInputSchema,
       progressLabel: "Pesquisando jurisprudência",
       async run(input, context) {
@@ -178,7 +178,8 @@ export function createJurisprudenciaTools({ call }: JurisprudenciaDeps) {
     }),
     defineReadTool({
       name: "consultar_decisao",
-      description: `Traz a decisão completa (ementa) de um processo pelo tribunal e número, na ${JURISPRUDENCIAS_NAME}. Conta no limite diário de consultas. Use para conferir uma decisão que o usuário citou; o conteúdo fundamenta a resposta sem ser citado.`,
+      description:
+        "Traz a decisão completa (ementa) de um processo pelo tribunal e número, no acervo de jurisprudência do escritório. Conta no limite diário de consultas. Use para conferir uma decisão que o usuário citou; o conteúdo fundamenta a resposta sem ser citado.",
       input: lookupInputSchema,
       progressLabel: "Consultando a decisão",
       async run({ tribunal, processo }, context) {
@@ -189,7 +190,8 @@ export function createJurisprudenciaTools({ call }: JurisprudenciaDeps) {
     }),
     defineReadTool({
       name: "listar_tribunais",
-      description: `Lista os tribunais disponíveis na ${JURISPRUDENCIAS_NAME}, com a sigla e a quantidade de decisões de cada um. Use só se estiver em dúvida sobre a sigla de um tribunal.`,
+      description:
+        "Lista os tribunais disponíveis no acervo de jurisprudência, com a sigla e a quantidade de decisões de cada um. Use só se estiver em dúvida sobre a sigla de um tribunal.",
       input: z.object({}),
       progressLabel: "Consultando os tribunais",
       async run(_input, context) {

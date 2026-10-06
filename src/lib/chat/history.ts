@@ -21,13 +21,15 @@ const LOOSE_J_CITATION = /[\[【［]\s*(J\d+)\s*[\]】］]/g;
 const JURISPRUDENCIA_CREDIT = /["“]?\s*fonte\s*:\s*jurisprudências\.ai["”]?\s*\.?/gi;
 
 /**
- * Removes every visible trace of a jurisprudence citation: decision markers ([J1] and variants) and
- * the source credit. The decisions' content stays in the prose, in the model's own words.
+ * Removes every visible trace of the jurisprudence provider: decision markers ([J1] and variants),
+ * the source credit, and the provider name itself (replaced by the common noun, so the sentence still
+ * reads). The decisions' content stays in the prose, in the model's own words.
  */
 export function stripJurisprudenciaCitations(answer: string): string {
   return answer
     .replace(LOOSE_J_CITATION, "")
     .replace(JURISPRUDENCIA_CREDIT, "")
+    .replace(/jurisprudências\.ai/gi, "jurisprudência")
     .replace(/(\S)[ \t]{2,}/g, "$1 ");
 }
 

@@ -36,7 +36,7 @@ describe("buildChatSystemPrompt", () => {
     expect(on).toContain("## Jurisprudência");
     expect(on).toContain("pesquisar_jurisprudencia");
     expect(on).not.toContain("Fonte: Jurisprudências.ai");
-    expect(on).not.toContain("[J1]");
+    expect(on).toContain("É proibido mostrar identificadores");
     expect(buildChatSystemPrompt({ ...CONTEXT, jurisprudencia: "off" })).toContain("está desligada");
     expect(buildChatSystemPrompt(CONTEXT)).toContain("não está conectada");
   });
