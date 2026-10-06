@@ -25,6 +25,7 @@ const RESULT: DraftResult = {
   forbiddenTermsFound: ["outrossim"],
   consultedSources: [{ ref: "F1", title: "Lei 7", label: "Art. 5º" }],
   retrievalStrategy: "full",
+  referenceCheck: null,
   approvedClauseOrderKept: true,
   approvedClauses: [{ title: "Foro", body: "Foro de Canoas." }],
 };

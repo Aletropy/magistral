@@ -101,6 +101,7 @@ describe("API routes with accounts", () => {
         forbiddenTermsFound: [],
         consultedSources: [],
         retrievalStrategy: null,
+        referenceCheck: null,
         approvedClauseOrderKept: true,
         approvedClauses: [],
       },

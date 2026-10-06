@@ -7,6 +7,7 @@ import type { Clause } from "@/lib/clauses/types";
 import { generateMinuta } from "@/lib/llm/generateMinuta";
 import { getEmbedder } from "@/lib/llm/getEmbedder";
 import { getMinutaGenerator } from "@/lib/llm/getMinutaGenerator";
+import { getStructuredGenerator } from "@/lib/llm/getStructuredGenerator";
 import { activeLibraryContextBudget } from "@/lib/llm/providerRegistry";
 import type { DraftResult } from "@/lib/minuta/types";
 import { findNegativeConstraintViolations } from "@/lib/personas/findNegativeConstraintViolations";
@@ -20,6 +21,8 @@ import { selectLibraryContext, type LibraryContext } from "@/lib/rag/selectConte
 import type { LlmOperation } from "@/lib/usage/types";
 import { MinutaRequestError } from "./errors";
 import type { MinutaRequest } from "./schema";
+import { auditMinutaReferences } from "./auditReferences";
+import type { ReferenceCheck } from "./types";
 
 export interface DraftedMinuta {
   result: DraftResult;
@@ -28,7 +31,7 @@ export interface DraftedMinuta {
 }
 
 /** The slow steps of a draft, reported so a background task can show where it is. */
-export type DraftStage = "library" | "drafting";
+export type DraftStage = "library" | "drafting" | "verifying";
 
 export interface DraftOptions {
   /** Cancels the retrieval and the LLM call. */
@@ -91,11 +94,24 @@ export async function draftMinuta(
     { sources, approvedClauses },
     { signal },
   );
+  signal?.throwIfAborted();
+  onStage?.("verifying");
+  let referenceCheck: ReferenceCheck | null = null;
+  if (sources.length > 0) {
+    try {
+      const audit = await auditMinutaReferences(markdown, sources, getStructuredGenerator(operation), { signal });
+      referenceCheck = audit.checked === 0 && audit.unconfirmed.length === 0 ? null : audit;
+    } catch {
+      // A failed audit must not lose the draft: it simply goes out unchecked.
+      referenceCheck = null;
+    }
+  }
   const result: DraftResult = {
     markdown,
     forbiddenTermsFound: findNegativeConstraintViolations(markdown, persona.negativeConstraints),
     consultedSources: sources.map(({ ref, title, label }) => ({ ref, title, label })),
     retrievalStrategy: library?.strategy ?? null,
+    referenceCheck,
     approvedClauseOrderKept: isApprovedClauseOrderKept(
       markdown,
       approvedClauses.map((clause) => clause.title),

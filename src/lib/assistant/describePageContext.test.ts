@@ -55,6 +55,7 @@ describe("describePageContext", () => {
         forbiddenTermsFound: [],
         consultedSources: [],
         retrievalStrategy: null,
+        referenceCheck: null,
         approvedClauseOrderKept: true,
         approvedClauses: [],
       },
