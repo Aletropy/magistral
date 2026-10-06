@@ -38,6 +38,7 @@ export const draftMinutaTask: TaskHandler<MinutaRequest, DraftTaskResult> = {
     const ownerId = taskOwner(context);
     const { result, personaName } = await draftMinuta(payload, "minuta", {
       signal,
+      auditReferences: true,
       onStage: (stage) => reportProgress(DRAFT_STAGE_STEP[stage], DRAFT_STAGE_COUNT, DRAFT_STAGE_LABELS[stage]),
     });
     const documentTypeLabel = resolveDocumentTypeLabel(payload);
